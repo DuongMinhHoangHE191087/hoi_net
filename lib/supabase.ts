@@ -40,6 +40,8 @@ export type BlogPost = {
   content: string
   author_name: string
   author_avatar?: string
+  category?: string
+  tags?: string[]
   featured_image?: string
   published: boolean
   created_at: string
