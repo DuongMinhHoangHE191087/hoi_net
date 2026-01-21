@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest photo-restore-ai --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-git)",
+      "Bash(npm run build)",
+      "Bash(npm install lucide-react)",
+      "Bash(timeout:*)",
+      "Skill(ui-ux-pro-max)",
+      "Bash(python:*)",
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(test:*)",
+      "Bash(npm run dev)",
+      "Bash(npm install:*)",
+      "Bash(powershell:*)",
+      "Bash(findstr:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(curl:*)",
+      "Bash(echo:*)",
+      "Bash(netstat:*)",
+      "WebSearch",
+      "Bash(npx tsc:*)",
+      "Bash(npm ls:*)",
+      "Bash(node:*)",
+      "Bash(npm search:*)",
+      "Bash(ping:*)",
+      "Bash(taskkill:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
