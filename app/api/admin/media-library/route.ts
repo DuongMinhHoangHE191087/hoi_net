@@ -167,7 +167,7 @@ export async function DELETE(request: NextRequest) {
     // Extract public_id from Cloudinary URL
     try {
       const urlParts = media.file_url.split('/')
-      const uploadIndex = urlParts.findIndex(part => part === 'upload')
+      const uploadIndex = urlParts.findIndex((part: string) => part === 'upload')
       if (uploadIndex !== -1) {
         const pathParts = urlParts.slice(uploadIndex + 2) // Skip version
         const publicIdWithExt = pathParts.join('/')
