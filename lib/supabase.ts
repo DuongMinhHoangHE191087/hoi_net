@@ -54,6 +54,7 @@ export type TeamMember = {
   role: string
   bio?: string
   avatar?: string
+  avatar_url?: string
   social_links?: {
     twitter?: string
     linkedin?: string

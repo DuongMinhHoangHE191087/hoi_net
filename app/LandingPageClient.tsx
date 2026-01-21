@@ -116,6 +116,7 @@ export default function LandingPageClient({ team, valueSections, features, testi
   const defaultFeatures = [
     {
       icon: Sparkles,
+      iconUrl: null,
       title: 'Khôi Phục Ảnh Bằng AI',
       description: 'Sử dụng công nghệ AI tiên tiến để khôi phục ảnh cũ, phai màu, hư hỏng.',
       gradient: 'from-pink-500 to-rose-500',
@@ -123,6 +124,7 @@ export default function LandingPageClient({ team, valueSections, features, testi
     },
     {
       icon: ImagePlus,
+      iconUrl: null,
       title: 'Ghép Ảnh Gia Đình',
       description: 'Ghép ảnh của bạn vào các bức ảnh gia đình một cách tự nhiên.',
       gradient: 'from-yellow-500 to-orange-500',
@@ -130,6 +132,7 @@ export default function LandingPageClient({ team, valueSections, features, testi
     },
     {
       icon: Users,
+      iconUrl: null,
       title: 'Dễ Dàng Sử Dụng',
       description: 'Chỉ cần tải ảnh lên, AI sẽ làm phần còn lại cho bạn.',
       gradient: 'from-purple-500 to-pink-500',
@@ -137,6 +140,7 @@ export default function LandingPageClient({ team, valueSections, features, testi
     },
     {
       icon: Zap,
+      iconUrl: null,
       title: 'Xử Lý Nhanh Chóng',
       description: 'Nhận kết quả trong vài phút, không cần chờ đợi lâu.',
       gradient: 'from-blue-500 to-cyan-500',

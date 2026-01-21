@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       bio: bio || '',
       avatar_url: avatar_url || '',
       social_links: social_links || {},
-      order_index: order_index || 0
+      display_order: order_index || 0
     })
 
     return NextResponse.json({
