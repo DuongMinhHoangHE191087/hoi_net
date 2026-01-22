@@ -13,7 +13,7 @@ interface BlogPostPageProps {
 // ✅ Generate static paths at build time for all blog posts
 export async function generateStaticParams() {
   try {
-    const posts = await db.getBlogPosts(true)
+    const { data: posts } = await db.getBlogPosts(true)
     return posts.map((post) => ({
       slug: post.slug,
     }))

@@ -70,11 +70,14 @@ export default function AboutPageClient({ aboutSections, team }: AboutPageClient
       <section className="pt-32 pb-20 px-4 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="fade-in-up text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
               <span className="gradient-text-alt">Về Chúng Tôi</span>
             </h1>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto leading-relaxed">
-              Khám phá câu chuyện, sứ mệnh và tầm nhìn của chúng tôi
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+              Khám phá câu chuyện, sứ mệnh và tầm nhìn của chúng tôi trong việc<br className="hidden sm:block" />
+              <strong className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">
+                bảo tồn ký ức và kết nối các thế hệ
+              </strong>
             </p>
           </div>
         </div>
@@ -87,17 +90,18 @@ export default function AboutPageClient({ aboutSections, team }: AboutPageClient
       <section className="py-20 px-4 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
               <span className="gradient-text-alt">Đội Ngũ Của Chúng Tôi</span>
             </h2>
-            <p className="text-xl text-gray-700">
-              Những người tạo nên sự khác biệt
+            <p className="text-lg sm:text-xl text-gray-700 max-w-2xl mx-auto">
+              Những con người tài năng và tận tâm,<br className="hidden sm:block" />
+              cùng nhau tạo nên sự khác biệt
             </p>
           </div>
 
-          <TeamCarousel3D 
-            team={team} 
-            variant="compact" 
+          <TeamCarousel3D
+            team={team}
+            variant="compact"
             showBackground={false}
           />
         </div>

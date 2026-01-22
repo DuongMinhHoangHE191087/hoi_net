@@ -122,7 +122,7 @@ export function useRealtimeNotifications(userId: string | undefined) {
           table: 'notifications',
           filter: `user_id=eq.${userId}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('[Realtime] New notification:', payload)
 
           // Invalidate queries to refetch
@@ -148,12 +148,12 @@ export function useRealtimeNotifications(userId: string | undefined) {
           table: 'notifications',
           filter: `user_id=eq.${userId}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('[Realtime] Notification updated:', payload)
           queryClient.invalidateQueries({ queryKey: notificationQueryKeys.notifications.all })
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: any) => {
         console.log('[Realtime] Subscription status:', status)
         setIsSubscribed(status === 'SUBSCRIBED')
       })

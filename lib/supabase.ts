@@ -942,5 +942,17 @@ export const db = {
     })
 
     await Promise.all(updates)
+  },
+
+  // Features
+  async getActiveFeatures() {
+    const { data, error } = await supabase
+      .from('features')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+
+    if (error) throw error
+    return data as Feature[]
   }
 }

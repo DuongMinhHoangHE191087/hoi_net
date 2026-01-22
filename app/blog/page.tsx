@@ -10,7 +10,7 @@ export const metadata = {
 export default async function BlogPage() {
   // ✅ Fetch blog posts on server - SEO friendly!
   try {
-    const posts = await db.getBlogPosts(true)
+    const { data: posts } = await db.getBlogPosts(true)
     return <BlogListClient posts={posts} />
   } catch (error) {
     console.error('Error loading blog posts:', error)

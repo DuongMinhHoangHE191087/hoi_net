@@ -194,7 +194,7 @@ export default function AdminMediaLibrary() {
     total: media.length,
     images: media.filter(m => m.file_type === 'image').length,
     totalSizeMB: (media.reduce((sum, m) => sum + m.file_size, 0) / (1024 * 1024)).toFixed(1),
-    categories: [...new Set(media.map(m => m.category))].length,
+    categories: Array.from(new Set(media.map(m => m.category))).length,
   }), [media])
 
   return (
@@ -414,14 +414,14 @@ export default function AdminMediaLibrary() {
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => copyUrl(item.file_url)}
                   >
                     Copy URL
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => handleDelete(item.id)}
                   >

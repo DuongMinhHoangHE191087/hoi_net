@@ -39,7 +39,7 @@ export default function Pagination({
       <Button
         onClick={() => onPageChange(1)}
         disabled={currentPage === 1}
-        variant="outline"
+        variant="secondary"
         size="sm"
         className="hidden sm:flex"
       >
@@ -50,7 +50,7 @@ export default function Pagination({
       <Button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        variant="outline"
+        variant="secondary"
         size="sm"
       >
         <ChevronLeft className="w-4 h-4" />
@@ -63,7 +63,7 @@ export default function Pagination({
           <>
             <Button
               onClick={() => onPageChange(1)}
-              variant="outline"
+              variant="secondary"
               size="sm"
               className="w-10"
             >
@@ -77,7 +77,7 @@ export default function Pagination({
           <Button
             key={page}
             onClick={() => onPageChange(page)}
-            variant={currentPage === page ? 'primary' : 'outline'}
+            variant={currentPage === page ? 'primary' : 'secondary'}
             size="sm"
             className="w-10"
           >
@@ -90,7 +90,7 @@ export default function Pagination({
             {endPage < totalPages - 1 && <span className="px-2 text-gray-500">...</span>}
             <Button
               onClick={() => onPageChange(totalPages)}
-              variant="outline"
+              variant="secondary"
               size="sm"
               className="w-10"
             >
@@ -104,7 +104,7 @@ export default function Pagination({
       <Button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        variant="outline"
+        variant="secondary"
         size="sm"
       >
         <span className="mr-1 hidden sm:inline">Sau</span>
@@ -115,7 +115,7 @@ export default function Pagination({
       <Button
         onClick={() => onPageChange(totalPages)}
         disabled={currentPage === totalPages}
-        variant="outline"
+        variant="secondary"
         size="sm"
         className="hidden sm:flex"
       >

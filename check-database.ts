@@ -16,7 +16,7 @@ async function checkDatabase() {
 
   // Check blog_posts
   try {
-    const posts = await db.getBlogPosts(true)
+    const { data: posts } = await db.getBlogPosts(true)
     checks.blog_posts = true
     console.log('✅ blog_posts:', posts.length, 'rows')
   } catch (error: any) {

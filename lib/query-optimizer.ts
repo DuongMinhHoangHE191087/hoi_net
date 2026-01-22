@@ -35,7 +35,8 @@ class QueryCache {
 
   invalidatePattern(pattern: string) {
     const regex = new RegExp(pattern)
-    for (const key of this.cache.keys()) {
+    const keys = Array.from(this.cache.keys())
+    for (const key of keys) {
       if (regex.test(key)) {
         this.cache.delete(key)
       }

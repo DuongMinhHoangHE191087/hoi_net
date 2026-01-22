@@ -167,7 +167,7 @@ export default function NotificationCenterClient() {
                         <div className="flex gap-2">
                           {notification.action_label && (
                             <Button
-                              variant="outline"
+                              variant="secondary"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -178,14 +178,14 @@ export default function NotificationCenterClient() {
                             </Button>
                           )}
                           <Button
-                            variant="outline"
+                            variant="secondary"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
                               deleteNotification.mutate(notification.id)
                             }}
-                            leftIcon={<Trash2 className="w-4 h-4" />}
                           >
+                            <Trash2 className="w-4 h-4 mr-1" />
                             Xóa
                           </Button>
                         </div>
@@ -201,7 +201,7 @@ export default function NotificationCenterClient() {
         {/* Load More */}
         {notifications.length > 0 && data?.total > notifications.length && (
           <div className="mt-6 text-center">
-            <Button variant="outline">Tải thêm</Button>
+            <Button variant="secondary">Tải thêm</Button>
           </div>
         )}
       </div>

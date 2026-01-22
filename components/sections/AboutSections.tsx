@@ -236,9 +236,35 @@ function SectionItem({ section, index, isImageLeft, Icon, isFirst, isLast }: Sec
 
           {/* Description */}
           <motion.div className="space-y-3 sm:space-y-4" variants={itemVariants}>
-            <p className="text-gray-700 leading-relaxed text-sm sm:text-base md:text-lg whitespace-pre-line">
-              {section.description}
-            </p>
+            <div className="text-gray-700 leading-relaxed text-sm sm:text-base md:text-lg whitespace-pre-line prose prose-sm sm:prose md:prose-lg max-w-none">
+              {section.description.split('\n\n').map((paragraph, idx) => {
+                // Check if paragraph starts with **text** (bold)
+                if (paragraph.trim().startsWith('**')) {
+                  const parts = paragraph.split('**')
+                  return (
+                    <p key={idx} className="mb-3">
+                      {parts.map((part, i) =>
+                        i % 2 === 1 ? <strong key={i} className="font-bold text-gray-900">{part}</strong> : part
+                      )}
+                    </p>
+                  )
+                }
+                // Check if paragraph starts with • (bullet points)
+                if (paragraph.trim().startsWith('•')) {
+                  return (
+                    <ul key={idx} className="list-none space-y-2 ml-0">
+                      {paragraph.split('\n').filter(line => line.trim()).map((line, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${accent.bg}`} />
+                          <span>{line.replace('•', '').trim()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                }
+                return <p key={idx} className="mb-3">{paragraph}</p>
+              })}
+            </div>
           </motion.div>
 
           {/* Decorative line with icon */}

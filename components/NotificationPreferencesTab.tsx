@@ -103,7 +103,7 @@ export default function NotificationPreferencesTab() {
                 </span>
               ) : (
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={handleRequestBrowserPermission}
                 >

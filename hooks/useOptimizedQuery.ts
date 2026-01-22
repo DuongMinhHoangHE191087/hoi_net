@@ -10,7 +10,7 @@ import {
   optimisticUpdates,
   fetchWithCache,
   invalidateCachePattern,
-} from './query-optimizer'
+} from '../lib/query-optimizer'
 
 // ============================================
 // INSTANT LOADING HOOK
@@ -98,7 +98,7 @@ export function useQuery<T>({
 
   // Refetch interval
   useEffect(() => {
-    if (!refetchInterval || refetchInterval === false) return
+    if (refetchInterval === false || !refetchInterval) return
 
     refetchIntervalRef.current = setInterval(() => {
       fetchData(true)
