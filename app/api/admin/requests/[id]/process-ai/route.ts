@@ -141,7 +141,7 @@ export async function POST(
             index,
             original: imageUrl,
             success: result.success,
-            processed_url: result.processedImageUrl || imageUrl, // Use processed URL if available
+            processed_url: imageUrl, // Original URL (Gemini only provides analysis, not processed image)
             analysis: result.analysis?.description,
             suggestions: result.analysis?.suggestions?.join(', '),
             error: result.error

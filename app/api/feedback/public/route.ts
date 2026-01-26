@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/supabase'
+import { getTestimonials } from '@/lib/supabase/server-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,18 +9,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const all = searchParams.get('all') === 'true'
     
-    if (all) {
-      // Get all testimonials for dedicated feedback page
-      const testimonials = await db.getAllPublicTestimonials()
-      return NextResponse.json({
-        success: true,
-        feedback: testimonials
-      })
-    }
-    
-    // Get limited testimonials for homepage (default: 6)
-    const limit = parseInt(searchParams.get('limit') || '6', 10)
-    const testimonials = await db.getTestimonials(limit)
+    // Get testimonials with optional limit
+    const limit = all ? undefined : parseInt(searchParams.get('limit') || '6', 10)
+    const testimonials = await getTestimonials(limit || 100)
 
     return NextResponse.json({
       success: true,

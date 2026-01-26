@@ -102,6 +102,9 @@ export type Feedback = {
   rating?: number
   status: 'new' | 'read' | 'archived'
   // Extended fields for testimonials
+  is_testimonial?: boolean
+  display_on_homepage?: boolean
+  display_order?: number
   testimonial_image_url?: string
   position_title?: string
   company_name?: string
@@ -111,6 +114,7 @@ export type Feedback = {
   zalo_id?: string
   website_url?: string
   phone_number?: string
+  is_public?: boolean
   created_at: string
   updated_at: string
 }

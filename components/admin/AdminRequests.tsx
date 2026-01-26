@@ -308,7 +308,7 @@ export default function AdminRequests() {
                 {status === 'all' ? 'Tất cả' : getStatusLabel(status)}
               </Button>
             ))}
-            <Button variant="secondary" onClick={fetchRequests} size="sm">
+            <Button variant="secondary" onClick={() => fetchRequests()} size="sm">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
@@ -328,7 +328,7 @@ export default function AdminRequests() {
         <Card className="text-center py-8">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={fetchRequests}>Thử lại</Button>
+          <Button onClick={() => fetchRequests()}>Thử lại</Button>
         </Card>
       )}
 
@@ -372,7 +372,7 @@ export default function AdminRequests() {
                           {request.user_profiles?.full_name || 'Không có tên'}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {request.user_profiles?.phone || request.user_profiles?.facebook_url || 'Chưa có liên hệ'}}
+                          {request.user_profiles?.phone || request.user_profiles?.facebook_url || 'Chưa có liên hệ'}
                         </p>
                       </div>
                     </div>

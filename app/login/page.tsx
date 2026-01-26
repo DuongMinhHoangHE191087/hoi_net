@@ -104,13 +104,14 @@ function LoginContent() {
       if (!signInResult.success) {
         // Handle specific error messages
         let errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.'
+        const errorString = signInResult.error?.toString() || ''
 
-        if (signInResult.error?.includes('Invalid login credentials')) {
+        if (errorString.includes('Invalid login credentials')) {
           errorMessage = 'Email hoặc mật khẩu không đúng'
-        } else if (signInResult.error?.includes('Email not confirmed')) {
+        } else if (errorString.includes('Email not confirmed')) {
           errorMessage = 'Vui lòng xác nhận email trước khi đăng nhập'
         } else if (signInResult.error) {
-          errorMessage = signInResult.error
+          errorMessage = errorString
         }
 
         toast.error(errorMessage, {

@@ -20,6 +20,15 @@ export interface ApiResponse<T = any> {
     limit?: number
     total?: number
     processingTime?: number
+    // Version conflict fields
+    expectedVersion?: number
+    currentVersion?: number
+    retryable?: boolean
+    // Lock fields
+    lockedBy?: string
+    lockedAt?: string
+    lockExpiresAt?: string
+    [key: string]: any
   }
 }
 

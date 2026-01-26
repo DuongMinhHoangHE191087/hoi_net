@@ -295,7 +295,7 @@ export default function AdminUsers() {
             <UserPlus className="w-4 h-4 mr-2" />
             Tạo Tài Khoản
           </Button>
-          <Button variant="secondary" onClick={fetchUsers} size="sm">
+          <Button variant="secondary" onClick={() => fetchUsers()} size="sm">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
@@ -392,7 +392,7 @@ export default function AdminUsers() {
           <p className="text-sm text-gray-500 mb-4">
             Chạy file migration <code className="bg-gray-100 px-2 py-1 rounded">011_complete_system_upgrade.sql</code> trong Supabase SQL Editor
           </p>
-          <Button onClick={fetchUsers}>Thử lại</Button>
+          <Button onClick={() => fetchUsers()}>Thử lại</Button>
         </Card>
       )}
 

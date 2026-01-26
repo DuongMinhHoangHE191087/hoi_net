@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
 import {
   User, Settings, FileText, Image as ImageIcon, Calendar,
   TrendingUp, CheckCircle, Clock, XCircle, ArrowRight,
-  Mail, Phone, MapPin, Sparkles, Shield, ArrowLeft
+  Mail, Phone, MapPin, Sparkles, Shield, ArrowLeft, AlertCircle
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
@@ -66,9 +66,9 @@ export default function DashboardPage() {
         console.error('Error loading requests:', requestsError)
       } else if (requestsData) {
         const totalRequests = requestsData.length
-        const pendingRequests = requestsData.filter(r => r.status === 'pending').length
-        const completedRequests = requestsData.filter(r => r.status === 'completed').length
-        const rejectedRequests = requestsData.filter(r => r.status === 'rejected').length
+        const pendingRequests = requestsData.filter((r: { status: string }) => r.status === 'pending').length
+        const completedRequests = requestsData.filter((r: { status: string }) => r.status === 'completed').length
+        const rejectedRequests = requestsData.filter((r: { status: string }) => r.status === 'rejected').length
 
         setStats({
           totalRequests,

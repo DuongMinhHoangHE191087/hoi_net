@@ -143,7 +143,9 @@ export default function AdminPage() {
         try {
           // Import dynamically to avoid circular deps
           const { AdminService } = await import('@/lib/admin-service')
-          const adminStatus = await AdminService.isAdmin(user.id)
+          const { createClient } = await import('@/lib/supabase/client')
+          const supabase = createClient()
+          const adminStatus = await AdminService.isAdmin(user.id, supabase)
           setIsVerifiedAdmin(adminStatus)
         } catch (e) {
           console.error('[AdminPage] Admin check failed:', e)

@@ -142,7 +142,7 @@ export default function AdminAnalytics() {
       <Card className="text-center py-12">
         <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
         <p className="text-gray-700 mb-4">Không thể tải dữ liệu thống kê</p>
-        <Button onClick={fetchAnalytics}>Thử lại</Button>
+        <Button onClick={() => fetchAnalytics()}>Thử lại</Button>
       </Card>
     )
   }
@@ -186,7 +186,7 @@ export default function AdminAnalytics() {
             <Activity className="w-4 h-4 inline mr-1" />
             {data.overview.systemHealth}
           </span>
-          <Button variant="secondary" size="sm" onClick={fetchAnalytics}>
+          <Button variant="secondary" size="sm" onClick={() => fetchAnalytics()}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>

@@ -270,7 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Handle specific events
       if (event === 'SIGNED_IN') {
-        authLogger.login(newSession?.user?.id || '', newSession?.user?.email || '', 'oauth')
+        authLogger.loginSuccess(newSession?.user?.id || '', newSession?.user?.email || '', { method: 'oauth' })
       } else if (event === 'SIGNED_OUT') {
         adminCache.clear()
       }

@@ -36,7 +36,7 @@ export function useUserRequests(userId: string | undefined) {
           table: 'user_requests',
           filter: `user_id=eq.${userId}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('🔄 Realtime update:', payload)
           
           // Invalidate and refetch when changes occur
@@ -51,7 +51,7 @@ export function useUserRequests(userId: string | undefined) {
               if (newStatus === 'completed') {
                 toast.success('🎉 Yêu cầu của bạn đã hoàn thành!')
               } else if (newStatus === 'processing') {
-                toast.info('⚙️ Yêu cầu đang được xử lý...')
+                toast('⚙️ Yêu cầu đang được xử lý...', { icon: 'ℹ️' })
               } else if (newStatus === 'rejected') {
                 toast.error('❌ Yêu cầu bị từ chối')
               }
@@ -59,7 +59,7 @@ export function useUserRequests(userId: string | undefined) {
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
           console.log('✅ Subscribed to user_requests realtime updates')
         }

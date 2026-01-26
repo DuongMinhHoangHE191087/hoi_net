@@ -85,14 +85,16 @@ export default function RegisterPage() {
 
       if (!signUpResult.success) {
         // Handle specific error messages
-        if (signUpResult.error?.includes('already registered')) {
+        const errorString = signUpResult.error?.toString() || ''
+        
+        if (errorString.includes('already registered')) {
           setErrors({ email: 'Email này đã được đăng ký' })
           toast.error('Email này đã được đăng ký')
-        } else if (signUpResult.error?.includes('Invalid email')) {
+        } else if (errorString.includes('Invalid email')) {
           setErrors({ email: 'Email không hợp lệ' })
           toast.error('Email không hợp lệ')
         } else {
-          toast.error(signUpResult.error || 'Đăng ký thất bại. Vui lòng thử lại.')
+          toast.error(errorString || 'Đăng ký thất bại. Vui lòng thử lại.')
         }
         setLoading(false)
         return
