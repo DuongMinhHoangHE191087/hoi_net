@@ -16,7 +16,10 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  Loader2
+  Loader2,
+  FileText,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -68,12 +71,15 @@ const DONATE_METHODS = [
     ]
   },
   {
-    id: 'bmc',
-    name: 'Buy Me a Coffee',
-    icon: Coffee,
-    color: 'bg-amber-500',
+    id: 'custom',
+    name: 'Nội dung tùy chỉnh',
+    icon: Heart,
+    color: 'bg-rose-500',
+    isCustom: true,
     fields: [
-      { key: 'donate_bmc_link', label: 'Link Buy Me a Coffee', type: 'url', placeholder: 'https://buymeacoffee.com/hoinet' },
+      { key: 'donate_custom_enabled', label: 'Bật phần này', type: 'toggle' },
+      { key: 'donate_custom_title', label: 'Tiêu đề', type: 'text', placeholder: 'Hỗ trợ khác' },
+      { key: 'donate_custom_content', label: 'Nội dung (HTML)', type: 'richtext', placeholder: 'Nhập nội dung HTML...' },
     ]
   },
 ]
@@ -297,14 +303,55 @@ export default function AdminDonate() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className={`grid ${(currentMethod as any).isCustom ? 'grid-cols-1' : 'md:grid-cols-2'} gap-6`}>
               {currentMethod.fields.map((field) => (
-                <div key={field.key}>
+                <div key={field.key} className={field.type === 'richtext' ? 'col-span-full' : ''}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {field.label}
                   </label>
                   
-                  {field.type === 'image' ? (
+                  {field.type === 'toggle' ? (
+                    <button
+                      onClick={() => updateSetting(field.key, settings[field.key] === 'true' ? 'false' : 'true')}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
+                        settings[field.key] === 'true' 
+                          ? 'bg-green-50 border-green-300 text-green-700' 
+                          : 'bg-gray-50 border-gray-200 text-gray-500'
+                      }`}
+                    >
+                      {settings[field.key] === 'true' ? (
+                        <ToggleRight className="w-6 h-6" />
+                      ) : (
+                        <ToggleLeft className="w-6 h-6" />
+                      )}
+                      <span className="font-medium">
+                        {settings[field.key] === 'true' ? 'Đang bật' : 'Đang tắt'}
+                      </span>
+                    </button>
+                  ) : field.type === 'richtext' ? (
+                    <div className="space-y-3">
+                      <textarea
+                        value={settings[field.key] || ''}
+                        onChange={(e) => updateSetting(field.key, e.target.value)}
+                        placeholder={field.placeholder}
+                        rows={10}
+                        className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono text-sm"
+                      />
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <FileText className="w-4 h-4" />
+                        <span>Hỗ trợ HTML cơ bản: &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;a&gt;, &lt;ul&gt;, &lt;li&gt;</span>
+                      </div>
+                      {settings[field.key] && (
+                        <div className="border rounded-lg p-4 bg-gray-50">
+                          <p className="text-xs text-gray-500 mb-2">Xem trước:</p>
+                          <div 
+                            className="prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ __html: settings[field.key] }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : field.type === 'image' ? (
                     <div className="space-y-3">
                       {/* Image Preview */}
                       <div className="w-48 h-48 border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">

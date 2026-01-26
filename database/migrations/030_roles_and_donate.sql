@@ -12,18 +12,30 @@
 ALTER TABLE user_profiles 
 ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user';
 
--- Create roles enum
+-- Create roles enum (optional, for reference)
 DO $$ 
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
     CREATE TYPE user_role AS ENUM ('admin', 'moderator', 'editor', 'user');
   END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'user_role type already exists or error: %', SQLERRM;
 END $$;
 
--- Update role column to use constraints
-ALTER TABLE user_profiles
-ADD CONSTRAINT valid_role 
-CHECK (role IN ('admin', 'moderator', 'editor', 'user'));
+-- Update role column to use constraints (wrap in DO block to handle existing constraint)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'valid_role' AND table_name = 'user_profiles'
+  ) THEN
+    ALTER TABLE user_profiles
+    ADD CONSTRAINT valid_role 
+    CHECK (role IN ('admin', 'moderator', 'editor', 'user'));
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Constraint valid_role error: %', SQLERRM;
+END $$;
 
 -- Create index for role lookups
 CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
@@ -84,33 +96,83 @@ ON CONFLICT (role, permission) DO NOTHING;
 -- ============================================
 
 -- Add donate settings to site_settings
-INSERT INTO site_settings (key, value, description) VALUES
+-- Using DO block to handle both TEXT and JSON value types
+DO $$
+BEGIN
   -- MoMo
-  ('donate_momo_qr', '', 'URL ảnh QR MoMo'),
-  ('donate_momo_account', '0394497949', 'Số điện thoại MoMo'),
-  ('donate_momo_name', 'DUONG MINH HOANG', 'Tên tài khoản MoMo'),
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_momo_qr', '', 'URL ảnh QR MoMo')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_momo_account', '0394497949', 'Số điện thoại MoMo')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_momo_name', 'DUONG MINH HOANG', 'Tên tài khoản MoMo')
+  ON CONFLICT (key) DO NOTHING;
   
   -- Bank
-  ('donate_bank_qr', '', 'URL ảnh QR Ngân hàng'),
-  ('donate_bank_account', '0394497949', 'Số tài khoản ngân hàng'),
-  ('donate_bank_name', 'DUONG MINH HOANG', 'Tên tài khoản ngân hàng'),
-  ('donate_bank_bank_name', 'MB Bank', 'Tên ngân hàng'),
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_bank_qr', '', 'URL ảnh QR Ngân hàng')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_bank_account', '0394497949', 'Số tài khoản ngân hàng')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_bank_name', 'DUONG MINH HOANG', 'Tên tài khoản ngân hàng')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_bank_bank_name', 'MB Bank', 'Tên ngân hàng')
+  ON CONFLICT (key) DO NOTHING;
   
   -- ZaloPay
-  ('donate_zalopay_qr', '', 'URL ảnh QR ZaloPay'),
-  ('donate_zalopay_account', '0394497949', 'Số điện thoại ZaloPay'),
-  ('donate_zalopay_name', 'DUONG MINH HOANG', 'Tên tài khoản ZaloPay'),
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_zalopay_qr', '', 'URL ảnh QR ZaloPay')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_zalopay_account', '0394497949', 'Số điện thoại ZaloPay')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_zalopay_name', 'DUONG MINH HOANG', 'Tên tài khoản ZaloPay')
+  ON CONFLICT (key) DO NOTHING;
   
   -- PayPal
-  ('donate_paypal_link', '', 'Link PayPal.me'),
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_paypal_link', '', 'Link PayPal.me')
+  ON CONFLICT (key) DO NOTHING;
   
-  -- Buy Me a Coffee
-  ('donate_bmc_link', '', 'Link Buy Me a Coffee'),
+  -- Custom Content (thay thế Buy Me a Coffee - cho phép đăng nội dung tùy chỉnh)
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_custom_title', 'Hỗ trợ khác', 'Tiêu đề phần nội dung tùy chỉnh')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_custom_content', '', 'Nội dung tùy chỉnh (HTML/Markdown)')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_custom_enabled', 'false', 'Bật/tắt phần nội dung tùy chỉnh')
+  ON CONFLICT (key) DO NOTHING;
   
   -- Enable/Disable
-  ('donate_enabled', 'true', 'Bật/tắt trang donate'),
-  ('donate_message', 'Cảm ơn bạn đã ủng hộ Hồi Nét!', 'Thông điệp cảm ơn')
-ON CONFLICT (key) DO NOTHING;
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_enabled', 'true', 'Bật/tắt trang donate')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_message', 'Cảm ơn bạn đã ủng hộ Hồi Nét!', 'Thông điệp cảm ơn')
+  ON CONFLICT (key) DO NOTHING;
+  
+  RAISE NOTICE 'Donate settings inserted successfully';
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Error inserting donate settings: %', SQLERRM;
+END $$;
 
 -- ============================================
 -- 4. FEEDBACK TABLE UPDATES
@@ -140,10 +202,20 @@ ADD COLUMN IF NOT EXISTS moderated_by UUID REFERENCES auth.users(id) ON DELETE S
 ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
 
--- Add constraint
-ALTER TABLE blog_posts
-ADD CONSTRAINT valid_moderation_status 
-CHECK (moderation_status IN ('pending', 'approved', 'rejected'));
+-- Add constraint (wrap in DO block)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'valid_moderation_status' AND table_name = 'blog_posts'
+  ) THEN
+    ALTER TABLE blog_posts
+    ADD CONSTRAINT valid_moderation_status 
+    CHECK (moderation_status IN ('pending', 'approved', 'rejected'));
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Constraint valid_moderation_status error: %', SQLERRM;
+END $$;
 
 -- Index for moderation
 CREATE INDEX IF NOT EXISTS idx_blog_posts_moderation ON blog_posts(moderation_status);

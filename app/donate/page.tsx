@@ -17,7 +17,8 @@ import {
   Sparkles,
   Users,
   Image as ImageIcon,
-  ChevronLeft
+  ChevronLeft,
+  FileText
 } from 'lucide-react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
@@ -83,15 +84,17 @@ const DONATION_METHODS = [
     defaultLink: 'https://paypal.me/hoinet'
   },
   {
-    id: 'buymeacoffee',
-    name: 'Buy Me a Coffee',
-    icon: Coffee,
-    color: 'from-yellow-500 to-orange-500',
-    bgColor: 'bg-amber-50',
-    textColor: 'text-amber-600',
-    description: 'Mời team một ly cà phê',
-    linkSettingKey: 'donate_bmc_link',
-    defaultLink: 'https://buymeacoffee.com/hoinet'
+    id: 'custom',
+    name: 'Hỗ trợ khác',
+    icon: Heart,
+    color: 'from-rose-500 to-orange-500',
+    bgColor: 'bg-rose-50',
+    textColor: 'text-rose-600',
+    description: 'Thông tin hỗ trợ khác',
+    isCustomContent: true,
+    titleSettingKey: 'donate_custom_title',
+    contentSettingKey: 'donate_custom_content',
+    enabledSettingKey: 'donate_custom_enabled'
   }
 ]
 
@@ -239,6 +242,31 @@ export default function DonatePage() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-card border rounded-2xl p-6 md:p-8 shadow-lg"
             >
+              {/* Custom Content Section */}
+              {(currentMethod as any).isCustomContent ? (
+                <div className="max-w-3xl mx-auto">
+                  <div className="text-center mb-8">
+                    <div className={`inline-flex items-center gap-2 ${currentMethod.bgColor} ${currentMethod.textColor} px-4 py-2 rounded-full text-sm font-medium mb-4`}>
+                      <FileText className="w-4 h-4" />
+                      {getValue((currentMethod as any).titleSettingKey || '', 'Hỗ trợ khác')}
+                    </div>
+                  </div>
+                  
+                  {getValue((currentMethod as any).contentSettingKey || '', '') ? (
+                    <div 
+                      className="prose prose-lg max-w-none"
+                      dangerouslySetInnerHTML={{ 
+                        __html: getValue((currentMethod as any).contentSettingKey || '', '') 
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Chưa có nội dung. Vui lòng cấu hình trong Admin.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
               <div className="grid md:grid-cols-2 gap-8">
                 {/* QR Code Section */}
                 <div className="text-center">
@@ -249,7 +277,7 @@ export default function DonatePage() {
 
                   {/* QR Image or Link Button */}
                   {currentMethod.linkSettingKey ? (
-                    // External link methods (PayPal, Buy Me a Coffee)
+                    // External link methods (PayPal)
                     <div className="space-y-4">
                       <div className={`w-48 h-48 mx-auto ${currentMethod.bgColor} rounded-2xl flex items-center justify-center`}>
                         <currentMethod.icon className={`w-20 h-20 ${currentMethod.textColor}`} />
@@ -409,6 +437,7 @@ export default function DonatePage() {
                   </div>
                 </div>
               </div>
+              )}
             </motion.div>
           )}
         </div>
