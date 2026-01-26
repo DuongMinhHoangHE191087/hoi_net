@@ -72,3 +72,4 @@ export const profileCheck = {
 }
 
 export default profileCheck
+

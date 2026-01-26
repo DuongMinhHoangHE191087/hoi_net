@@ -111,3 +111,4 @@ export default function AboutPageClient({ aboutSections, team }: AboutPageClient
     </div>
   )
 }
+

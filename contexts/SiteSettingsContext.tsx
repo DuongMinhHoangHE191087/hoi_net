@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, ReactNode, useMemo } from 'react'
-import { useSiteSettings, useFooterLinksByColumn, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
+import { useSiteSettings, useFooterLinksByColumn, DEFAULT_SITE_SETTINGS, HOINET_LOGO_URL } from '@/hooks/useSiteSettings'
 import { FooterLink } from '@/lib/supabase'
 
 interface SiteSettingsContextValue {
@@ -73,8 +73,8 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     // Legacy helper getters with fallbacks
     brandName: settings.brand_name || DEFAULT_SITE_SETTINGS.brand_name,
     brandSlogan: settings.brand_slogan || DEFAULT_SITE_SETTINGS.brand_slogan,
-    brandLogoUrl: settings.brand_logo_url || '',
-    brandLogoType: (settings.brand_logo_type as 'icon' | 'image') || 'icon',
+    brandLogoUrl: settings.brand_logo_url || HOINET_LOGO_URL,
+    brandLogoType: (settings.brand_logo_type as 'icon' | 'image') || 'image',
     footerDescription: settings.footer_description || DEFAULT_SITE_SETTINGS.footer_description,
     footerCopyright: settings.footer_copyright || DEFAULT_SITE_SETTINGS.footer_copyright,
     contactEmail: settings.contact_email || DEFAULT_SITE_SETTINGS.contact_email,
@@ -85,16 +85,16 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     seoTitle: settings.seo_title || DEFAULT_SITE_SETTINGS.seo_title,
     seoDescription: settings.seo_description || DEFAULT_SITE_SETTINGS.seo_description,
 
-    // New Site Branding getters
-    siteName: settings.site_name || 'Photo Restore',
+    // New Site Branding getters with Hồi Nét defaults
+    siteName: settings.site_name || 'Hồi Nét',
     siteTagline: settings.site_tagline || 'Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI',
-    siteLogoUrl: settings.site_logo_url || '',
-    siteLogoDarkUrl: settings.site_logo_dark_url || '',
-    siteFaviconUrl: settings.site_favicon_url || '',
-    siteMetaTitle: settings.site_meta_title || 'Photo Restoration App',
-    siteMetaDescription: settings.site_meta_description || 'Khôi phục ảnh bằng AI',
-    siteMetaKeywords: settings.site_meta_keywords || '',
-    siteOgImage: settings.site_og_image || '',
+    siteLogoUrl: settings.site_logo_url || HOINET_LOGO_URL,
+    siteLogoDarkUrl: settings.site_logo_dark_url || HOINET_LOGO_URL,
+    siteFaviconUrl: settings.site_favicon_url || HOINET_LOGO_URL,
+    siteMetaTitle: settings.site_meta_title || 'Hồi Nét - Khôi phục ảnh cũ bằng AI',
+    siteMetaDescription: settings.site_meta_description || 'Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI',
+    siteMetaKeywords: settings.site_meta_keywords || 'khôi phục ảnh, phục chế ảnh, AI, ảnh cũ, gia đình',
+    siteOgImage: settings.site_og_image || HOINET_LOGO_URL,
     themePrimaryColor: settings.theme_primary_color || '#ec4899',
     themeSecondaryColor: settings.theme_secondary_color || '#f59e0b',
     googleAnalyticsId: settings.google_analytics_id || '',
@@ -127,3 +127,4 @@ export function useSiteSettingsContext() {
 export function useSiteSettingsOptional() {
   return useContext(SiteSettingsContext)
 }
+

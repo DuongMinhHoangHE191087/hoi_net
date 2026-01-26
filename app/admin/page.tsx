@@ -1,66 +1,183 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { MessageSquare, FileText, Users, Settings as SettingsIcon, BookOpen, Target, Info, Sparkles, Palette, BarChart3, UserCog, Globe, Link2, Menu, Shield, AlertTriangle, Image as ImageIcon, Layers, Type, Zap } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { MessageSquare, FileText, Users, Settings as SettingsIcon, BookOpen, Target, Info, Sparkles, Palette, BarChart3, UserCog, Globe, Link2, Menu, Shield, AlertTriangle, Image as ImageIcon, Layers, Type, Zap, Award, Loader2, Home } from 'lucide-react'
 import Sidebar from '@/components/layout/Sidebar'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import AdminRequests from '@/components/admin/AdminRequests'
-import AdminBlog from '@/components/admin/AdminBlog'
-import AdminTeam from '@/components/admin/AdminTeam'
-import AdminSettings from '@/components/admin/AdminSettings'
-import AdminFeedback from '@/components/admin/AdminFeedback'
-import AdminValues from '@/components/admin/AdminValues'
-import AdminAbout from '@/components/admin/AdminAbout'
-import AdminSystemPrompts from '@/components/admin/AdminSystemPrompts'
-import AdminUISettings from '@/components/admin/AdminUISettings'
-import AdminAnalytics from '@/components/admin/AdminAnalytics'
-import AdminUsers from '@/components/admin/AdminUsers'
-import AdminSiteSettings from '@/components/admin/AdminSiteSettings'
-import AdminFooterLinks from '@/components/admin/AdminFooterLinks'
-import AdminNavigationLinks from '@/components/admin/AdminNavigationLinks'
-import AdminSiteBranding from '@/components/admin/AdminSiteBranding'
-import AdminMediaLibrary from '@/components/admin/AdminMediaLibrary'
-import AdminSiteContent from '@/components/admin/AdminSiteContent'
-import AdminFeatures from '@/components/admin/AdminFeatures'
-import { usePageLoading } from '@/components/ui/PageWrapper'
-import { FullScreenLoading } from '@/components/UniversalLoading'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import toast from 'react-hot-toast'
 
-type Tab = 'analytics' | 'requests' | 'users' | 'blog' | 'team' | 'about' | 'prompts' | 'values' | 'feedback' | 'uiSettings' | 'settings' | 'siteSettings' | 'footerLinks' | 'navLinks' | 'branding' | 'media' | 'siteContent' | 'features'
+// Tab loading skeleton component
+function TabLoadingSkeleton() {
+  return (
+    <Card className="p-8">
+      <div className="animate-pulse space-y-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="h-8 w-48 bg-gray-200 rounded" />
+          <div className="h-10 w-32 bg-gray-200 rounded" />
+        </div>
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="w-12 h-12 bg-gray-200 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-1/3 bg-gray-200 rounded" />
+                <div className="h-3 w-1/2 bg-gray-200 rounded" />
+              </div>
+              <div className="h-8 w-20 bg-gray-200 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+// ✅ OPTIMIZED: Dynamic loaders instead of eager imports
+// Each component is only imported when clicked, not on page load
+const ADMIN_TAB_LOADERS = {
+  'homepage': () => import('@/components/admin/AdminHomepage'),
+  'analytics': () => import('@/components/admin/AdminAnalytics'),
+  'requests': () => import('@/components/admin/AdminRequests'),
+  'users': () => import('@/components/admin/AdminUsers'),
+  'blog': () => import('@/components/admin/AdminBlog'),
+  'team': () => import('@/components/admin/AdminTeam'),
+  'about': () => import('@/components/admin/AdminAbout'),
+  'prompts': () => import('@/components/admin/AdminSystemPrompts'),
+  'values': () => import('@/components/admin/AdminValues'),
+  'features': () => import('@/components/admin/AdminFeatures'),
+  'testimonials': () => import('@/components/admin/AdminTestimonials'),
+  'siteContent': () => import('@/components/admin/AdminSiteContent'),
+  'branding': () => import('@/components/admin/AdminSiteBranding'),
+  'media': () => import('@/components/admin/AdminMediaLibrary'),
+  'siteSettings': () => import('@/components/admin/AdminSiteSettings'),
+  'footerLinks': () => import('@/components/admin/AdminFooterLinks'),
+  'navLinks': () => import('@/components/admin/AdminNavigationLinks'),
+  'uiSettings': () => import('@/components/admin/AdminUISettings'),
+  'settings': () => import('@/components/admin/AdminSettings'),
+} as const
+
+type Tab = keyof typeof ADMIN_TAB_LOADERS
+
+// ✅ OPTIMIZED: Lazy wrapper that loads component on demand
+function TabRenderer({ tabId }: { tabId: Tab }) {
+  const [TabComponent, setTabComponent] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+
+    const loader = ADMIN_TAB_LOADERS[tabId]
+    if (!loader) {
+      setError('Tab not found')
+      setLoading(false)
+      return
+    }
+
+    loader()
+      .then((module) => {
+        setTabComponent(() => module.default)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error(`[AdminPage] Failed to load tab ${tabId}:`, err)
+        setError(`Failed to load ${tabId}`)
+        setLoading(false)
+      })
+  }, [tabId])
+
+  if (error) {
+    return (
+      <Card className="p-8 text-center">
+        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <p className="text-red-600">{error}</p>
+      </Card>
+    )
+  }
+
+  if (loading || !TabComponent) {
+    return <TabLoadingSkeleton />
+  }
+
+  return <TabComponent />
+}
 
 export default function AdminPage() {
   const router = useRouter()
-  const { user, loading: authLoading, isAdmin } = useAuth()
-  const { loading: pageLoading, finishLoading } = usePageLoading(true, 1000)
-  const [activeTab, setActiveTab] = useState<Tab>('analytics')
+  const { user, loading: authLoading, isAdmin, status } = useAuth()
+  const [activeTab, setActiveTab] = useState<Tab>('homepage')
+  const [isPending, startTransition] = useTransition()
+  const [adminChecked, setAdminChecked] = useState(false)
+  const [isVerifiedAdmin, setIsVerifiedAdmin] = useState(false)
 
-  // Let middleware handle auth protection - no client-side redirect
-  // Just show loading while auth initializes
-  useEffect(() => {
-    console.log('[Admin Page] Auth state:', {
-      authLoading,
-      hasUser: !!user,
-      userEmail: user?.email,
-      isAdmin
+  // Handle tab change with transition for smooth UX
+  const handleTabChange = (tab: Tab) => {
+    startTransition(() => {
+      setActiveTab(tab)
     })
-
-    if (!authLoading) {
-      finishLoading()
-    }
-  }, [authLoading, user, isAdmin, finishLoading])
-
-  // Show loading while checking auth
-  if (authLoading) {
-    return <FullScreenLoading message="Đang tải Admin Panel..." />
   }
 
-  // If somehow got here without auth (middleware should prevent this)
-  if (!user || !isAdmin) {
+  // ✅ IMPROVED: Wait for admin check to complete before showing access denied
+  useEffect(() => {
+    // Don't check until auth is loaded
+    if (authLoading || status === 'loading' || status === 'idle') {
+      return
+    }
+
+    // If already admin from store, we're good
+    if (isAdmin) {
+      setIsVerifiedAdmin(true)
+      setAdminChecked(true)
+      return
+    }
+
+    // If we have a user but isAdmin is false, do an explicit check
+    // This handles the race condition where admin check runs in background
+    if (user) {
+      const checkAdmin = async () => {
+        try {
+          // Import dynamically to avoid circular deps
+          const { AdminService } = await import('@/lib/admin-service')
+          const adminStatus = await AdminService.isAdmin(user.id)
+          setIsVerifiedAdmin(adminStatus)
+        } catch (e) {
+          console.error('[AdminPage] Admin check failed:', e)
+          setIsVerifiedAdmin(false)
+        } finally {
+          setAdminChecked(true)
+        }
+      }
+      checkAdmin()
+    } else {
+      // No user = not admin
+      setAdminChecked(true)
+      setIsVerifiedAdmin(false)
+    }
+  }, [user, isAdmin, authLoading, status])
+
+  // Show loading state while auth or admin check is in progress
+  if (authLoading || !adminChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center gradient-mesh">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-gray-600">
+            {authLoading ? 'Đang xác thực...' : 'Đang kiểm tra quyền admin...'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Access denied if not admin (only show after admin check completed)
+  if (!user || !isVerifiedAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-mesh">
         <Card className="max-w-md p-8 text-center">
           <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Truy cập bị từ chối</h2>
@@ -75,11 +192,10 @@ export default function AdminPage() {
     )
   }
 
-  if (pageLoading) {
-    return <FullScreenLoading message="Đang tải Admin Panel..." />
-  }
+  // ✅ REMOVED: No more pageLoading check - render immediately when ready
 
   const tabs = [
+    { id: 'homepage' as Tab, label: 'Trang Chủ', icon: Home },
     { id: 'analytics' as Tab, label: 'Thống Kê', icon: BarChart3 },
     { id: 'requests' as Tab, label: 'Yêu Cầu', icon: FileText },
     { id: 'users' as Tab, label: 'Người Dùng', icon: UserCog },
@@ -89,7 +205,7 @@ export default function AdminPage() {
     { id: 'prompts' as Tab, label: 'AI Prompts', icon: Sparkles },
     { id: 'values' as Tab, label: 'Giá Trị', icon: Target },
     { id: 'features' as Tab, label: 'Tính Năng', icon: Zap },
-    { id: 'feedback' as Tab, label: 'Phản Hồi', icon: MessageSquare },
+    { id: 'testimonials' as Tab, label: 'Phản Hồi & Testimonials', icon: MessageSquare },
     { id: 'siteContent' as Tab, label: 'Nội Dung Web', icon: Type },
     { id: 'branding' as Tab, label: 'Site Branding', icon: ImageIcon },
     { id: 'media' as Tab, label: 'Media Library', icon: Layers },
@@ -101,7 +217,7 @@ export default function AdminPage() {
   ]
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen gradient-mesh">
       <Sidebar />
 
       <main className="flex-1 p-8">
@@ -131,8 +247,9 @@ export default function AdminPage() {
                   <Button
                     key={tab.id}
                     variant={activeTab === tab.id ? 'primary' : 'secondary'}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => handleTabChange(tab.id)}
                     className="flex items-center gap-2"
+                    disabled={isPending}
                   >
                     <Icon className="w-4 h-4" />
                     {tab.label}
@@ -142,27 +259,19 @@ export default function AdminPage() {
             </div>
           </Card>
 
-          {/* Tab Content */}
-          {activeTab === 'analytics' && <AdminAnalytics />}
-          {activeTab === 'requests' && <AdminRequests />}
-          {activeTab === 'users' && <AdminUsers />}
-          {activeTab === 'blog' && <AdminBlog />}
-          {activeTab === 'team' && <AdminTeam />}
-          {activeTab === 'about' && <AdminAbout />}
-          {activeTab === 'prompts' && <AdminSystemPrompts />}
-          {activeTab === 'values' && <AdminValues />}
-          {activeTab === 'features' && <AdminFeatures />}
-          {activeTab === 'feedback' && <AdminFeedback />}
-          {activeTab === 'siteContent' && <AdminSiteContent />}
-          {activeTab === 'branding' && <AdminSiteBranding />}
-          {activeTab === 'media' && <AdminMediaLibrary />}
-          {activeTab === 'siteSettings' && <AdminSiteSettings />}
-          {activeTab === 'footerLinks' && <AdminFooterLinks />}
-          {activeTab === 'navLinks' && <AdminNavigationLinks />}
-          {activeTab === 'uiSettings' && <AdminUISettings />}
-          {activeTab === 'settings' && <AdminSettings />}
+          {/* Tab Loading Indicator */}
+          {isPending && (
+            <div className="fixed top-20 right-8 z-50 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-gray-100">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <span className="text-sm text-gray-600">Đang tải...</span>
+            </div>
+          )}
+
+          {/* ✅ OPTIMIZED: Tab content loaded on-demand */}
+          <TabRenderer tabId={activeTab} />
         </div>
       </main>
     </div>
   )
 }
+

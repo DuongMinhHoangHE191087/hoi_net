@@ -50,7 +50,13 @@ interface UniversalLoadingProps {
   progress?: number
   fullScreen?: boolean
   variant?: 'default' | 'minimal'
+  // Dynamic branding from database
+  brandName?: string
+  logoUrl?: string
 }
+
+// Default Hồi Nét logo
+const HOINET_LOGO_URL = 'https://res.cloudinary.com/dt6p7wm6i/image/upload/v1769010302/site-branding/logos/jfse7pubnqgqfzfnyemr.png'
 
 export default function UniversalLoading({
   message = 'Đang tải...',
@@ -58,6 +64,8 @@ export default function UniversalLoading({
   progress = 0,
   fullScreen = false,
   variant = 'default',
+  brandName = 'Hồi Nét',
+  logoUrl = HOINET_LOGO_URL,
 }: UniversalLoadingProps) {
   // ✅ Fix hydration mismatch - only render particles on client
   const [isMounted, setIsMounted] = useState(false)
@@ -111,15 +119,22 @@ export default function UniversalLoading({
       <div className="relative z-10 flex flex-col items-center justify-center w-full">
         {/* Glass card */}
         <div className="glassmorphism-strong p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center backdrop-blur-xl">
-          {/* Logo */}
+          {/* Logo - Dynamic from database */}
           <div className="mb-6 relative">
             <div className="relative inline-block">
-              {/* Logo icon/text */}
-              <div className="text-5xl font-bold gradient-text mb-2 animate-scale-pulse">
-                📸
-              </div>
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt={brandName}
+                  className="w-16 h-16 object-contain mx-auto mb-2 animate-scale-pulse"
+                />
+              ) : (
+                <div className="text-5xl font-bold gradient-text mb-2 animate-scale-pulse">
+                  📸
+                </div>
+              )}
               <h2 className="text-2xl font-bold gradient-text-alt">
-                Photo AI
+                {brandName}
               </h2>
             </div>
           </div>
@@ -343,3 +358,4 @@ export function useLoading() {
       ) : null,
   }
 }
+

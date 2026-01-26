@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { verifyAuth } from '@/lib/auth-server'
 import { dbServer } from '@/lib/supabase/db-server'
 
@@ -19,6 +20,9 @@ export async function PATCH(
     const body = await request.json()
 
     const updatedValueSection = await dbServer.updateValueSection(id, body)
+
+    // Revalidate homepage
+    revalidatePath('/')
 
     return NextResponse.json({
       success: true,
@@ -45,6 +49,9 @@ export async function DELETE(
     const { id } = params
 
     await dbServer.deleteValueSection(id)
+
+    // Revalidate homepage
+    revalidatePath('/')
 
     return NextResponse.json({
       success: true,

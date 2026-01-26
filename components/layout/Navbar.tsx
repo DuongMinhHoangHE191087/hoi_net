@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { ImageIcon, Menu, X, Sparkles, User, LogOut, Settings, FileText, ShieldCheck, ChevronDown, ExternalLink } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { useSiteSettings, useNavigationLinks, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
 import toast from 'react-hot-toast'
 import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog'
@@ -458,3 +458,4 @@ export default function Navbar() {
     </motion.nav>
   )
 }
+

@@ -5,15 +5,28 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  images: {
-    domains: [
-      'lh3.googleusercontent.com',
-      'avatars.githubusercontent.com',
-      '*.supabase.co', // Supabase storage
-      '*.supabase.in', // Supabase storage alternative
-      'res.cloudinary.com', // Cloudinary
+  // Increase body size limit for file uploads (50MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+    optimizePackageImports: [
+      'framer-motion',
+      'lucide-react',
     ],
+  },
+
+  images: {
+    // Use remotePatterns instead of deprecated domains
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
       {
         protocol: 'https',
         hostname: '**.supabase.co',
@@ -110,14 +123,6 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],
     } : false,
-  },
-
-  // Experimental features for better performance
-  experimental: {
-    optimizePackageImports: [
-      'framer-motion',
-      'lucide-react',
-    ],
   },
 }
 

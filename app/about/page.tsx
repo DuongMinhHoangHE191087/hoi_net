@@ -1,5 +1,5 @@
 // ✅ Server Component - SEO Optimized
-import { db } from '@/lib/supabase'
+import { getAboutSections, getTeamMembers } from '@/lib/supabase/server-utils'
 import AboutPageClient from './AboutPageClient'
 
 export const metadata = {
@@ -17,8 +17,8 @@ export default async function AboutPage() {
   // ✅ Fetch data on server - SEO friendly!
   try {
     const [aboutSections, team] = await Promise.all([
-      db.getAboutSections(),
-      db.getTeamMembers()
+      getAboutSections(),
+      getTeamMembers()
     ])
 
     return <AboutPageClient aboutSections={aboutSections} team={team} />
@@ -28,3 +28,4 @@ export default async function AboutPage() {
     return <AboutPageClient aboutSections={[]} team={[]} />
   }
 }
+

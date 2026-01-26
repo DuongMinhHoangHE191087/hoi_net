@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Users, Search, Shield, ShieldCheck, ShieldX, UserX, UserCheck,
   Loader2, RefreshCw, AlertCircle, Mail, Phone, Calendar, Plus, X,
@@ -10,8 +10,9 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import UserProfileEditModal from '@/components/admin/UserProfileEditModal'
+import { SafeAvatar } from '@/components/ui/SafeImage'
 import { authFetch } from '@/lib/auth-fetch'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -37,7 +38,11 @@ const ROLE_OPTIONS = [
 ]
 
 export default function AdminUsers() {
-  const { user, isAdmin } = useAuth()
+  // ✅ Get current user to prevent self-actions
+  const { user } = useAuth()
+  
+  // ✅ OPTIMIZED: Trust AdminPage parent - no auth check needed
+  // If this component rendered, user IS authenticated and admin
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -64,43 +69,39 @@ export default function AdminUsers() {
     role: 'user' as 'user' | 'moderator' | 'admin',
   })
   const [showPassword, setShowPassword] = useState(false)
+  const didFetch = useRef(false)
 
   useEffect(() => {
-    console.log('[AdminUsers] useEffect triggered:', {
-      hasUser: !!user,
-      userEmail: user?.email,
-      isAdmin
-    })
-
-    if (!user) {
-      console.log('[AdminUsers] No user, waiting...')
-      setLoading(false)
+    // Prevent double-fetch on mount (React StrictMode)
+    if (didFetch.current && process.env.NODE_ENV === 'development') {
       return
     }
-
-    if (!isAdmin) {
-      console.log('[AdminUsers] User is not admin')
-      setLoading(false)
-      setError('Bạn không có quyền truy cập')
-      return
-    }
-
+    didFetch.current = true
+    
     console.log('[AdminUsers] Fetching users...')
     fetchUsers()
-  }, [isAdmin, user])
+  }, [])
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (retryCount = 0) => {
     setLoading(true)
     setError(null)
 
     try {
-      console.log('[AdminUsers] Fetching from /api/admin/users...')
+      console.log('[AdminUsers] Fetching from /api/admin/users... (retry:', retryCount, ')')
       const response = await authFetch.get('/api/admin/users')
       console.log('[AdminUsers] Response status:', response.status)
 
       if (!response.ok) {
         const errData = await response.json()
         console.error('[AdminUsers] API error:', errData)
+        
+        // Retry on 401 (auth might not be ready yet)
+        if (response.status === 401 && retryCount < 2) {
+          console.log('[AdminUsers] Auth error, retrying in 1s...')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          return fetchUsers(retryCount + 1)
+        }
+        
         throw new Error(errData.error || 'Failed to fetch users')
       }
 
@@ -436,19 +437,11 @@ export default function AdminUsers() {
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                      {userItem.avatar_url ? (
-                        <img
-                          src={userItem.avatar_url}
-                          alt=""
-                          className="w-14 h-14 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-purple-100 flex items-center justify-center">
-                          <span className="text-xl font-bold text-primary">
-                            {userItem.full_name?.[0] || userItem.email?.[0] || '?'}
-                          </span>
-                        </div>
-                      )}
+                      <SafeAvatar
+                        src={userItem.avatar_url}
+                        alt={userItem.full_name || userItem.email || 'User'}
+                        size="lg"
+                      />
                     </div>
 
                     {/* Details */}
@@ -973,3 +966,4 @@ export default function AdminUsers() {
     </div>
   )
 }
+

@@ -7,8 +7,36 @@
  * - Server components: import { createClient } from '@/lib/supabase/server'
  */
 
-// Re-export the browser client for backward compatibility
-export { createClient, supabase } from './supabase/client'
+// Import supabase for internal use first
+import { supabase as supabaseClient, createClient as createBrowserClient } from './supabase/client'
+
+// Re-export for backward compatibility
+export const supabase = supabaseClient
+export const createClient = createBrowserClient
+
+// Helper function to check if error is AbortError
+function isAbortError(error: any): boolean {
+  return error?.name === 'AbortError' ||
+         error?.message?.includes('abort') ||
+         error?.message?.includes('signal is aborted')
+}
+
+// Helper function to handle Supabase errors with retry logic
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries = 2,
+  delay = 300
+): Promise<T> {
+  try {
+    return await fn()
+  } catch (error) {
+    if (isAbortError(error) && retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay))
+      return withRetry(fn, retries - 1, delay * 1.5)
+    }
+    throw error
+  }
+}
 
 // Types for database tables
 export type User = {
@@ -73,6 +101,16 @@ export type Feedback = {
   message: string
   rating?: number
   status: 'new' | 'read' | 'archived'
+  // Extended fields for testimonials
+  testimonial_image_url?: string
+  position_title?: string
+  company_name?: string
+  is_featured?: boolean
+  allow_contact_display?: boolean
+  facebook_url?: string
+  zalo_id?: string
+  website_url?: string
+  phone_number?: string
   created_at: string
   updated_at: string
 }
@@ -215,14 +253,13 @@ export type QuotaTier = {
   updated_at: string
 }
 
-// Import supabase for db utility functions
-import { supabase } from './supabase/client'
+// Use the already imported supabaseClient for db utility functions
 
 // Database utility functions
 export const db = {
   // Users
   async getUser(id: string) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('users')
       .select('*')
       .eq('id', id)
@@ -742,20 +779,27 @@ export const db = {
   // ============================================
   async getFooterLinks(): Promise<FooterLink[]> {
     try {
-      const { data, error } = await supabase
-        .from('footer_links')
-        .select('*')
-        .eq('is_active', true)
-        .order('column_name')
-        .order('display_order', { ascending: true })
+      const result = await withRetry(() =>
+        supabase
+          .from('footer_links')
+          .select('*')
+          .eq('is_active', true)
+          .order('column_name')
+          .order('display_order', { ascending: true })
+      )
+      const { data, error } = result as any
 
       if (error) {
-        console.warn('getFooterLinks error:', error.message)
+        if (!isAbortError(error)) {
+          console.warn('getFooterLinks error:', error.message)
+        }
         return []
       }
       return (data || []) as FooterLink[]
     } catch (err) {
-      console.warn('getFooterLinks exception:', err)
+      if (!isAbortError(err)) {
+        console.warn('getFooterLinks exception:', err)
+      }
       return []
     }
   },
@@ -916,12 +960,17 @@ export const db = {
   // ============================================
   async getAllSiteSettings(): Promise<Record<string, string>> {
     try {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('key, value')
+      const result = await withRetry(() =>
+        supabase
+          .from('site_settings')
+          .select('key, value')
+      )
+      const { data, error } = result as any
 
       if (error) {
-        console.warn('getAllSiteSettings error:', error.message)
+        if (!isAbortError(error)) {
+          console.warn('getAllSiteSettings error:', error.message)
+        }
         return {}
       }
 
@@ -931,7 +980,9 @@ export const db = {
       }
       return settings
     } catch (err) {
-      console.warn('getAllSiteSettings exception:', err)
+      if (!isAbortError(err)) {
+        console.warn('getAllSiteSettings exception:', err)
+      }
       return {}
     }
   },
@@ -956,3 +1007,5 @@ export const db = {
     return data as Feature[]
   }
 }
+
+

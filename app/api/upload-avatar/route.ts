@@ -40,11 +40,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (max 5MB for avatars)
-    const maxSize = 5 * 1024 * 1024 // 5MB
+    // Validate file size (max 50MB for avatars)
+    const maxSize = 50 * 1024 * 1024 // 50MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File too large', message: 'File không được vượt quá 5MB' },
+        { error: 'File too large', message: 'File không được vượt quá 50MB' },
         { status: 400 }
       )
     }
@@ -128,3 +128,4 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+

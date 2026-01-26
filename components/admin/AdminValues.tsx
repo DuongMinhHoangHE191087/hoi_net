@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Edit2, Trash2, Save, X, ChevronUp, ChevronDown, Eye, EyeOff, Target, Heart, Sparkles, Users, Zap, Star, Loader2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, Save, X, ChevronUp, ChevronDown, Eye, EyeOff, Target, Heart, Sparkles, Users, Zap, Star, Loader2, Rocket, Shield, Award, TrendingUp, Lightbulb, Globe, CheckCircle, Clock, Cpu, Camera, Palette, Smile, Code, Lock, Layers, MessageCircle, Flame, RefreshCw } from 'lucide-react'
 import { ValueSection } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+
+// Helper to get auth headers
+const getAuthHeaders = async () => {
+  const { createClient } = await import('@/lib/supabase/client')
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
+  }
+}
 
 interface FormData {
   title: string
@@ -25,13 +36,31 @@ const defaultFormData: FormData = {
 }
 
 const iconOptions = [
-  { name: 'Target', component: Target },
-  { name: 'Eye', component: Eye },
-  { name: 'Heart', component: Heart },
-  { name: 'Sparkles', component: Sparkles },
-  { name: 'Users', component: Users },
-  { name: 'Zap', component: Zap },
-  { name: 'Star', component: Star }
+  { name: 'Target', component: Target, label: 'Mục tiêu' },
+  { name: 'Eye', component: Eye, label: 'Tầm nhìn' },
+  { name: 'Heart', component: Heart, label: 'Trái tim' },
+  { name: 'Sparkles', component: Sparkles, label: 'Lấp lánh' },
+  { name: 'Users', component: Users, label: 'Nhóm' },
+  { name: 'Zap', component: Zap, label: 'Nhanh' },
+  { name: 'Star', component: Star, label: 'Ngôi sao' },
+  { name: 'Rocket', component: Rocket, label: 'Tên lửa' },
+  { name: 'Shield', component: Shield, label: 'Bảo vệ' },
+  { name: 'Award', component: Award, label: 'Giải thưởng' },
+  { name: 'TrendingUp', component: TrendingUp, label: 'Tăng trưởng' },
+  { name: 'Lightbulb', component: Lightbulb, label: 'Ý tưởng' },
+  { name: 'Globe', component: Globe, label: 'Toàn cầu' },
+  { name: 'CheckCircle', component: CheckCircle, label: 'Hoàn thành' },
+  { name: 'Clock', component: Clock, label: 'Thời gian' },
+  { name: 'Cpu', component: Cpu, label: 'Công nghệ' },
+  { name: 'Camera', component: Camera, label: 'Máy ảnh' },
+  { name: 'Palette', component: Palette, label: 'Màu sắc' },
+  { name: 'Smile', component: Smile, label: 'Nụ cười' },
+  { name: 'Code', component: Code, label: 'Mã nguồn' },
+  { name: 'Lock', component: Lock, label: 'Bảo mật' },
+  { name: 'Layers', component: Layers, label: 'Lớp' },
+  { name: 'MessageCircle', component: MessageCircle, label: 'Tin nhắn' },
+  { name: 'Flame', component: Flame, label: 'Lửa' },
+  { name: 'RefreshCw', component: RefreshCw, label: 'Làm mới' }
 ]
 
 const gradientOptions = [
@@ -40,7 +69,13 @@ const gradientOptions = [
   { name: 'Purple to Pink', value: 'from-purple-500 via-pink-500 to-rose-500' },
   { name: 'Blue to Cyan', value: 'from-blue-500 via-cyan-500 to-teal-500' },
   { name: 'Green to Emerald', value: 'from-green-500 via-emerald-500 to-teal-500' },
-  { name: 'Pink to Yellow', value: 'from-pink-500 via-orange-500 to-yellow-500' }
+  { name: 'Pink to Yellow', value: 'from-pink-500 via-orange-500 to-yellow-500' },
+  { name: 'Indigo to Purple', value: 'from-indigo-500 via-purple-500 to-pink-500' },
+  { name: 'Red to Orange', value: 'from-red-500 via-orange-500 to-yellow-500' },
+  { name: 'Teal to Blue', value: 'from-teal-500 via-blue-500 to-indigo-500' },
+  { name: 'Lime to Green', value: 'from-lime-500 via-green-500 to-emerald-500' },
+  { name: 'Fuchsia to Violet', value: 'from-fuchsia-500 via-violet-500 to-purple-500' },
+  { name: 'Sky to Blue', value: 'from-sky-500 via-blue-500 to-indigo-500' }
 ]
 
 export default function AdminValues() {
@@ -116,12 +151,11 @@ export default function AdminValues() {
         : '/api/admin/values'
 
       const method = editingId ? 'PATCH' : 'POST'
+      const headers = await getAuthHeaders()
 
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify(formData)
       })
 
@@ -152,8 +186,10 @@ export default function AdminValues() {
 
     try {
       setSaving(true)
+      const headers = await getAuthHeaders()
       const response = await fetch(`/api/admin/values/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       })
 
       const data = await response.json()
@@ -175,11 +211,10 @@ export default function AdminValues() {
 
   const handleToggleActive = async (section: ValueSection) => {
     try {
+      const headers = await getAuthHeaders()
       const response = await fetch(`/api/admin/values/${section.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({
           is_active: !section.is_active
         })
@@ -205,16 +240,17 @@ export default function AdminValues() {
 
     try {
       const prevSection = sections[index - 1]
+      const headers = await getAuthHeaders()
 
       const response1 = await fetch(`/api/admin/values/${section.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ display_order: prevSection.display_order })
       })
 
       const response2 = await fetch(`/api/admin/values/${prevSection.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ display_order: section.display_order })
       })
 
@@ -236,16 +272,17 @@ export default function AdminValues() {
 
     try {
       const nextSection = sections[index + 1]
+      const headers = await getAuthHeaders()
 
       const response1 = await fetch(`/api/admin/values/${section.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ display_order: nextSection.display_order })
       })
 
       const response2 = await fetch(`/api/admin/values/${nextSection.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ display_order: section.display_order })
       })
 
@@ -644,3 +681,4 @@ export default function AdminValues() {
     </div>
   )
 }
+

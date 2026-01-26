@@ -1,16 +1,15 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { AuthProvider } from '@/lib/auth'
 import { SiteSettingsProvider } from '@/contexts/SiteSettingsContext'
-import PageTransition from '@/components/layout/PageTransition'
-import PageTransitionLoader from '@/components/PageTransitionLoader'
-import TopLoadingBar from '@/components/TopLoadingBar'
+import LoadingWrapper from '@/components/LoadingWrapper'
 import QueryProvider from '@/lib/providers/QueryProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import AbortErrorSuppressor from '@/components/AbortErrorSuppressor'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
-  title: 'Photo Restoration App',
+  title: 'Hồi Nét - Khôi phục ảnh cũ bằng AI',
   description: 'Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI',
 }
 
@@ -33,56 +32,57 @@ export default function RootLayout({
         `}} />
       </head>
       <body className="antialiased">
+        <AbortErrorSuppressor />
         <ErrorBoundary>
           <QueryProvider>
             <AuthProvider>
               <SiteSettingsProvider>
-                {/* ⚡ Lightweight loading indicator - Keep only ONE transition system */}
-                <TopLoadingBar />
-                {/* Removed PageTransitionLoader and PageTransition - causing triple work on navigation */}
-                {children}
+                {/* ⚡ Loading with dynamic branding from database */}
+                <LoadingWrapper>
+                  {children}
+                </LoadingWrapper>
 
                 {/* 🔔 Toast Notifications - Bottom Right */}
                 <Toaster
-                position="bottom-right"
-                toastOptions={{
-                  duration: 3000,
-                  style: {
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(0, 0, 0, 0.05)',
-                    borderRadius: '12px',
-                    padding: '12px 16px',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12)',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                  },
-                  success: {
-                    iconTheme: {
-                      primary: '#10B981',
-                      secondary: '#fff',
-                    },
+                  position="bottom-right"
+                  toastOptions={{
+                    duration: 3000,
                     style: {
-                      borderLeft: '4px solid #10B981',
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(0, 0, 0, 0.05)',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12)',
+                      fontSize: '14px',
+                      fontWeight: '500',
                     },
-                  },
-                  error: {
-                    iconTheme: {
-                      primary: '#EF4444',
-                      secondary: '#fff',
+                    success: {
+                      iconTheme: {
+                        primary: '#10B981',
+                        secondary: '#fff',
+                      },
+                      style: {
+                        borderLeft: '4px solid #10B981',
+                      },
                     },
-                    style: {
-                      borderLeft: '4px solid #EF4444',
+                    error: {
+                      iconTheme: {
+                        primary: '#EF4444',
+                        secondary: '#fff',
+                      },
+                      style: {
+                        borderLeft: '4px solid #EF4444',
+                      },
                     },
-                  },
-                  loading: {
-                    iconTheme: {
-                      primary: '#F59E0B',
-                      secondary: '#fff',
+                    loading: {
+                      iconTheme: {
+                        primary: '#F59E0B',
+                        secondary: '#fff',
+                      },
                     },
-                  },
-                }}
-              />
+                  }}
+                />
               </SiteSettingsProvider>
             </AuthProvider>
           </QueryProvider>
@@ -91,4 +91,5 @@ export default function RootLayout({
     </html>
   )
 }
+
 

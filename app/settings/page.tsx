@@ -48,7 +48,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen gradient-mesh">
       <Sidebar />
 
       <main className="flex-1 p-8">
@@ -197,3 +197,4 @@ export default function SettingsPage() {
     </div>
   )
 }
+

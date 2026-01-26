@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   FileText, Clock, CheckCircle, XCircle, Image as ImageIcon,
   Plus, ArrowLeft, Loader2, Calendar, Download, Eye, Trash2, Sparkles, Send
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import toast from 'react-hot-toast'
 import AIConfirmDialog from '@/components/ui/AIConfirmDialog'
 import { FullScreenLoading } from '@/components/UniversalLoading'
@@ -106,10 +106,11 @@ export default function RequestsPage() {
   } | null>(null)
 
   // Redirect if not authenticated
-  if (!authLoading && !user) {
-    router.push('/login?redirect=/requests')
-    return null
-  }
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login?redirect=/requests')
+    }
+  }, [authLoading, user, router])
 
   // Loading state
   if (isLoading || authLoading) {
@@ -119,7 +120,7 @@ export default function RequestsPage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen gradient-mesh flex items-center justify-center">
         <div className="glassmorphism-strong p-8 text-center max-w-md">
           <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-text mb-2">Lỗi tải dữ liệu</h2>
@@ -388,3 +389,4 @@ export default function RequestsPage() {
     </div>
   )
 }
+

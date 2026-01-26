@@ -7,9 +7,10 @@
  * - Client: import { useAdminCheck } from '@/lib/admin-service'
  */
 
-import { createClient as createBrowserClient } from '@/lib/supabase/client'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+// Note: Do NOT import browser client here as this file is used in middleware
+// import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import React from 'react'
 
 // ==========================================
 // Types
@@ -103,35 +104,44 @@ export class AdminService {
         return cached
       }
 
-      // Query database - use maybeSingle() to handle 0 rows gracefully
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('user_id')
-        .eq('user_id', userId)
-        .maybeSingle()
-
-      if (error) {
-        // If table doesn't exist or query fails, fallback to env
-        console.log('[AdminService] Database query failed, using env fallback:', error.message)
-
-        // Get user email for env check
+      // Try to get user email first for fallback
+      let userEmail: string | null = null
+      try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const isAdmin = isAdminByEmail(user.email || '')
+        userEmail = user?.email || null
+      } catch (e) {
+        // Ignore - will try database next
+      }
+
+      // Query database - use maybeSingle() to handle 0 rows gracefully
+      try {
+        const { data, error } = await supabase
+          .from('admin_users')
+          .select('user_id')
+          .eq('user_id', userId)
+          .maybeSingle()
+
+        if (!error) {
+          const isAdmin = !!data
+          console.log('[AdminService] Database check:', { userId, isAdmin })
           adminCache.set(userId, isAdmin)
           return isAdmin
         }
 
-        return false
+        console.log('[AdminService] Database query failed:', error.message)
+      } catch (dbError: any) {
+        console.log('[AdminService] Database query exception:', dbError.message)
       }
 
-      const isAdmin = !!data
-      console.log('[AdminService] Database check:', { userId, isAdmin })
+      // Fallback to env-based check if database fails
+      if (userEmail) {
+        const adminStatus = isAdminByEmail(userEmail)
+        console.log('[AdminService] Using env fallback:', { userId, email: userEmail, isAdmin: adminStatus })
+        adminCache.set(userId, adminStatus)
+        return adminStatus
+      }
 
-      // Cache result
-      adminCache.set(userId, isAdmin)
-
-      return isAdmin
+      return false
     } catch (error) {
       console.error('[AdminService] Error checking admin:', error)
       return false
@@ -246,7 +256,9 @@ export function useAdminCheck() {
   React.useEffect(() => {
     async function checkAdmin() {
       try {
-        const supabase = createBrowserClient()
+        // Dynamic import to avoid loading browser client in server/middleware context
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
 
         if (!user) {
@@ -296,7 +308,5 @@ export function useAdminCheck() {
   return { isAdmin, loading, user }
 }
 
-// For Next.js compatibility
-import React from 'react'
-
 export default AdminService
+

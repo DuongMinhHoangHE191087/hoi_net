@@ -45,3 +45,4 @@ export default function Alert({ type = 'info', children, className = '' }: Alert
     </div>
   )
 }
+

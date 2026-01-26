@@ -246,7 +246,51 @@ export default function RequestDetailModal({
               Ghi Chú Từ Admin
             </h3>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-gray-700">{request.admin_notes}</p>
+              <pre className="text-gray-700 whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                {request.admin_notes}
+              </pre>
+            </div>
+          </div>
+        )}
+
+        {/* Completed Success Message */}
+        {request.status === 'completed' && request.restored_images && request.restored_images.length > 0 && (
+          <div className="mb-6 p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-7 h-7 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-green-800">Yêu cầu đã hoàn thành!</h3>
+                <p className="text-green-700">Bạn có {request.restored_images.length} ảnh đã được xử lý</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                request.restored_images?.forEach((url, i) => {
+                  setTimeout(() => handleDownload(url), i * 500)
+                })
+                toast.success('Đang tải tất cả ảnh...')
+              }}
+              className="btn-glass-primary bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Tải Tất Cả Ảnh ({request.restored_images.length})
+            </button>
+          </div>
+        )}
+
+        {/* Rejected Message */}
+        {request.status === 'rejected' && (
+          <div className="mb-6 p-6 bg-gradient-to-br from-red-50 to-orange-50 rounded-lg border-2 border-red-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <XCircle className="w-7 h-7 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-red-800">Yêu cầu bị từ chối</h3>
+                <p className="text-red-700">Vui lòng xem ghi chú từ admin để biết thêm chi tiết</p>
+              </div>
             </div>
           </div>
         )}
@@ -430,3 +474,4 @@ export default function RequestDetailModal({
     </div>
   )
 }
+

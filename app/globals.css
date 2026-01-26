@@ -55,6 +55,28 @@ html {
 
 
 @layer components {
+  /* ⚡ PERFORMANCE: CSS hover effects instead of JS animations */
+  .hover-lift {
+    @apply transition-transform duration-200 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-8px) scale(1.02);
+  }
+  
+  .hover-scale {
+    @apply transition-transform duration-150 ease-out;
+  }
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+  
+  .hover-glow {
+    @apply transition-shadow duration-200 ease-out;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 30px rgba(255, 107, 157, 0.3);
+  }
+
   /* Glassmorphism Components - Updated with Pink-Yellow Theme */
   .glassmorphism-card {
     @apply bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl shadow-xl;
@@ -146,7 +168,32 @@ html {
 
   /* Clean background for sections */
   .bg-section-light {
-    background: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, #FFF9FB 0%, #FFFFFF 50%, #FFFBF5 100%);
+  }
+
+  /* Gradient section backgrounds */
+  .bg-section-gradient-pink {
+    background: linear-gradient(135deg, rgba(255, 107, 157, 0.08) 0%, rgba(255, 143, 171, 0.05) 50%, rgba(255, 255, 255, 0.9) 100%);
+  }
+
+  .bg-section-gradient-orange {
+    background: linear-gradient(135deg, rgba(255, 200, 55, 0.08) 0%, rgba(255, 180, 100, 0.05) 50%, rgba(255, 255, 255, 0.9) 100%);
+  }
+
+  .bg-section-gradient-mixed {
+    background: 
+      linear-gradient(135deg, rgba(255, 107, 157, 0.06) 0%, transparent 50%),
+      linear-gradient(225deg, rgba(255, 200, 55, 0.06) 0%, transparent 50%),
+      linear-gradient(180deg, #FFF9FB 0%, #FFFFFF 100%);
+  }
+
+  .bg-section-gradient-subtle {
+    background: linear-gradient(180deg, 
+      rgba(255, 249, 251, 1) 0%, 
+      rgba(255, 255, 255, 1) 30%,
+      rgba(255, 251, 245, 1) 70%,
+      rgba(255, 249, 251, 1) 100%
+    );
   }
 
   /* Button Variants - Enhanced with Prominent Styling */

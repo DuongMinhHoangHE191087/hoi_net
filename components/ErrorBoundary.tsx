@@ -139,3 +139,4 @@ export class ErrorBoundary extends Component<Props, State> {
 export default function ErrorBoundaryWrapper({ children, fallback }: Props) {
   return <ErrorBoundary fallback={fallback}>{children}</ErrorBoundary>
 }
+

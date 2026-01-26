@@ -145,6 +145,17 @@ const availableIcons = [
   { name: 'Wrench', component: Wrench, label: 'Wrench' }
 ]
 
+// Helper to get auth headers
+const getAuthHeaders = async () => {
+  const { createClient } = await import('@/lib/supabase/client')
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
+  }
+}
+
 export default function AdminFeatures() {
   const [features, setFeatures] = useState<Feature[]>([])
   const [loading, setLoading] = useState(true)
@@ -192,8 +203,8 @@ export default function AdminFeatures() {
       return
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Kích thước ảnh không được vượt quá 2MB')
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Kích thước ảnh không được vượt quá 50MB')
       return
     }
 
@@ -244,9 +255,10 @@ export default function AdminFeatures() {
         : '/api/admin/features'
       const method = editingId ? 'PATCH' : 'POST'
 
+      const headers = await getAuthHeaders()
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ...formData,
           display_order: editingId
@@ -290,8 +302,10 @@ export default function AdminFeatures() {
     if (!confirm('Bạn có chắc muốn xóa tính năng này?')) return
 
     try {
+      const headers = await getAuthHeaders()
       const response = await fetch(`/api/admin/features/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       })
 
       const data = await response.json()
@@ -590,6 +604,7 @@ export default function AdminFeatures() {
                             src={formData.icon_value}
                             alt="Preview"
                             fill
+                            sizes="48px"
                             className="object-contain"
                           />
                         </div>
@@ -685,6 +700,7 @@ export default function AdminFeatures() {
                         src={feature.icon_value}
                         alt={feature.title}
                         fill
+                        sizes="32px"
                         className="object-contain"
                       />
                     </div>
@@ -769,3 +785,4 @@ export default function AdminFeatures() {
     </div>
   )
 }
+

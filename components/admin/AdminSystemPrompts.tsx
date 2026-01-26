@@ -616,3 +616,4 @@ function PromptCard({
     </motion.div>
   )
 }
+

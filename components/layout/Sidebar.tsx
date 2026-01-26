@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, ImagePlus, Settings, Shield, LogOut, User } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { useState } from 'react'
 import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog'
 import toast from 'react-hot-toast'
@@ -152,3 +152,4 @@ export default function Sidebar() {
     </>
   )
 }
+

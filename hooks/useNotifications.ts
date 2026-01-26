@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { useEffect, useState, useMemo } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import type { Notification, NotificationPreferences } from '@/lib/notifications-client'
 
 // Query Keys
@@ -106,6 +106,9 @@ export function useDeleteNotification() {
 export function useRealtimeNotifications(userId: string | undefined) {
   const queryClient = useQueryClient()
   const [isSubscribed, setIsSubscribed] = useState(false)
+  
+  // Create supabase client only in browser context
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     if (!userId) return
@@ -230,3 +233,4 @@ export function useNotificationPermission() {
 
   return { permission, requestPermission, isSupported: 'Notification' in window }
 }
+

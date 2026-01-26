@@ -1,33 +1,53 @@
 // ✅ Server Component - fetches data server-side
-import { db } from '@/lib/supabase'
+import { 
+  getTeamMembers, 
+  getValueSections, 
+  getTestimonials, 
+  getAllSiteSettings,
+  getServices as getActiveFeatures
+} from '@/lib/supabase/server-utils'
+import { getBrandName } from '@/lib/site-metadata'
 import LandingPageClient from './LandingPageClient'
+import { Metadata } from 'next'
 
-export const metadata = {
-  title: 'Photo Restore - Khôi Phục Ảnh Cũ Bằng AI',
-  description: 'Biến những bức ảnh cũ, phai màu thành những kỷ niệm sống động. Ghép ảnh gia đình một cách tự nhiên và chuyên nghiệp.',
+export async function generateMetadata(): Promise<Metadata> {
+  const brandName = await getBrandName()
+  return {
+    title: `${brandName} - Khôi Phục Ảnh Cũ Bằng AI`,
+    description: 'Biến những bức ảnh cũ, phai màu thành những kỷ niệm sống động. Ghép ảnh gia đình một cách tự nhiên và chuyên nghiệp.',
+  }
 }
 
 export default async function LandingPage() {
   // ✅ Fetch data on server - NO loading spinner needed
   // Data is included in initial HTML
   try {
-    const [team, valueSections, features, feedback] = await Promise.all([
-      db.getTeamMembers(),
-      db.getValueSections(),
-      db.getActiveFeatures(),
-      db.getFeedback()
+    const [team, valueSections, features, testimonials, siteSettings] = await Promise.all([
+      getTeamMembers(),
+      getValueSections(),
+      getActiveFeatures(),
+      getTestimonials(6), // Get up to 6 testimonials that are marked for homepage display
+      getAllSiteSettings() // Get all site settings including CTA content
     ])
 
-    // Filter feedback for testimonials - only show 'read' status feedback with name and message
-    const testimonials = feedback
-      .filter((item) => item.name && item.message && item.status === 'read')
-      .slice(0, 6) // Limit to 6 testimonials
-
     // Pass data to Client Component
-    return <LandingPageClient team={team} valueSections={valueSections} features={features} testimonials={testimonials} />
+    return <LandingPageClient
+      team={team}
+      valueSections={valueSections}
+      features={features}
+      testimonials={testimonials}
+      siteSettings={siteSettings}
+    />
   } catch (error) {
     console.error('Error loading data:', error)
     // Fallback to empty data if database tables don't exist
-    return <LandingPageClient team={[]} valueSections={[]} features={[]} testimonials={[]} />
+    return <LandingPageClient
+      team={[]}
+      valueSections={[]}
+      features={[]}
+      testimonials={[]}
+      siteSettings={{}}
+    />
   }
 }
+

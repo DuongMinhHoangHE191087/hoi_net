@@ -20,8 +20,18 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now()
 
   try {
+    console.log('[AdminRequests API] Starting verifyAuth...')
     const user = await verifyAuth(request)
+    
+    console.log('[AdminRequests API] Auth result:', {
+      user: user?.email || 'null',
+      id: user?.id || 'null',
+      isAdmin: user?.isAdmin || false,
+      role: user?.role || 'null'
+    })
+    
     if (!user || !user.isAdmin) {
+      console.log('[AdminRequests API] Unauthorized - returning 401')
       return unauthorizedResponse()
     }
 
@@ -29,18 +39,41 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const { page, limit, offset } = parsePagination(searchParams, { limit: 20 })
 
-    // Build query - Try with relationship first, fallback to simple query
+    console.log('[AdminRequests API] Query params:', { status, page, limit, offset })
+
+    // Check if supabaseAdmin is configured
+    const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    console.log('[AdminRequests API] Service key configured:', hasServiceKey)
+
+    // Build query - select all columns like test-db
     let query = supabaseAdmin
       .from('user_requests')
-      .select('*', { count: 'exact' })
+      .select('*')
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+      .limit(limit)
+
+    // Build count query with same filter
+    let countQuery = supabaseAdmin
+      .from('user_requests')
+      .select('*', { count: 'exact', head: true })
 
     if (status && status !== 'all') {
       query = query.eq('status', status)
+      countQuery = countQuery.eq('status', status)
     }
 
-    const { data, error, count } = await query
+    // Execute both queries
+    const { count: headCount, error: headError } = await countQuery
+    const { data, error } = await query
+
+    console.log('[AdminRequests API] Query result:', {
+      data_count: data?.length || 0,
+      total_count: headCount,
+      head_count: headCount,
+      head_error: headError?.message || null,
+      error: error?.message || null,
+      first_item: data?.[0] ? { id: data[0].id, user_id: data[0].user_id, status: data[0].status } : null
+    })
 
     if (error) {
       log.error('Failed to fetch requests', { error: error.message })
@@ -79,14 +112,14 @@ export async function GET(request: NextRequest) {
     }
 
     log.debug('Requests fetched', {
-      metadata: { count: count || 0, page, status }
+      metadata: { count: headCount || 0, page, status }
     })
 
     return withNoCacheHeaders(
       withTiming(
         successResponse(
           { requests: enrichedData },
-          { page, limit, total: count || 0 }
+          { page, limit, total: headCount || 0 }
         ),
         startTime
       )
@@ -97,3 +130,4 @@ export async function GET(request: NextRequest) {
     return internalErrorResponse(error)
   }
 }
+

@@ -7,7 +7,7 @@ import BackgroundRemoval from '@/components/studio/BackgroundRemoval'
 
 export default function BackgroundRemoverPage() {
   return (
-    <div className="min-h-screen bg-gray-50 bg-[url('/grid-pattern.svg')]">
+    <div className="min-h-screen gradient-mesh">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8 mt-16 text-center">
@@ -26,3 +26,4 @@ export default function BackgroundRemoverPage() {
     </div>
   )
 }
+

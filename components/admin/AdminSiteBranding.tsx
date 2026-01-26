@@ -87,9 +87,9 @@ export default function AdminSiteBranding() {
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File quá lớn. Tối đa 5MB')
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File quá lớn. Tối đa 50MB')
       return
     }
 
@@ -607,3 +607,4 @@ export default function AdminSiteBranding() {
     </div>
   )
 }
+

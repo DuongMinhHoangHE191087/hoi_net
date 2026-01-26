@@ -92,3 +92,4 @@ export const VideoExtension = Node.create<VideoOptions>({
     }
   },
 })
+

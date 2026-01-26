@@ -8,6 +8,7 @@ import {
   CheckCircle, XCircle, Clock, Send, AlertCircle
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import { SafeAvatar } from '@/components/ui/SafeImage'
 import { authFetch } from '@/lib/auth-fetch'
 import toast from 'react-hot-toast'
 
@@ -155,17 +156,11 @@ export default function RequestDetailModal({ isOpen, onClose, request, onUpdate 
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
-                  {request.user_profiles?.avatar_url ? (
-                    <img
-                      src={request.user_profiles.avatar_url}
-                      alt=""
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-6 h-6 text-primary" />
-                    </div>
-                  )}
+                  <SafeAvatar
+                    src={request.user_profiles?.avatar_url}
+                    alt={request.user_profiles?.full_name || 'User'}
+                    size="lg"
+                  />
                   <div>
                     <p className="font-semibold text-gray-800">
                       {request.user_profiles?.full_name || 'Không có tên'}
@@ -381,3 +376,4 @@ export default function RequestDetailModal({ isOpen, onClose, request, onUpdate 
     </AnimatePresence>
   )
 }
+

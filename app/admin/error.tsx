@@ -17,7 +17,7 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen gradient-mesh flex items-center justify-center p-4">
       <Card className="max-w-lg w-full p-8 text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
           <AlertTriangle className="w-8 h-8 text-red-600" />
@@ -58,3 +58,4 @@ export default function Error({
     </div>
   )
 }
+

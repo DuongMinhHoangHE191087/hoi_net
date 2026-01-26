@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { ShieldAlert, Home, LogIn } from 'lucide-react'
 import Link from 'next/link'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 
 export default function UnauthorizedPage() {
   const { user, signOut } = useAuth()
@@ -92,3 +92,4 @@ export default function UnauthorizedPage() {
     </div>
   )
 }
+

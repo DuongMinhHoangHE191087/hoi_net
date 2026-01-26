@@ -8,7 +8,7 @@ import {
   Save, ArrowLeft, Eye, EyeOff, Loader2, CheckCircle,
   AlertCircle, FileText, Image as ImageIcon
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { blogPostSchema } from '@/lib/validation'
 import { sanitizeInput, sanitizeHTML } from '@/lib/security'
 import { supabase } from '@/lib/supabase'
@@ -417,3 +417,4 @@ export default function NewBlogPostPage() {
     </div>
   )
 }
+

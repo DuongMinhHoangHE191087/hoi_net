@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { verifyAuth } from '@/lib/auth-server'
 import { dbServer } from '@/lib/supabase/db-server'
 
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
       is_active: is_active !== undefined ? is_active : true
     })
 
+    // Revalidate homepage
+    revalidatePath('/')
+
     return NextResponse.json({
       success: true,
       message: 'Value section created successfully',
@@ -53,3 +57,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
   }
 }
+

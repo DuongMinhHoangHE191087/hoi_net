@@ -429,3 +429,4 @@ function SectionItem({ section, index, isImageLeft, Icon, isFirst, isLast }: Sec
     </div>
   )
 }
+

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Sparkles, AlertTriangle, Crown, RefreshCw, Key, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { useGeminiKey } from '@/hooks/useGeminiKey'
 import ApiKeySetup from './ApiKeySetup'
 
@@ -355,3 +355,4 @@ export default function QuotaDisplay({
     </>
   )
 }
+

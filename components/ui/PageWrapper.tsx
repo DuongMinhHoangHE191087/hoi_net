@@ -1,70 +1,39 @@
 'use client'
 
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
-import { FullScreenLoading } from '@/components/UniversalLoading'
 
 interface PageWrapperProps {
   children: ReactNode
   minLoadingTime?: number
-  loadingVariant?: 'spinner' | 'dots' | 'pulse' | 'sparkle'
   loadingMessage?: string
 }
 
+/**
+ * PageWrapper - Now delegates loading to global LoadingContext
+ * No longer shows its own loading overlay (handled by LoadingProvider)
+ */
 export default function PageWrapper({
   children,
   minLoadingTime = 300,
-  loadingVariant = 'spinner',
   loadingMessage = 'Đang tải...'
 }: PageWrapperProps) {
-  const pathname = usePathname()
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    // Show loading immediately
-    setIsLoading(true)
-    const startTime = Date.now()
-
-    const finishLoading = () => {
-      const elapsed = Date.now() - startTime
-      const remaining = Math.max(0, minLoadingTime - elapsed)
-
-      setTimeout(() => {
-        setIsLoading(false)
-      }, remaining)
-    }
-
-    // Finish loading ASAP
-    finishLoading()
-
-    return () => {
-      setIsLoading(false)
-    }
-  }, [pathname, minLoadingTime])
-
-  // NO ANIMATIONS - INSTANT SWITCH
-  if (isLoading) {
-    return (
-      <FullScreenLoading message={loadingMessage} />
-    )
-  }
-
+  // Just render children - loading is handled globally
   return <>{children}</>
 }
 
-// Hook for programmatic loading control
-export function usePageLoading(initialLoading = true, minTime = 1000) {
-  const [loading, setLoading] = useState(initialLoading)
-  const [startTime] = useState(Date.now())
+/**
+ * usePageLoading - Hook for pages that need local loading control
+ * Now returns immediately (no delay) since global loading handles transitions
+ */
+export function usePageLoading(initialLoading = false, minTime = 0) {
+  // Always return false - global loading handles page transitions
+  const [loading, setLoading] = useState(false)
 
-  const finishLoading = () => {
-    const elapsed = Date.now() - startTime
-    const remaining = Math.max(0, minTime - elapsed)
-
-    setTimeout(() => {
-      setLoading(false)
-    }, remaining)
-  }
+  const finishLoading = useCallback(() => {
+    setLoading(false)
+  }, [])
 
   return { loading, setLoading, finishLoading }
 }
+

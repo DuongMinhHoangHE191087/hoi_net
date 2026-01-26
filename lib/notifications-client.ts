@@ -89,3 +89,4 @@ export function getNotificationColor(type: NotificationType): string {
   }
   return colors[type] || 'gray'
 }
+

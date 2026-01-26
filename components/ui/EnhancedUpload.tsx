@@ -28,7 +28,7 @@ interface EnhancedUploadProps {
 
 export default function EnhancedUpload({
   maxFiles = 5,
-  maxSize = 10,
+  maxSize = 50,
   onUploadComplete,
   allowAIPreview = false,
   label = 'Upload Images',
@@ -339,3 +339,4 @@ export default function EnhancedUpload({
     </div>
   )
 }
+

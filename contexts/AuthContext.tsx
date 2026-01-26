@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -41,6 +41,15 @@ export const useAuth = () => {
   return context
 }
 
+// ✅ Cache admin status to avoid repeated database calls
+const adminCache = new Map<string, { isAdmin: boolean; timestamp: number }>()
+const ADMIN_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+// ✅ CRITICAL: Global singleton flag to ensure auth only initializes once across ALL mounts
+// This survives React Strict Mode unmount/remount cycles
+let authGloballyInitialized = false
+let authInitInProgress = false
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -51,13 +60,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Memoize supabase client to prevent recreation on every render
   const supabase = useMemo(() => createClient(), [])
 
-  // ✅ IMPROVED: Check if user is admin using centralized AdminService
-  const checkAdmin = useCallback(async (user: User | null) => {
+  // ✅ IMPROVED: Check if user is admin with caching
+  const checkAdmin = useCallback(async (user: User | null): Promise<boolean> => {
     if (!user?.id) return false
+
+    // Check cache first
+    const cached = adminCache.get(user.id)
+    if (cached && Date.now() - cached.timestamp < ADMIN_CACHE_TTL) {
+      return cached.isAdmin
+    }
 
     try {
       const isAdminUser = await AdminService.isAdmin(user.id, supabase)
-      console.log('[Auth] Admin check:', { userId: user.id, isAdmin: isAdminUser })
+      // Cache the result
+      adminCache.set(user.id, { isAdmin: isAdminUser, timestamp: Date.now() })
       return isAdminUser
     } catch (error) {
       console.error('[Auth] Error checking admin:', error)
@@ -87,144 +103,186 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    let retryTimeout: NodeJS.Timeout | null = null
+    let initStarted = false
 
-    // Get initial session with retry logic
-    const initializeAuth = async (retryCount = 0) => {
-      if (!mounted) return
+    // ✅ CRITICAL: Global singleton check - only one initialization across entire app lifecycle
+    if (authGloballyInitialized) {
+      // Auth already initialized by another instance, just sync state
+      console.log('[Auth] Already globally initialized, skipping')
+      if (mounted) setLoading(false)
+      return
+    }
+
+    if (authInitInProgress) {
+      // Another instance is currently initializing, wait for it
+      console.log('[Auth] Init in progress by another instance, waiting')
+      if (mounted) setLoading(false)
+      return
+    }
+
+    // ✅ Helper to check if error is AbortError (should be silently ignored)
+    const isAbortError = (error: any) => {
+      if (!error) return false
+      const errorName = error.name?.toLowerCase() || ''
+      const errorMessage = error.message?.toLowerCase() || ''
+      return (
+        errorName === 'aborterror' ||
+        errorMessage.includes('abort') ||
+        errorMessage.includes('signal')
+      )
+    }
+
+    // ✅ SIMPLIFIED: Get initial session ONCE
+    const initializeAuth = async () => {
+      // Double check before starting
+      if (authGloballyInitialized || authInitInProgress || initStarted) {
+        console.log('[Auth] Init already started/completed, aborting duplicate')
+        return
+      }
+      
+      if (!mounted) {
+        console.log('[Auth] Component unmounted before init, aborting')
+        return
+      }
+      
+      initStarted = true
+      authInitInProgress = true
+      const startTime = Date.now()
+      console.log('[Auth] Initializing auth...')
 
       try {
-        console.log('[Auth] Initializing auth...', { attempt: retryCount + 1 })
+        // Only use getSession - simpler and faster
+        const { data: { session: existingSession }, error } = await supabase.auth.getSession()
+        
+        const duration = Date.now() - startTime
+        console.log(`[Auth] getSession completed in ${duration}ms`, { hasSession: !!existingSession, hasError: !!error })
+        
+        if (!mounted) {
+          console.log('[Auth] Component unmounted, aborting')
+          authInitInProgress = false
+          return
+        }
 
-        // First check if there's an existing session
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
-
-        if (!mounted) return
+        // Silently ignore AbortError
+        if (error && isAbortError(error)) {
+          console.log('[Auth] Request aborted, finishing')
+          setLoading(false)
+          authGloballyInitialized = true
+          authInitInProgress = false
+          return
+        }
 
         if (error) {
-          // Retry on AbortError or timeout (max 3 retries)
-          if ((error.message?.includes('abort') || error.message?.includes('timeout')) && retryCount < 3) {
-            console.warn('[Auth] Session fetch aborted, retrying...', { attempt: retryCount + 1 })
-            retryTimeout = setTimeout(() => {
+          console.log('[Auth] Session error:', error.message)
+          setLoading(false)
+          authGloballyInitialized = true
+          authInitInProgress = false
+          return
+        }
+
+        if (existingSession?.user) {
+          console.log('[Auth] ✅ Session found:', existingSession.user.email)
+          setUser(existingSession.user)
+          setSession(existingSession)
+          
+          // ✅ OPTIMIZED: Don't block rendering on admin check
+          // Check admin status in background (fire-and-forget)
+          console.log('[Auth] Checking admin status (non-blocking)...')
+          checkAdmin(existingSession.user)
+            .then((adminStatus) => {
+              console.log('[Auth] Admin status resolved:', adminStatus)
               if (mounted) {
-                initializeAuth(retryCount + 1)
+                setIsAdmin(adminStatus)
               }
-            }, 500 * (retryCount + 1))
-            return
-          }
-
-          console.error('[Auth] Error getting session:', error)
-          if (mounted) {
-            setLoading(false)
-          }
-          return
-        }
-
-        if (initialSession) {
-          console.log('[Auth] Initial session found:', initialSession.user?.email)
-          if (mounted) {
-            setSession(initialSession)
-            setUser(initialSession.user)
-          }
-          // Check admin is now async
-          const adminStatus = await checkAdmin(initialSession.user)
-          if (mounted) {
-            setIsAdmin(adminStatus)
-          }
+            })
+            .catch((adminError) => {
+              console.error('[Auth] Admin check failed:', adminError)
+              if (mounted) {
+                setIsAdmin(false)
+              }
+            })
         } else {
-          console.log('[Auth] No initial session found')
+          console.log('[Auth] No session found')
         }
 
+        console.log('[Auth] Setting loading to false (render immediately, admin check in background)...')
         if (mounted) {
-          setLoading(false)
+          setLoading(false)  // ✅ Don't wait for admin check!
         }
+        
+        authGloballyInitialized = true
+        console.log('[Auth] ✅ Init complete')
       } catch (error: any) {
-        if (!mounted) return
-
-        // Catch AbortError and retry (max 3 retries)
-        if ((error.name === 'AbortError' || error.message?.includes('abort')) && retryCount < 3) {
-          console.warn('[Auth] AbortError caught, retrying...', { attempt: retryCount + 1 })
-          retryTimeout = setTimeout(() => {
-            if (mounted) {
-              initializeAuth(retryCount + 1)
-            }
-          }, 500 * (retryCount + 1))
+        // Silently ignore AbortError
+        if (isAbortError(error)) {
+          console.log('[Auth] Request aborted')
+          if (mounted) setLoading(false)
+          authGloballyInitialized = true
+          authInitInProgress = false
           return
         }
 
-        console.error('[Auth] Auth initialization error:', error)
-        if (mounted) {
-          setLoading(false)
-        }
+        console.error('[Auth] ❌ Auth error:', error)
+        if (mounted) setLoading(false)
+        authGloballyInitialized = true
+      } finally {
+        authInitInProgress = false
       }
     }
 
+    // Start initialization with timeout safety
     initializeAuth()
 
-    // Listen for auth changes
+    // Safety timeout - if auth doesn't complete in 10s, force finish
+    const authTimeout = setTimeout(() => {
+      if (authInitInProgress && mounted) {
+        console.warn('[Auth] ⚠️ Timeout - forcing completion')
+        setLoading(false)
+        authGloballyInitialized = true
+        authInitInProgress = false
+      }
+    }, 10000)
+
+    // ✅ Listen for auth changes - handles sign in/out
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, newSession: Session | null) => {
       if (!mounted) return
 
-      console.log('[Auth] Auth state changed:', event, newSession?.user?.email)
-
-      // Update state based on event
-      if (mounted) {
-        setSession(newSession)
-        setUser(newSession?.user ?? null)
+      // Only log important auth events, not every state change
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        console.log('[Auth] Auth state changed:', event, newSession?.user?.email)
       }
 
-      // Check admin is now async
-      const adminStatus = await checkAdmin(newSession?.user ?? null)
-      if (mounted) {
-        setIsAdmin(adminStatus)
-      }
-
-      // Handle different auth events
-      switch (event) {
-        case 'SIGNED_IN':
-          console.log('[Auth] User signed in:', newSession?.user?.email)
-          // Refresh router to update server components
-          router.refresh()
-          break
-
-        case 'SIGNED_OUT':
-          console.log('[Auth] User signed out')
-          setUser(null)
-          setSession(null)
-          setIsAdmin(false)
-          router.refresh()
-          break
-
-        case 'TOKEN_REFRESHED':
-          console.log('[Auth] Token refreshed')
-          break
-
-        case 'USER_UPDATED':
-          console.log('[Auth] User updated')
-          break
-
-        case 'PASSWORD_RECOVERY':
-          console.log('[Auth] Password recovery requested')
-          break
-
-        default:
-          break
-      }
-
+      // Update state
+      setSession(newSession)
+      setUser(newSession?.user ?? null)
       setLoading(false)
+
+      // Check admin status
+      if (newSession?.user) {
+        const adminStatus = await checkAdmin(newSession.user)
+        if (mounted) setIsAdmin(adminStatus)
+      } else {
+        setIsAdmin(false)
+        adminCache.clear() // Clear cache on sign out
+      }
+
+      // Handle specific events
+      if (event === 'SIGNED_IN') {
+        authLogger.login(newSession?.user?.id || '', newSession?.user?.email || '', 'oauth')
+      } else if (event === 'SIGNED_OUT') {
+        adminCache.clear()
+      }
     })
 
-    // Cleanup function
+    // Cleanup
     return () => {
       mounted = false
-      if (retryTimeout) {
-        clearTimeout(retryTimeout)
-      }
+      clearTimeout(authTimeout)
       subscription.unsubscribe()
     }
-  }, [supabase, router, checkAdmin])
+  }, [supabase, checkAdmin])
 
   // Memoize all handler functions to prevent child re-renders
   const signInWithGoogle = useCallback(async () => {
@@ -433,3 +491,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+

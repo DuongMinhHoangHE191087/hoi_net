@@ -191,3 +191,4 @@ export default function CodeBlockModal({ isOpen, onClose, onInsert }: CodeBlockM
     </AnimatePresence>
   )
 }
+

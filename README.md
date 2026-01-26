@@ -1,4 +1,4 @@
-# Photo Restoration App
+# Hồi Nét - Khôi phục ảnh cũ bằng AI
 
 Ứng dụng khôi phục ảnh và ghép ảnh gia đình bằng AI - phiên bản 1.1
 

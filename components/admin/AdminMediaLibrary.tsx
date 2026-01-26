@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Upload, Trash2, Search, Filter, Image as ImageIcon, Video, FileText, Grid3X3, List } from 'lucide-react'
+import { Upload, Trash2, Search, Filter, Image as ImageIcon, Video, FileText, Grid3X3, List, AlertCircle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Pagination from '@/components/ui/Pagination'
@@ -42,6 +42,7 @@ export default function AdminMediaLibrary() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadCategory, setUploadCategory] = useState('general')
   const [uploadAltText, setUploadAltText] = useState('')
+  const [tableNotExists, setTableNotExists] = useState(false)
 
   useEffect(() => {
     fetchMedia()
@@ -68,13 +69,15 @@ export default function AdminMediaLibrary() {
         setMedia(data.media || [])
         setTotalCount(data.pagination?.total || 0)
         setTotalPages(Math.ceil((data.pagination?.total || 0) / ITEMS_PER_PAGE))
+        setTableNotExists(data.tableNotExists || false)
       } else {
         // Handle table not exists error gracefully
-        if (data.error?.includes('media_library')) {
-          console.warn('[AdminMediaLibrary] Table media_library does not exist yet')
+        if (data.error?.includes('media_library') || data.error?.includes('does not exist')) {
+          console.log('[AdminMediaLibrary] Table media_library does not exist yet')
           setMedia([])
           setTotalCount(0)
           setTotalPages(0)
+          setTableNotExists(true)
         } else {
           throw new Error(data.error)
         }
@@ -82,7 +85,7 @@ export default function AdminMediaLibrary() {
     } catch (error: any) {
       console.error('Fetch error:', error)
       // Only show toast for real errors, not missing table
-      if (!error.message?.includes('media_library')) {
+      if (!error.message?.includes('media_library') && !error.message?.includes('does not exist')) {
         toast.error('Lỗi khi tải media')
       }
       setMedia([])
@@ -97,9 +100,9 @@ export default function AdminMediaLibrary() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file size (max 20MB)
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('File quá lớn. Tối đa 20MB')
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File quá lớn. Tối đa 50MB')
       return
     }
 
@@ -199,6 +202,26 @@ export default function AdminMediaLibrary() {
 
   return (
     <div className="space-y-6">
+      {/* Table Not Exists Warning */}
+      {tableNotExists && (
+        <Card className="p-6 bg-yellow-50 border-yellow-200">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-yellow-800">Bảng Media Library chưa được tạo</h3>
+              <p className="text-yellow-700 mt-1">
+                Để sử dụng Media Library, bạn cần tạo bảng trong Supabase.
+              </p>
+              <p className="text-yellow-600 text-sm mt-2">
+                Chạy file SQL: <code className="bg-yellow-100 px-2 py-1 rounded">sql/create-media-library-table.sql</code>
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -479,3 +502,4 @@ export default function AdminMediaLibrary() {
     </div>
   )
 }
+

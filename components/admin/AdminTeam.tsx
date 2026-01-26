@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import AvatarUpload from '@/components/ui/AvatarUpload'
+import { SafeAvatar } from '@/components/ui/SafeImage'
 import { TeamMember } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -224,9 +225,11 @@ export default function AdminTeam() {
           {members.map((member) => (
             <Card key={member.id} hover>
               <div className="flex items-start gap-4">
-                {member.avatar && (
-                  <img src={member.avatar} alt={member.name} className="w-16 h-16 rounded-full object-cover" />
-                )}
+                <SafeAvatar 
+                  src={member.avatar || member.avatar_url} 
+                  alt={member.name} 
+                  size="lg" 
+                />
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-text">{member.name}</h3>
                   <p className="text-primary font-medium mb-2">{member.role}</p>
@@ -248,3 +251,4 @@ export default function AdminTeam() {
     </div>
   )
 }
+

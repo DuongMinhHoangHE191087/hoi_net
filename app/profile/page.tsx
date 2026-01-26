@@ -1,18 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   User, Mail, Phone, MapPin, Facebook, Camera, Save,
   ArrowLeft, Loader2, CheckCircle, AlertCircle
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { profileSchema, type ProfileInput } from '@/lib/validation'
 import { sanitizeInput, validatePhone, validateFacebookURL } from '@/lib/security'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
-import { usePageLoading } from '@/components/ui/PageWrapper'
 import { FullScreenLoading } from '@/components/UniversalLoading'
 
 interface UserProfile {
@@ -30,9 +29,9 @@ export default function ProfilePage() {
   const router = useRouter()
   const { user, loading: authLoading, updateProfile } = useAuth()
 
-  const { loading: pageLoading, finishLoading } = usePageLoading(true, 1000)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [isReady, setIsReady] = useState(false)
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -44,19 +43,8 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Load user profile
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login?redirect=/profile')
-      return
-    }
-
-    if (user) {
-      loadProfile()
-    }
-  }, [user, authLoading])
-
-  const loadProfile = async () => {
+  // Define loadProfile BEFORE using it in useEffect
+  const loadProfile = useCallback(async () => {
     try {
       // Try to fetch existing profile from database
       const { data: profile, error } = await supabase
@@ -91,9 +79,21 @@ export default function ProfilePage() {
       console.error('Error loading profile:', error)
       toast.error('Không thể tải thông tin hồ sơ')
     } finally {
-      finishLoading()
+      setIsReady(true)
     }
-  }
+  }, [user?.id, user?.user_metadata?.full_name])
+
+  // Load user profile
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login?redirect=/profile')
+      return
+    }
+
+    if (user) {
+      loadProfile()
+    }
+  }, [user, authLoading, router, loadProfile])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -105,9 +105,9 @@ export default function ProfilePage() {
       return
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Kích thước ảnh không được vượt quá 5MB')
+    // Validate file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Kích thước ảnh không được vượt quá 50MB')
       return
     }
 
@@ -226,8 +226,12 @@ export default function ProfilePage() {
     return user?.email?.[0].toUpperCase() || 'U'
   }
 
-  if (pageLoading || authLoading) {
+  if (authLoading || !isReady) {
     return <FullScreenLoading message="Đang tải hồ sơ..." />
+  }
+
+  if (!user) {
+    return null
   }
 
   return (
@@ -474,3 +478,4 @@ export default function ProfilePage() {
     </div>
   )
 }
+

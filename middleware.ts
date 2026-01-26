@@ -61,13 +61,13 @@ function applySecurityHeaders(response: NextResponse): void {
     response.headers.set(key, value)
   }
 
-  // Secure cookie settings
+  // Secure cookie settings - extended expiry
   const cookieOptions = {
     httpOnly: true, // Prevent XSS
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
     sameSite: 'lax' as const, // CSRF protection
     path: '/',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 29 * 24 * 60 * 60, // 29 days (matches refresh token)
   }
 
   // Apply to all Set-Cookie headers
@@ -207,3 +207,4 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+

@@ -49,8 +49,8 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
         toast.error(`${file.name} không phải là ảnh`)
         return
       }
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`${file.name} vượt quá 10MB`)
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error(`${file.name} vượt quá 50MB`)
         return
       }
       validFiles.push(file)
@@ -284,3 +284,4 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
     </AnimatePresence>
   )
 }
+

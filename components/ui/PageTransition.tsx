@@ -89,3 +89,4 @@ export function SlideTransition({ children }: PageTransitionProps) {
     </AnimatePresence>
   )
 }
+

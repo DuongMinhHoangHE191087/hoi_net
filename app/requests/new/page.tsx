@@ -1,20 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Upload, X, Image as ImageIcon, FileText, ArrowLeft,
   Loader2, CheckCircle, AlertCircle, Camera, Sparkles, Send
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { sanitizeInput } from '@/lib/security'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { checkProfileComplete } from '@/lib/profile-check'
 import toast from 'react-hot-toast'
-import { usePageLoading } from '@/components/ui/PageWrapper'
-import { FullScreenLoading } from '@/components/UniversalLoading'
 import Link from 'next/link'
+import { FullScreenLoading } from '@/components/UniversalLoading'
 
 const REQUEST_TYPES = [
   {
@@ -38,8 +37,10 @@ const REQUEST_TYPES = [
 export default function NewRequestPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  
+  // Create supabase client
+  const supabase = useMemo(() => createClient(), [])
 
-  const { loading: pageLoading, finishLoading } = usePageLoading(true, 1000)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null)
@@ -56,6 +57,13 @@ export default function NewRequestPage() {
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login?redirect=/requests/new')
+    }
+  }, [authLoading, user, router])
+
   // Check profile completeness
   useEffect(() => {
     const checkProfile = async () => {
@@ -67,18 +75,8 @@ export default function NewRequestPage() {
     checkProfile()
   }, [user?.id])
 
-  useEffect(() => {
-    finishLoading()
-  }, [])
-
-  // Redirect if not authenticated
-  if (!authLoading && !user) {
-    router.push('/login?redirect=/requests/new')
-    return null
-  }
-
   // Show loading screen
-  if (authLoading || pageLoading) {
+  if (authLoading) {
     return <FullScreenLoading message="Đang chuẩn bị..." />
   }
 
@@ -102,9 +100,9 @@ export default function NewRequestPage() {
         return
       }
 
-      // Check file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`${file.name} vượt quá 10MB`)
+      // Check file size (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error(`${file.name} vượt quá 50MB`)
         return
       }
 
@@ -207,29 +205,49 @@ export default function NewRequestPage() {
       setUploadedUrls(imageUrls)
       setUploading(false)
 
-      // Create request in database
-      const { data: insertedRequest, error: insertError } = await supabase
-        .from('user_requests')
-        .insert({
-          user_id: user?.id,
+      // Create request via API (uses server-side supabaseAdmin to bypass RLS)
+      console.log('[NewRequest] Creating request via API...', {
+        user_id: user?.id,
+        type: formData.type,
+        status: formData.sendToAdmin ? 'pending' : 'processing',
+        images_count: imageUrls.length
+      })
+      
+      const createResponse = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
           type: formData.type,
           description: description,
           original_images: imageUrls,
           status: formData.sendToAdmin ? 'pending' : 'processing',
+          use_ai: formData.useAI
         })
-        .select()
-        .single()
+      })
 
-      if (insertError) {
-        console.error('Database insert error:', insertError)
-        throw new Error(insertError.message || 'Không thể tạo yêu cầu')
+      const createResult = await createResponse.json()
+
+      if (!createResponse.ok) {
+        console.error('[NewRequest] API error:', createResult)
+        throw new Error(createResult.message || 'Không thể tạo yêu cầu')
       }
+
+      const insertedRequest = createResult.request
+
+      console.log('[NewRequest] Request created successfully:', {
+        id: insertedRequest.id,
+        status: insertedRequest.status,
+        user_id: insertedRequest.user_id
+      })
 
       toast.success('Gửi yêu cầu thành công!')
 
+      // Admins are notified automatically by the API
+
       // If AI processing is enabled, trigger it
       if (formData.useAI && insertedRequest) {
-        toast.loading('Đang xử lý với AI...', { id: 'ai-process' })
+        const aiProcessingToast = toast.loading('Đang xử lý với AI...', { duration: Infinity })
 
         try {
           const selectedType = REQUEST_TYPES.find(t => t.value === formData.type)
@@ -245,27 +263,55 @@ export default function NewRequestPage() {
             })
           })
 
+          const aiData = await aiResponse.json()
+
           if (aiResponse.ok) {
-            const aiData = await aiResponse.json()
             toast.success(
-              `AI đã xử lý ${aiData.summary.successful}/${aiData.summary.total} ảnh`,
-              { id: 'ai-process' }
+              `AI đã xử lý ${aiData.summary.successful}/${aiData.summary.total} ảnh thành công!`,
+              { id: aiProcessingToast }
             )
           } else {
-            const aiError = await aiResponse.json().catch(() => ({ message: 'AI processing failed' }))
-            console.warn('AI processing failed:', aiError)
-            toast.dismiss('ai-process')
+            // ✅ FIX: Handle errors properly
+            toast.error(
+              `AI không xử lý được: ${aiData.message || 'Lỗi không xác định'}. Admin sẽ xử lý thủ công.`,
+              { id: aiProcessingToast, duration: 5000 }
+            )
+            
+            // Update request status back to pending for admin review
+            await supabase
+              .from('user_requests')
+              .update({
+                status: 'pending',
+                admin_notes: `AI tự động thất bại: ${aiData.message || 'Unknown error'}. Cần xử lý thủ công.`
+              })
+              .eq('id', insertedRequest.id)
           }
-        } catch (aiError) {
+        } catch (aiError: any) {
           console.error('AI processing error:', aiError)
-          toast.dismiss('ai-process')
+          toast.error(
+            'AI không xử lý được. Admin sẽ xử lý thủ công cho bạn.',
+            { id: aiProcessingToast, duration: 5000 }
+          )
+          
+          // Update request status for manual processing
+          try {
+            await supabase
+              .from('user_requests')
+              .update({
+                status: 'pending',
+                admin_notes: `AI tự động thất bại: ${aiError.message}. Cần xử lý thủ công.`
+              })
+              .eq('id', insertedRequest.id)
+          } catch (updateError) {
+            console.error('Failed to update request status:', updateError)
+          }
         }
       }
 
       // Redirect to requests page
       setTimeout(() => {
         router.push('/requests')
-      }, 1500)
+      }, 2000) // ✅ Increased delay to show AI result
 
     } catch (error: any) {
       console.error('Submit error:', error)
@@ -566,3 +612,4 @@ export default function NewRequestPage() {
     </div>
   )
 }
+

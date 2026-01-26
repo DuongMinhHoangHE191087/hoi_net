@@ -50,9 +50,9 @@ export default function AvatarUpload({
       return
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File không được vượt quá 5MB')
+    // Validate file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File không được vượt quá 50MB')
       return
     }
 
@@ -204,3 +204,4 @@ export default function AvatarUpload({
     </div>
   )
 }
+

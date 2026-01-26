@@ -95,7 +95,7 @@ export default function RequestPhotoPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen gradient-mesh">
       <Toaster position="top-center" />
       <Sidebar />
 
@@ -375,3 +375,4 @@ export default function RequestPhotoPage() {
     </div>
   )
 }
+

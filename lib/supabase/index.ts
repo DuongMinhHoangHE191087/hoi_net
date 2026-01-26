@@ -14,3 +14,4 @@ export { updateSession } from './middleware'
 
 // Types
 export type { User, Session, AuthError } from '@supabase/supabase-js'
+

@@ -249,3 +249,4 @@ export async function GET() {
       : 'Add GEMINI_API_KEY to enable AI processing',
   })
 }
+

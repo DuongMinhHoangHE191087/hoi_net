@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 
 export default function AdminDebugPage() {
   const { user, loading, isAdmin } = useAuth()
@@ -98,7 +98,7 @@ export default function AdminDebugPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen gradient-mesh p-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Admin API Debug Tool</h1>
 
@@ -171,3 +171,4 @@ export default function AdminDebugPage() {
     </div>
   )
 }
+

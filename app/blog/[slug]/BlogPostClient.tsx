@@ -5,6 +5,7 @@ import { Calendar, User, ArrowLeft } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import TableOfContents from '@/components/blog/TableOfContents'
+import { SafeAvatar } from '@/components/ui/SafeImage'
 import { BlogPost } from '@/lib/supabase'
 
 interface BlogPostClientProps {
@@ -142,17 +143,13 @@ export default function BlogPostClient({ post }: BlogPostClientProps) {
               Về tác giả
             </h3>
             <div className="flex items-center gap-4">
-              {post.author_avatar ? (
-                <img
+              <div className="border-4 border-white/50 shadow-lg rounded-full overflow-hidden">
+                <SafeAvatar
                   src={post.author_avatar}
                   alt={post.author_name}
-                  className="w-16 h-16 rounded-full object-cover border-4 border-white/50 shadow-lg"
+                  size="lg"
                 />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                  {post.author_name.charAt(0)}
-                </div>
-              )}
+              </div>
               <div>
                 <p className="font-bold text-text text-lg">{post.author_name}</p>
                 <p className="text-gray-600">Tác giả</p>

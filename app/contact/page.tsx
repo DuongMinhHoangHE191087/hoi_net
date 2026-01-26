@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Send, Mail, MessageSquare, Upload, X, Star, CheckCircle, Sparkles } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
@@ -8,12 +8,9 @@ import Footer from '@/components/layout/Footer'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { db } from '@/lib/supabase'
-import { usePageLoading } from '@/components/ui/PageWrapper'
-import { FullScreenLoading } from '@/components/UniversalLoading'
 import { useSiteSettings, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
 
 export default function ContactPage() {
-  const { loading: pageLoading, finishLoading } = usePageLoading(true, 1000)
   const { data: settings = DEFAULT_SITE_SETTINGS } = useSiteSettings()
   const contactEmail = settings.contact_email || DEFAULT_SITE_SETTINGS.contact_email
 
@@ -28,14 +25,6 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-
-  useEffect(() => {
-    finishLoading()
-  }, [])
-
-  if (pageLoading) {
-    return <FullScreenLoading message="Đang tải trang liên hệ..." />
-  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -406,3 +395,4 @@ export default function ContactPage() {
     </div>
   )
 }
+

@@ -4,7 +4,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
   size?: 'sm' | 'md' | 'lg'
   children: React.ReactNode
   loading?: boolean
@@ -32,7 +32,8 @@ export default function Button({
   const variants = {
     primary: "bg-primary text-white hover:bg-primary/90 active:bg-primary/70 active:scale-[0.98]",
     secondary: "border border-gray-300 hover:bg-gray-50 text-gray-700 active:bg-gray-200 active:scale-[0.98]",
-    ghost: "text-gray-600 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 active:scale-[0.98]"
+    ghost: "text-gray-600 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 active:scale-[0.98]",
+    danger: "bg-red-500 text-white hover:bg-red-600 active:bg-red-700 active:scale-[0.98]"
   }
 
   return (
@@ -57,3 +58,4 @@ export default function Button({
     </motion.button>
   )
 }
+

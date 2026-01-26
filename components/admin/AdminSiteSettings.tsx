@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Save, Loader2, Globe, Mail, Phone, MapPin, Facebook, Image, Type, FileText } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Save, Loader2, Globe, Mail, Phone, MapPin, Facebook, Image, Type, FileText, Upload, Trash2, Palette, Settings } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { useSiteSettings, useUpdateSiteSettings, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
@@ -10,12 +10,15 @@ import toast from 'react-hot-toast'
 export default function AdminSiteSettings() {
   const { data: currentSettings, isLoading } = useSiteSettings()
   const updateSettings = useUpdateSiteSettings()
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const [settings, setSettings] = useState({
     brand_name: '',
     brand_slogan: '',
     brand_logo_url: '',
     brand_logo_type: 'icon',
+    site_logo_url: '',
     footer_description: '',
     footer_copyright: '',
     contact_email: '',
@@ -24,6 +27,10 @@ export default function AdminSiteSettings() {
     contact_facebook: '',
     seo_title: '',
     seo_description: '',
+    // New settings
+    loading_message: 'Đang tải...',
+    theme_primary_color: '#ec4899',
+    theme_secondary_color: '#f59e0b',
   })
 
   useEffect(() => {
@@ -33,6 +40,7 @@ export default function AdminSiteSettings() {
         brand_slogan: currentSettings.brand_slogan || DEFAULT_SITE_SETTINGS.brand_slogan,
         brand_logo_url: currentSettings.brand_logo_url || '',
         brand_logo_type: currentSettings.brand_logo_type || 'icon',
+        site_logo_url: currentSettings.site_logo_url || '',
         footer_description: currentSettings.footer_description || DEFAULT_SITE_SETTINGS.footer_description,
         footer_copyright: currentSettings.footer_copyright || DEFAULT_SITE_SETTINGS.footer_copyright,
         contact_email: currentSettings.contact_email || DEFAULT_SITE_SETTINGS.contact_email,
@@ -41,9 +49,74 @@ export default function AdminSiteSettings() {
         contact_facebook: currentSettings.contact_facebook || '',
         seo_title: currentSettings.seo_title || DEFAULT_SITE_SETTINGS.seo_title,
         seo_description: currentSettings.seo_description || DEFAULT_SITE_SETTINGS.seo_description,
+        loading_message: currentSettings.loading_message || 'Đang tải...',
+        theme_primary_color: currentSettings.theme_primary_color || '#ec4899',
+        theme_secondary_color: currentSettings.theme_secondary_color || '#f59e0b',
       })
     }
   }, [currentSettings])
+
+  // Upload logo to Supabase storage
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn file hình ảnh')
+      return
+    }
+
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File quá lớn. Tối đa 50MB')
+      return
+    }
+
+    try {
+      setUploadingLogo(true)
+      
+      // Upload via API
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('bucket', 'site-assets')
+      formData.append('path', `logos/${Date.now()}-${file.name}`)
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const { url } = await response.json()
+      
+      setSettings(prev => ({
+        ...prev,
+        brand_logo_url: url,
+        site_logo_url: url,
+        brand_logo_type: 'image'
+      }))
+      
+      toast.success('Đã upload logo thành công!')
+    } catch (error) {
+      console.error('Logo upload error:', error)
+      toast.error('Lỗi khi upload logo')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  const handleRemoveLogo = () => {
+    setSettings(prev => ({
+      ...prev,
+      brand_logo_url: '',
+      site_logo_url: '',
+      brand_logo_type: 'icon'
+    }))
+  }
 
   const handleSave = async () => {
     try {
@@ -101,6 +174,7 @@ export default function AdminSiteSettings() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
               placeholder="Photo Restore"
             />
+            <p className="text-xs text-gray-500 mt-1">Tên này hiển thị trên Loading, Navbar, Footer</p>
           </div>
 
           <div>
@@ -112,22 +186,82 @@ export default function AdminSiteSettings() {
               onChange={(e) => setSettings({ ...settings, brand_logo_type: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
             >
-              <option value="icon">Icon (Lucide)</option>
-              <option value="image">Hình ảnh</option>
+              <option value="icon">Icon mặc định (📸)</option>
+              <option value="image">Hình ảnh tải lên</option>
             </select>
           </div>
 
+          {/* Logo Upload Section */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL Logo (nếu dùng hình ảnh)
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Logo (hiển thị trên Loading, Navbar)
             </label>
-            <input
-              type="text"
-              value={settings.brand_logo_url}
-              onChange={(e) => setSettings({ ...settings, brand_logo_url: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
-              placeholder="https://example.com/logo.png"
-            />
+            
+            <div className="flex items-start gap-4">
+              {/* Logo Preview */}
+              <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+                {settings.brand_logo_url || settings.site_logo_url ? (
+                  <img 
+                    src={settings.brand_logo_url || settings.site_logo_url} 
+                    alt="Logo"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <span className="text-4xl">📸</span>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={uploadingLogo}
+                  >
+                    {uploadingLogo ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 mr-1" />
+                    )}
+                    Upload Logo
+                  </Button>
+                  
+                  {(settings.brand_logo_url || settings.site_logo_url) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveLogo}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Xóa
+                    </Button>
+                  )}
+                </div>
+
+                <p className="text-xs text-gray-500">
+                  PNG, JPG, SVG. Tối đa 2MB. Kích thước đề xuất: 200x200px
+                </p>
+
+                {/* Manual URL input */}
+                <input
+                  type="text"
+                  value={settings.brand_logo_url}
+                  onChange={(e) => setSettings({ ...settings, brand_logo_url: e.target.value, site_logo_url: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
+                  placeholder="Hoặc nhập URL logo..."
+                />
+              </div>
+            </div>
           </div>
 
           <div className="md:col-span-2">
@@ -141,6 +275,72 @@ export default function AdminSiteSettings() {
               rows={2}
               placeholder="Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI..."
             />
+          </div>
+        </div>
+      </Card>
+
+      {/* Loading & Theme Settings */}
+      <Card>
+        <div className="flex items-center gap-2 mb-4">
+          <Settings className="w-5 h-5 text-primary" />
+          <h3 className="text-xl font-bold text-text">Loading & Giao Diện</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tin nhắn Loading mặc định
+            </label>
+            <input
+              type="text"
+              value={settings.loading_message}
+              onChange={(e) => setSettings({ ...settings, loading_message: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
+              placeholder="Đang tải..."
+            />
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Palette className="w-4 h-4 inline mr-1" />
+                Màu chủ đạo
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={settings.theme_primary_color}
+                  onChange={(e) => setSettings({ ...settings, theme_primary_color: e.target.value })}
+                  className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.theme_primary_color}
+                  onChange={(e) => setSettings({ ...settings, theme_primary_color: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none font-mono text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Màu phụ
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={settings.theme_secondary_color}
+                  onChange={(e) => setSettings({ ...settings, theme_secondary_color: e.target.value })}
+                  className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.theme_secondary_color}
+                  onChange={(e) => setSettings({ ...settings, theme_secondary_color: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none font-mono text-sm"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </Card>
@@ -285,3 +485,4 @@ export default function AdminSiteSettings() {
     </div>
   )
 }
+

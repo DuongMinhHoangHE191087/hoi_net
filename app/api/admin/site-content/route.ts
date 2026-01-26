@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { verifyAuth } from '@/lib/auth-server'
 import { dbServer } from '@/lib/supabase/db-server'
 
@@ -35,6 +36,10 @@ export async function POST(request: NextRequest) {
 
     await dbServer.updateMultipleSiteSettings(settings)
 
+    // Revalidate all pages that use site settings
+    revalidatePath('/')
+    revalidatePath('/about')
+
     return NextResponse.json({
       success: true,
       message: 'Site settings updated successfully'
@@ -44,3 +49,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
   }
 }
+

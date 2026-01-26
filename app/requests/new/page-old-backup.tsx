@@ -7,7 +7,7 @@ import {
   Upload, X, Image as ImageIcon, FileText, ArrowLeft,
   Loader2, CheckCircle, AlertCircle, Camera, Phone, Facebook
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { requestSchema } from '@/lib/validation'
 import { sanitizeInput } from '@/lib/security'
 import { supabase } from '@/lib/supabase'
@@ -521,3 +521,4 @@ export default function NewRequestPage() {
     </div>
   )
 }
+

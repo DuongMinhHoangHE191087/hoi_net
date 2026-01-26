@@ -80,7 +80,7 @@ export default function PricingPage() {
   ]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen gradient-mesh">
       <Navbar />
 
       <section className="pt-32 pb-20 px-4">
@@ -173,3 +173,4 @@ export default function PricingPage() {
     </div>
   )
 }
+

@@ -24,8 +24,8 @@ export default function ImageUploadModal({ isOpen, onClose, onInsert }: ImageUpl
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File không được vượt quá 10MB')
+    if (file.size > 50 * 1024 * 1024) {
+      alert('File không được vượt quá 50MB')
       return
     }
 
@@ -289,3 +289,4 @@ export default function ImageUploadModal({ isOpen, onClose, onInsert }: ImageUpl
     </AnimatePresence>
   )
 }
+

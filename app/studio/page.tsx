@@ -77,7 +77,7 @@ export default function StudioPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-screen flex flex-col gradient-mesh overflow-hidden">
       <Navbar />
       
       <main className="flex-1 flex overflow-hidden mt-16">
@@ -210,3 +210,4 @@ export default function StudioPage() {
     </div>
   )
 }
+

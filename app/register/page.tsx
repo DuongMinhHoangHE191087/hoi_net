@@ -5,14 +5,16 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ImageIcon, Mail, Lock, Sparkles, Chrome, UserPlus, Eye, EyeOff, User, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { registerSchema } from '@/lib/validation'
 import { sanitizeInput, validatePassword } from '@/lib/security'
+import { useSiteSetting } from '@/hooks/useSiteSettings'
 import toast, { Toaster } from 'react-hot-toast'
 
 export default function RegisterPage() {
   const router = useRouter()
   const { signUpWithEmail, signInWithGoogle, loading: authLoading } = useAuth()
+  const brandName = useSiteSetting('brand_name')
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -34,24 +36,6 @@ export default function RegisterPage() {
     setFormData({ ...formData, password })
     const validation = validatePassword(password)
     setPasswordStrength(validation.strength)
-  }
-
-  // Show loading while auth is initializing
-  if (authLoading) {
-    return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center">
-        <div className="glassmorphism-strong p-8 rounded-2xl">
-          <div className="flex flex-col items-center gap-4">
-            <motion.div
-              className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            />
-            <p className="text-gray-600 font-medium">Đang kiểm tra...</p>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   // Email registration
@@ -252,7 +236,7 @@ export default function RegisterPage() {
               <div className="p-3 bg-gradient-primary rounded-2xl shadow-glow-pink animate-glow">
                 <ImageIcon className="w-8 h-8 text-white" />
               </div>
-              <span className="text-2xl font-bold gradient-text-alt">Photo Restore</span>
+              <span className="text-2xl font-bold gradient-text-alt">{brandName}</span>
             </motion.div>
             <motion.h1
               className="text-3xl md:text-4xl font-bold text-text mb-3"
@@ -626,3 +610,4 @@ export default function RegisterPage() {
     </div>
   )
 }
+

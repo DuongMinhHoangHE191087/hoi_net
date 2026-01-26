@@ -479,3 +479,4 @@ export const geminiClient = {
 }
 
 export default geminiClient
+

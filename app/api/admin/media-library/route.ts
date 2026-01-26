@@ -46,6 +46,16 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query
 
     if (error) {
+      // Handle table not existing gracefully
+      if (error.message?.includes('does not exist') || error.code === '42P01') {
+        console.log('[Media Library API] Table does not exist yet, returning empty')
+        return NextResponse.json({
+          media: [],
+          pagination: { page, limit, total: 0 },
+          tableNotExists: true
+        })
+      }
+      
       console.error('[Media Library API] Error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
@@ -240,3 +250,4 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
+

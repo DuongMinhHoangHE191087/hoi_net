@@ -17,20 +17,25 @@ export const siteSettingsQueryKeys = {
   },
 }
 
+// Official Hồi Nét logo URL
+export const HOINET_LOGO_URL = 'https://res.cloudinary.com/dt6p7wm6i/image/upload/v1769010302/site-branding/logos/jfse7pubnqgqfzfnyemr.png'
+
 // Default fallback values
 export const DEFAULT_SITE_SETTINGS: Record<string, string> = {
-  brand_name: 'Photo Restore',
+  brand_name: 'Hồi Nét',
   brand_slogan: 'Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI - Mang lại kỷ niệm tươi đẹp.',
-  brand_logo_url: '',
-  brand_logo_type: 'icon',
+  brand_logo_url: HOINET_LOGO_URL,
+  brand_logo_type: 'image',
+  site_logo_url: HOINET_LOGO_URL,
+  site_name: 'Hồi Nét',
   footer_description: 'Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI - Mang lại kỷ niệm tươi đẹp.',
-  footer_copyright: '© 2026 Photo Restore. Made with ❤️ All rights reserved.',
-  contact_email: 'support@photorestore.com',
+  footer_copyright: '© 2026 Hồi Nét. Made with ❤️ All rights reserved.',
+  contact_email: 'support@hoinet.com',
   contact_phone: '',
   contact_address: '',
   contact_facebook: '',
   social_links: '{}',
-  seo_title: 'Photo Restoration App',
+  seo_title: 'Hồi Nét - Khôi phục ảnh cũ',
   seo_description: 'Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI',
 }
 
@@ -62,7 +67,25 @@ export function useUpdateSiteSettings() {
 
   return useMutation({
     mutationFn: async (settings: Record<string, string>) => {
-      await db.updateMultipleSiteSettings(settings)
+      // Use API route to update settings (bypasses RLS with service key)
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      const response = await fetch('/api/admin/site-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
+        },
+        body: JSON.stringify({ settings })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to update settings')
+      }
+
       return settings
     },
     onSuccess: () => {
@@ -266,3 +289,4 @@ export function useReorderNavigationLinks() {
     },
   })
 }
+

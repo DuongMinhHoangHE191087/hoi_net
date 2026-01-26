@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -9,9 +9,10 @@ import {
   TrendingUp, CheckCircle, Clock, XCircle, ArrowRight,
   Mail, Phone, MapPin, Sparkles, Shield, ArrowLeft
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { usePageLoading } from '@/components/ui/PageWrapper'
+import { useSiteSetting } from '@/hooks/useSiteSettings'
+import { SafeAvatar } from '@/components/ui/SafeImage'
 import { FullScreenLoading } from '@/components/UniversalLoading'
 
 interface DashboardStats {
@@ -24,15 +25,65 @@ interface DashboardStats {
 export default function DashboardPage() {
   const router = useRouter()
   const { user, isAdmin, loading: authLoading } = useAuth()
+  const brandName = useSiteSetting('brand_name')
 
-  const { loading: pageLoading, finishLoading } = usePageLoading(true, 1000)
   const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<DashboardStats>({
     totalRequests: 0,
     pendingRequests: 0,
     completedRequests: 0,
     rejectedRequests: 0,
   })
+
+  // Define loadDashboardData BEFORE using it in useEffect
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Load profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single()
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw profileError
+      }
+
+      setProfile(profileData)
+
+      // Load user requests stats
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('user_requests')
+        .select('status')
+        .eq('user_id', user?.id)
+
+      if (requestsError) {
+        console.error('Error loading requests:', requestsError)
+      } else if (requestsData) {
+        const totalRequests = requestsData.length
+        const pendingRequests = requestsData.filter(r => r.status === 'pending').length
+        const completedRequests = requestsData.filter(r => r.status === 'completed').length
+        const rejectedRequests = requestsData.filter(r => r.status === 'rejected').length
+
+        setStats({
+          totalRequests,
+          pendingRequests,
+          completedRequests,
+          rejectedRequests,
+        })
+      }
+    } catch (error: any) {
+      console.error('Error loading dashboard:', error)
+      setError('Không thể tải dữ liệu dashboard')
+    } finally {
+      setLoading(false)
+    }
+  }, [user?.id])
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,33 +94,7 @@ export default function DashboardPage() {
     if (user) {
       loadDashboardData()
     }
-  }, [user, authLoading])
-
-  const loadDashboardData = async () => {
-    try {
-      // Load profile
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single()
-
-      setProfile(profileData)
-
-      // Load stats (will be implemented when requests table is created)
-      // For now, showing placeholder stats
-      setStats({
-        totalRequests: 0,
-        pendingRequests: 0,
-        completedRequests: 0,
-        rejectedRequests: 0,
-      })
-    } catch (error) {
-      console.error('Error loading dashboard:', error)
-    } finally {
-      finishLoading()
-    }
-  }
+  }, [user, authLoading, router, loadDashboardData])
 
   const getUserInitials = () => {
     if (profile?.full_name) {
@@ -89,8 +114,26 @@ export default function DashboardPage() {
     })
   }
 
-  if (pageLoading || authLoading) {
+  if (authLoading || loading) {
     return <FullScreenLoading message="Đang tải dashboard..." />
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen gradient-mesh flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Lỗi tải dữ liệu</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={loadDashboardData}
+            className="btn-primary w-full"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -117,7 +160,7 @@ export default function DashboardPage() {
               <h1 className="text-4xl font-bold gradient-text mb-2">
                 Xin chào, {profile?.full_name || user?.email?.split('@')[0] || 'Người dùng'}! 👋
               </h1>
-              <p className="text-gray-600">Chào mừng bạn quay trở lại với Photo Restore</p>
+              <p className="text-gray-600">Chào mừng bạn quay trở lại với {brandName}</p>
             </div>
           </div>
         </motion.div>
@@ -133,17 +176,13 @@ export default function DashboardPage() {
             <div className="glassmorphism-strong p-6 sticky top-24">
               {/* Avatar */}
               <div className="flex flex-col items-center mb-6">
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt="Avatar"
-                    className="w-24 h-24 rounded-full object-cover shadow-glow-pink mb-4"
+                <div className="shadow-glow-pink mb-4 rounded-full overflow-hidden">
+                  <SafeAvatar
+                    src={profile?.avatar_url}
+                    alt={profile?.full_name || 'User'}
+                    size="xl"
                   />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-gradient-primary flex items-center justify-center text-white text-3xl font-bold shadow-glow-pink mb-4">
-                    {getUserInitials()}
-                  </div>
-                )}
+                </div>
 
                 <h2 className="text-xl font-bold text-gray-800">
                   {profile?.full_name || 'Chưa cập nhật'}
@@ -394,3 +433,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+

@@ -1,5 +1,6 @@
 // ✅ Server Component with Static Generation - CRITICAL for SEO!
 import { db } from '@/lib/supabase'
+import { getBrandName } from '@/lib/site-metadata'
 import { notFound } from 'next/navigation'
 import BlogPostClient from './BlogPostClient'
 import { Metadata } from 'next'
@@ -26,10 +27,13 @@ export async function generateStaticParams() {
 // ✅ Generate metadata for SEO
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   try {
-    const post = await db.getBlogPost(params.slug)
+    const [post, brandName] = await Promise.all([
+      db.getBlogPost(params.slug),
+      getBrandName()
+    ])
 
     return {
-      title: `${post.title} - Photo Restore Blog`,
+      title: `${post.title} - ${brandName} Blog`,
       description: post.excerpt,
       openGraph: {
         title: post.title,
@@ -48,7 +52,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     }
   } catch (error) {
     return {
-      title: 'Blog Post - Photo Restore',
+      title: 'Blog Post',
       description: 'Khôi phục ảnh cũ bằng AI',
     }
   }

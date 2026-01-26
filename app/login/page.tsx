@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, Sparkles, Home, LogIn, Loader2 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { loginSchema } from '@/lib/validation'
 import { sanitizeInput } from '@/lib/security'
 import toast, { Toaster } from 'react-hot-toast'
@@ -59,23 +59,12 @@ function LoginContent() {
     }
   }, [errorParam])
 
-  // Show loading while auth is initializing
-  if (authLoading) {
-    return (
-      <div className="min-h-screen gradient-mesh flex items-center justify-center">
-        <div className="glassmorphism-strong p-8 rounded-2xl">
-          <div className="flex flex-col items-center gap-4">
-            <motion.div
-              className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            />
-            <p className="text-gray-600 font-medium">Đang kiểm tra đăng nhập...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Redirect if already logged in (don't block initial render)
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push(isAdmin ? '/admin' : redirectUrl)
+    }
+  }, [authLoading, user, isAdmin, router, redirectUrl])
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -447,3 +436,4 @@ function LoginContent() {
     </div>
   )
 }
+

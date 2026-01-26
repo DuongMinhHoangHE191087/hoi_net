@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
-import { Sparkles, ImagePlus, Users, Zap, Star, Target, Eye, Heart, ArrowRight, Rocket, Globe, Shield, Award, TrendingUp, Camera, Palette, Smile, Clock, Cpu, Database, FileImage, Film, Filter, Fingerprint, Flame, Grid, Hash, HelpCircle, Home, Inbox, Lightbulb, Link as LinkIcon, Mail, Map, MessageCircle, Music, Package, Phone, PieChart, RefreshCw, Search, Send, Settings, Share2, ShoppingCart, Sliders, Sun, Tag, Truck, Video, Wand2, Wifi, Wind, Wrench, Code, Lock, CheckCircle, Layers } from 'lucide-react'
+import { Sparkles, ImagePlus, Users, Zap, Star, Target, Eye, Heart, ArrowRight, Rocket, Globe, Shield, Award, TrendingUp, Camera, Palette, Smile, Clock, Cpu, Database, FileImage, Film, Filter, Fingerprint, Flame, Grid, Hash, HelpCircle, Home, Inbox, Lightbulb, Link as LinkIcon, Mail, Map, MessageCircle, Music, Package, Phone, PieChart, RefreshCw, Search, Send, Settings, Share2, ShoppingCart, Sliders, Sun, Tag, Truck, Video, Wand2, Wifi, Wind, Wrench, Code, Lock, CheckCircle, Layers, Loader2 } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import { ValueCardRow } from '@/components/ui/ValueCard'
 import { TeamMember, ValueSection, Feature, Feedback } from '@/lib/supabase'
 import { demoStats } from '@/components/sections/GlobalStats'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 // Dynamic imports cho heavy components (below-the-fold)
 const TeamCarousel3D = dynamic(() => import('@/components/sections/TeamCarousel3D'), {
@@ -19,7 +19,7 @@ const TeamCarousel3D = dynamic(() => import('@/components/sections/TeamCarousel3
       <p className="text-gray-500">Đang tải team...</p>
     </div>
   ),
-  ssr: false, // Disable SSR vì component có client-side logic và animations
+  ssr: false,
 })
 
 const GlobalStats = dynamic(() => import('@/components/sections/GlobalStats'), {
@@ -30,15 +30,28 @@ const GlobalStats = dynamic(() => import('@/components/sections/GlobalStats'), {
   ),
 })
 
+const FeaturesCarousel = dynamic(() => import('@/components/sections/FeaturesCarousel'), {
+  loading: () => (
+    <div className="h-96 animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
+      <p className="text-gray-500">Đang tải tính năng...</p>
+    </div>
+  ),
+  ssr: false,
+})
+
 interface LandingPageClientProps {
   team: TeamMember[]
   valueSections: ValueSection[]
   features: Feature[]
   testimonials: Feedback[]
+  siteSettings: Record<string, string>
 }
 
-export default function LandingPageClient({ team, valueSections, features, testimonials: dbTestimonials }: LandingPageClientProps) {
+export default function LandingPageClient({ team, valueSections, features, testimonials: dbTestimonials, siteSettings }: LandingPageClientProps) {
   const [isMounted, setIsMounted] = useState(false)
+
+  // Helper function to get setting with fallback
+  const getSetting = (key: string, fallback: string = '') => siteSettings[key] || fallback
 
   // ✅ Fix hydration mismatch - only render particles on client
   useEffect(() => {
@@ -186,14 +199,42 @@ export default function LandingPageClient({ team, valueSections, features, testi
 
   // Map database feedback to testimonials format or use defaults
   const testimonials = dbTestimonials.length > 0
-    ? dbTestimonials.map((item) => ({
+    ? dbTestimonials.slice(0, 3).map((item) => ({
         name: item.name || 'Khách hàng',
-        role: item.email ? 'Khách hàng' : 'Người dùng',
+        role: item.position_title || (item.company_name ? `${item.company_name}` : 'Khách hàng'),
         content: item.message,
-        rating: 5, // Default 5 stars for approved feedback
-        avatar: item.name ? item.name.charAt(0).toUpperCase() : '👤'
+        rating: item.rating || 5,
+        avatar: item.testimonial_image_url || (item.name ? item.name.charAt(0).toUpperCase() : '👤')
       }))
     : defaultTestimonials
+
+  // Default value sections (Mission, Vision, Values)
+  const defaultValueSections = [
+    {
+      id: 'default-1',
+      title: 'Sứ Mệnh',
+      description: 'Mang lại giá trị cho khách hàng thông qua công nghệ AI tiên tiến, giúp khôi phục và lưu giữ những kỷ niệm quý giá của mọi gia đình.',
+      icon: 'Target',
+      gradient: 'from-pink-500 via-rose-500 to-red-500'
+    },
+    {
+      id: 'default-2',
+      title: 'Tầm Nhìn',
+      description: 'Trở thành nền tảng hàng đầu về khôi phục ảnh AI tại Việt Nam, mang đến trải nghiệm tốt nhất cho người dùng.',
+      icon: 'Eye',
+      gradient: 'from-yellow-500 via-orange-500 to-amber-500'
+    },
+    {
+      id: 'default-3',
+      title: 'Giá Trị Cốt Lõi',
+      description: 'Chất lượng, Sáng tạo, Tận tâm - Ba giá trị cốt lõi định hướng mọi hoạt động của chúng tôi.',
+      icon: 'Heart',
+      gradient: 'from-purple-500 via-pink-500 to-rose-500'
+    }
+  ]
+
+  // Use database value sections or defaults
+  const displayValueSections = valueSections.length > 0 ? valueSections : defaultValueSections
 
   // Animation variants
   const containerVariants = {
@@ -211,6 +252,18 @@ export default function LandingPageClient({ team, valueSections, features, testi
       y: 0,
       transition: { type: "spring", stiffness: 100, damping: 15 }
     }
+  }
+
+  // CTA Button with loading state
+  const router = useRouter()
+  const [loadingButton, setLoadingButton] = useState<string | null>(null)
+
+  const handleCTAClick = (buttonId: string, href: string) => {
+    setLoadingButton(buttonId)
+    // Navigate after showing loading
+    setTimeout(() => {
+      router.push(href)
+    }, 100)
   }
 
   return (
@@ -283,115 +336,55 @@ export default function LandingPageClient({ team, valueSections, features, testi
           </div>
 
           <h1 className="fade-in text-5xl md:text-7xl font-bold mb-6">
-            <span className="gradient-text-alt">Khôi Phục Ảnh Cũ</span>
+            <span className="gradient-text-alt">{getSetting('hero_title', 'Khôi Phục Ảnh Cũ')}</span>
             <br />
             <span className="text-text">Bằng Công Nghệ AI</span>
           </h1>
 
           <p className="fade-in-delay-1 text-xl md:text-2xl text-gray-700 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Biến những bức ảnh cũ, phai màu thành những kỷ niệm sống động.
-            <br />
-            <span className="gradient-text font-semibold">Ghép ảnh gia đình một cách tự nhiên và chuyên nghiệp.</span>
+            {getSetting('hero_subtitle', 'Biến những bức ảnh cũ, phai màu thành những kỷ niệm sống động. Ghép ảnh gia đình một cách tự nhiên và chuyên nghiệp.')}
           </p>
 
           <div className="fade-in-delay-3 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
-              <button className="btn-glass-primary text-xl px-10 py-5 transition-all hover:scale-105 hover:-translate-y-1 active:scale-95">
-                <span className="flex items-center gap-2">
-                  Bắt Đầu Ngay
-                  <Sparkles className="w-6 h-6" />
-                </span>
-              </button>
-            </Link>
-            <Link href="/about">
-              <button className="btn-glass-secondary text-xl px-10 py-5 transition-all hover:scale-105 hover:-translate-y-1 active:scale-95">
-                <span className="flex items-center gap-2">
-                  Tìm Hiểu Thêm
-                  <ArrowRight className="w-6 h-6" />
-                </span>
-              </button>
-            </Link>
+            <button 
+              onClick={() => handleCTAClick('hero-primary', getSetting('hero_cta_primary_link', '/register'))}
+              disabled={loadingButton === 'hero-primary'}
+              className="btn-glass-primary text-xl px-10 py-5 transition-all hover:scale-105 hover:-translate-y-1 active:scale-95 disabled:opacity-70"
+            >
+              <span className="flex items-center gap-2">
+                {loadingButton === 'hero-primary' ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    Đang chuyển...
+                  </>
+                ) : (
+                  <>
+                    {getSetting('hero_cta_primary_text', 'Bắt Đầu Ngay')}
+                    <Sparkles className="w-6 h-6" />
+                  </>
+                )}
+              </span>
+            </button>
+            <button 
+              onClick={() => handleCTAClick('hero-secondary', getSetting('hero_cta_secondary_link', '/about'))}
+              disabled={loadingButton === 'hero-secondary'}
+              className="btn-glass-secondary text-xl px-10 py-5 transition-all hover:scale-105 hover:-translate-y-1 active:scale-95 disabled:opacity-70"
+            >
+              <span className="flex items-center gap-2">
+                {loadingButton === 'hero-secondary' ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    Đang chuyển...
+                  </>
+                ) : (
+                  <>
+                    {getSetting('hero_cta_secondary_text', 'Tìm Hiểu Thêm')}
+                    <ArrowRight className="w-6 h-6" />
+                  </>
+                )}
+              </span>
+            </button>
           </div>
-        </div>
-      </section>
-
-      {/* Features Section - Enhanced with Framer Motion */}
-      <section className="py-20 px-4 relative">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-alt">Tính Năng Nổi Bật</span>
-            </h2>
-            <p className="text-gray-600 text-lg">
-              Công nghệ AI tiên tiến mang đến trải nghiệm tuyệt vời
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {displayFeatures.map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="glassmorphism-strong p-6 text-center relative overflow-hidden group cursor-pointer rounded-2xl"
-                whileHover={{ y: -12, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <motion.div
-                  className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0`}
-                  whileHover={{ opacity: 0.1 }}
-                  transition={{ duration: 0.3 }}
-                />
-
-                <motion.div
-                  className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-glow relative z-10`}
-                  whileHover={{ scale: 1.15, rotate: 8 }}
-                  transition={{ type: "spring", stiffness: 400 }}
-                >
-                  {feature.iconType === 'lucide' && feature.icon ? (
-                    <feature.icon className="w-7 h-7 text-white" />
-                  ) : feature.iconUrl ? (
-                    <div className="relative w-7 h-7">
-                      <Image
-                        src={feature.iconUrl}
-                        alt={feature.title}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <Sparkles className="w-7 h-7 text-white" />
-                  )}
-                </motion.div>
-
-                <h3 className="text-lg font-bold text-text mb-2 relative z-10">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-gray-700 leading-relaxed relative z-10">
-                  {feature.description}
-                </p>
-
-                <motion.div
-                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${feature.gradient}`}
-                  initial={{ scaleX: 0 }}
-                  whileHover={{ scaleX: 1 }}
-                  transition={{ duration: 0.3 }}
-                  style={{ originX: 0 }}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
       </section>
 
@@ -406,10 +399,10 @@ export default function LandingPageClient({ team, valueSections, features, testi
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-alt">Về Chúng Tôi</span>
+              <span className="gradient-text-alt">{getSetting('about_section_title', 'Về Chúng Tôi')}</span>
             </h2>
             <p className="text-gray-600 text-lg">
-              Sứ mệnh và tầm nhìn của chúng tôi
+              {getSetting('about_section_subtitle', 'Sứ mệnh và tầm nhìn của chúng tôi')}
             </p>
           </motion.div>
 
@@ -420,7 +413,7 @@ export default function LandingPageClient({ team, valueSections, features, testi
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {valueSections.map((item, index) => {
+            {displayValueSections.map((item, index) => {
               const Icon = getIconComponent(item.icon)
               return (
                 <motion.div
@@ -467,35 +460,12 @@ export default function LandingPageClient({ team, valueSections, features, testi
         </div>
       </section>
 
-      {/* Value Propositions Section - Leadership Style */}
-      <section className="py-20 px-4 bg-section-light relative">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-multi">Tại Sao Chọn Chúng Tôi?</span>
-            </h2>
-            <p className="text-gray-600 text-lg">
-              Cam kết mang đến dịch vụ tốt nhất
-            </p>
-          </motion.div>
-
-          <ValueCardRow
-            items={[
-              { icon: <Rocket className="w-full h-full" />, title: 'Tốc Độ', gradient: 'pink' },
-              { icon: <TrendingUp className="w-full h-full" />, title: 'Quy Mô', gradient: 'orange' },
-              { icon: <Globe className="w-full h-full" />, title: 'Toàn Cầu', gradient: 'pink' },
-              { icon: <Award className="w-full h-full" />, title: 'Chất Lượng', gradient: 'orange' },
-              { icon: <Shield className="w-full h-full" />, title: 'An Toàn', gradient: 'pink' },
-            ]}
-          />
-        </div>
-      </section>
+      {/* Features Section - Carousel */}
+      <FeaturesCarousel 
+        features={features}
+        title={getSetting('features_section_title', 'Tính Năng Nổi Bật')}
+        subtitle={getSetting('features_section_subtitle', 'Khám phá những công cụ mạnh mẽ giúp bạn khôi phục và cải thiện ảnh')}
+      />
 
       {/* Global Stats Section */}
       <GlobalStats
@@ -523,10 +493,10 @@ export default function LandingPageClient({ team, valueSections, features, testi
             className="text-center mb-8"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-alt">Đội Ngũ Của Chúng Tôi</span>
+              <span className="gradient-text-alt">{getSetting('team_section_title', 'Đội Ngũ Của Chúng Tôi')}</span>
             </h2>
             <p className="text-gray-600 text-lg">
-              Những người đồng hành cùng bạn
+              {getSetting('team_section_subtitle', 'Những người đồng hành cùng bạn')}
             </p>
           </motion.div>
 
@@ -541,7 +511,7 @@ export default function LandingPageClient({ team, valueSections, features, testi
       </section>
 
       {/* Testimonials Section - Enhanced */}
-      <section className="py-20 px-4 relative">
+      <section id="testimonials" className="py-20 px-4 relative">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -551,10 +521,10 @@ export default function LandingPageClient({ team, valueSections, features, testi
             className="text-center mb-12"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-alt">Khách Hàng Nói Gì</span>
+              <span className="gradient-text-alt">{getSetting('testimonials_section_title', 'Khách Hàng Nói Gì')}</span>
             </h2>
             <p className="text-gray-600 text-lg">
-              Phản hồi từ những người đã sử dụng dịch vụ
+              {getSetting('testimonials_section_subtitle', 'Phản hồi từ những người đã sử dụng dịch vụ')}
             </p>
           </motion.div>
 
@@ -621,6 +591,33 @@ export default function LandingPageClient({ team, valueSections, features, testi
               </motion.div>
             ))}
           </motion.div>
+
+          {/* View All Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="text-center mt-10"
+          >
+            <button
+              onClick={() => handleCTAClick('testimonial-cta', '/contact')}
+              disabled={loadingButton === 'testimonial-cta'}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-primary/20 text-primary font-semibold rounded-full hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-lg hover:shadow-xl group disabled:opacity-70"
+            >
+              {loadingButton === 'testimonial-cta' ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Đang chuyển...</span>
+                </>
+              ) : (
+                <>
+                  <span>Gửi phản hồi của bạn</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </motion.div>
         </div>
       </section>
 
@@ -632,22 +629,33 @@ export default function LandingPageClient({ team, valueSections, features, testi
 
             <div className="relative z-10">
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                <span className="gradient-text-alt">Sẵn Sàng Khôi Phục Ảnh?</span>
+                <span className="gradient-text-alt">{getSetting('final_cta_title', 'Sẵn Sàng Khôi Phục Ảnh?')}</span>
               </h2>
 
               <p className="text-xl text-gray-700 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Tham gia cùng <span className="font-bold gradient-text">hàng ngàn người dùng</span> đã tin tưởng chúng tôi để lưu giữ kỷ niệm quý giá.
+                {getSetting('final_cta_subtitle', 'Tham gia cùng hàng ngàn người dùng đã tin tưởng chúng tôi để lưu giữ kỷ niệm quý giá.')}
               </p>
 
-              <Link href="/register">
-                <button className="btn-glass-primary text-xl px-12 py-6 transition-all hover:scale-105 hover:-translate-y-1 active:scale-95">
-                  <span className="flex items-center gap-3">
-                    <Sparkles className="w-6 h-6" />
-                    Đăng Ký Miễn Phí Ngay
-                    <ArrowRight className="w-6 h-6" />
-                  </span>
-                </button>
-              </Link>
+              <button 
+                onClick={() => handleCTAClick('final-cta', getSetting('final_cta_button_link', '/register'))}
+                disabled={loadingButton === 'final-cta'}
+                className="btn-glass-primary text-xl px-12 py-6 transition-all hover:scale-105 hover:-translate-y-1 active:scale-95 disabled:opacity-70"
+              >
+                <span className="flex items-center gap-3">
+                  {loadingButton === 'final-cta' ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      Đang chuyển...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-6 h-6" />
+                      {getSetting('final_cta_button_text', 'Đăng Ký Miễn Phí Ngay')}
+                      <ArrowRight className="w-6 h-6" />
+                    </>
+                  )}
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -657,3 +665,4 @@ export default function LandingPageClient({ team, valueSections, features, testi
     </div>
   )
 }
+

@@ -1,7 +1,9 @@
 // ✅ React Query Hooks for User Requests
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { supabase, db, SystemPrompt } from '@/lib/supabase'
+import { authFetch } from '@/lib/auth-fetch'
 import toast from 'react-hot-toast'
+import { useEffect } from 'react'
 
 interface UserRequest {
   id: string
@@ -16,21 +18,75 @@ interface UserRequest {
   completed_at: string | null
 }
 
-// ✅ Fetch user requests with automatic caching
+// ✅ Fetch user requests with automatic caching AND realtime updates
 export function useUserRequests(userId: string | undefined) {
+  const queryClient = useQueryClient()
+
+  // ✅ Setup Realtime subscription for automatic updates
+  useEffect(() => {
+    if (!userId) return
+
+    const channel = supabase
+      .channel(`user_requests:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'user_requests',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('🔄 Realtime update:', payload)
+          
+          // Invalidate and refetch when changes occur
+          queryClient.invalidateQueries({ queryKey: ['user-requests', userId] })
+          
+          // Show toast notification for status changes
+          if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+            const oldStatus = (payload.old as any).status
+            const newStatus = (payload.new as any).status
+            
+            if (oldStatus !== newStatus) {
+              if (newStatus === 'completed') {
+                toast.success('🎉 Yêu cầu của bạn đã hoàn thành!')
+              } else if (newStatus === 'processing') {
+                toast.info('⚙️ Yêu cầu đang được xử lý...')
+              } else if (newStatus === 'rejected') {
+                toast.error('❌ Yêu cầu bị từ chối')
+              }
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Subscribed to user_requests realtime updates')
+        }
+      })
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('🔌 Unsubscribing from user_requests')
+      supabase.removeChannel(channel)
+    }
+  }, [userId, queryClient])
+
   return useQuery({
     queryKey: ['user-requests', userId],
     queryFn: async () => {
       if (!userId) return []
 
-      const { data, error } = await supabase
-        .from('user_requests')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      return data as UserRequest[]
+      // Use API endpoint instead of client supabase (bypasses RLS issues)
+      const response = await authFetch.get('/api/requests')
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to fetch requests')
+      }
+      
+      const data = await response.json()
+      return (data.requests || []) as UserRequest[]
     },
     enabled: !!userId, // Only run query if userId exists
     staleTime: 30 * 1000, // Cache for 30 seconds
@@ -282,3 +338,4 @@ export function useInfiniteUserRequests(userId: string | undefined, pageSize: nu
     staleTime: 30 * 1000,
   })
 }
+

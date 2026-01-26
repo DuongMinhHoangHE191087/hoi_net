@@ -230,6 +230,15 @@ export const dbServer = {
     return data as Feedback
   },
 
+  async deleteFeedback(id: string) {
+    const { error } = await supabaseAdmin
+      .from('feedback')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
   // Requests
   async getRequests(userId?: string, page = 1, limit = 20) {
     const offset = (page - 1) * limit
@@ -393,3 +402,4 @@ export const dbServer = {
     if (error) throw error
   }
 }
+

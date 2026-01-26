@@ -3,6 +3,7 @@
 import Head from 'next/head'
 import { useEffect } from 'react'
 import { BlogPost } from '@/lib/supabase'
+import { useSiteSetting } from '@/hooks/useSiteSettings'
 
 interface BlogSEOProps {
   post: BlogPost
@@ -10,6 +11,8 @@ interface BlogSEOProps {
 }
 
 export default function BlogSEO({ post, url }: BlogSEOProps) {
+  const brandName = useSiteSetting('brand_name')
+  
   // Extract plain text from HTML content for description
   const getMetaDescription = (html: string): string => {
     const tempDiv = document.createElement('div')
@@ -25,7 +28,7 @@ export default function BlogSEO({ post, url }: BlogSEOProps) {
 
   useEffect(() => {
     // Update document title
-    document.title = `${post.title} | Photo Restore Blog`
+    document.title = `${post.title} | ${brandName} Blog`
 
     // Add JSON-LD structured data
     const jsonLd = {
@@ -43,7 +46,7 @@ export default function BlogSEO({ post, url }: BlogSEOProps) {
       },
       publisher: {
         '@type': 'Organization',
-        name: 'Photo Restore',
+        name: brandName,
         logo: {
           '@type': 'ImageObject',
           url: `${siteUrl}/logo.png`,
@@ -97,7 +100,8 @@ export default function BlogSEO({ post, url }: BlogSEOProps) {
         script.parentNode.removeChild(script)
       }
     }
-  }, [post, description, fullUrl, imageUrl, siteUrl])
+  }, [post, description, fullUrl, imageUrl, siteUrl, brandName])
 
   return null
 }
+

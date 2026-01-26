@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   BarChart3, TrendingUp, Zap, AlertCircle, Users, FileText, MessageSquare,
   BookOpen, Clock, CheckCircle, XCircle, UserPlus, ShieldX, Activity,
@@ -10,7 +10,6 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
 import { authFetch } from '@/lib/auth-fetch'
-import { useAuth } from '@/contexts/AuthContext'
 
 interface AnalyticsData {
   overview: {
@@ -54,51 +53,31 @@ interface AnalyticsData {
 }
 
 export default function AdminAnalytics() {
-  const { user, loading: authLoading, isAdmin } = useAuth()
+  // ✅ OPTIMIZED: Trust AdminPage parent - no auth check needed
+  // If this component rendered, user IS authenticated and admin
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const didFetch = useRef(false)
 
   useEffect(() => {
-    console.log('[AdminAnalytics] useEffect triggered:', {
-      authLoading,
-      hasUser: !!user,
-      userEmail: user?.email,
-      isAdmin
-    })
-
-    if (authLoading) {
-      console.log('[AdminAnalytics] Still loading auth...')
+    // Prevent double-fetch on mount (React StrictMode)
+    if (didFetch.current && process.env.NODE_ENV === 'development') {
       return
     }
-
-    if (!user) {
-      console.log('[AdminAnalytics] No user, stopping fetch')
-      setLoading(false)
-      return
-    }
-
-    if (!isAdmin) {
-      console.log('[AdminAnalytics] User is not admin, stopping fetch')
-      setLoading(false)
-      toast.error('Bạn không có quyền admin')
-      return
-    }
-
-    console.log('[AdminAnalytics] All checks passed, fetching...')
+    didFetch.current = true
+    
+    console.log('[AdminAnalytics] Fetching analytics...')
     fetchAnalytics()
-  }, [authLoading, user, isAdmin])
+  }, [])
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (retryCount = 0) => {
     setLoading(true)
     try {
-      console.log('[AdminAnalytics] Starting fetch...')
-      console.log('[AdminAnalytics] User:', user?.email, 'isAdmin:', isAdmin)
-      console.log('[AdminAnalytics] Auth loading:', authLoading)
+      console.log('[AdminAnalytics] Starting fetch... (retry:', retryCount, ')')
 
       const res = await authFetch.get('/api/admin/analytics')
 
       console.log('[AdminAnalytics] Response status:', res.status)
-      console.log('[AdminAnalytics] Response headers:', Object.fromEntries(res.headers.entries()))
 
       if (!res.ok) {
         const errorText = await res.text()
@@ -109,6 +88,13 @@ export default function AdminAnalytics() {
           errorData = JSON.parse(errorText)
         } catch (e) {
           errorData = { message: errorText }
+        }
+
+        // Retry on 401 (auth might not be ready yet)
+        if (res.status === 401 && retryCount < 2) {
+          console.log('[AdminAnalytics] Auth error, retrying in 1s... (attempt', retryCount + 1, ')')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          return fetchAnalytics(retryCount + 1)
         }
 
         console.error('[AdminAnalytics] API Error:', errorData)
@@ -506,3 +492,4 @@ function StatsCard({ title, value, icon: Icon, color, subValue }: {
     </Card>
   )
 }
+

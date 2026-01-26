@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Search, Filter, CheckCircle, Clock, XCircle, Eye, Send, Loader2, RefreshCw, AlertCircle } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -8,8 +8,8 @@ import Input from '@/components/ui/Input'
 import Pagination from '@/components/ui/Pagination'
 import DeliveryModal from './DeliveryModal'
 import RequestDetailModal from './RequestDetailModal'
+import { SafeAvatar } from '@/components/ui/SafeImage'
 import { authFetch } from '@/lib/auth-fetch'
-import { useAuth } from '@/contexts/AuthContext'
 import { useDebounce } from '@/hooks/useDebounce'
 import toast from 'react-hot-toast'
 
@@ -33,7 +33,8 @@ interface UserRequest {
 }
 
 export default function AdminRequests() {
-  const { user, loading: authLoading, isAdmin } = useAuth()
+  // ✅ OPTIMIZED: Trust AdminPage parent - no auth check needed
+  // If this component rendered, user IS authenticated and admin
   const [filter, setFilter] = useState<'all' | 'pending' | 'processing' | 'completed' | 'rejected'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [requests, setRequests] = useState<UserRequest[]>([])
@@ -42,6 +43,7 @@ export default function AdminRequests() {
   const [selectedRequest, setSelectedRequest] = useState<UserRequest | null>(null)
   const [showDeliveryModal, setShowDeliveryModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  const [hasFetched, setHasFetched] = useState(false) // Track if initial fetch completed
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -50,12 +52,12 @@ export default function AdminRequests() {
   const ITEMS_PER_PAGE = 20
 
   // Fetch requests from API
-  const fetchRequests = async () => {
+  const fetchRequests = async (retryCount = 0) => {
     setLoading(true)
     setError(null)
 
     try {
-      console.log('[AdminRequests] Fetching requests with filter:', filter, 'page:', currentPage)
+      console.log('[AdminRequests] Fetching requests with filter:', filter, 'page:', currentPage, 'retry:', retryCount)
       const response = await authFetch.get(
         `/api/admin/requests?status=${filter}&page=${currentPage}&limit=${ITEMS_PER_PAGE}`
       )
@@ -65,6 +67,13 @@ export default function AdminRequests() {
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
         console.error('[AdminRequests] API Error:', errData)
+
+        // Retry on 401 (auth might not be ready yet)
+        if (response.status === 401 && retryCount < 2) {
+          console.log('[AdminRequests] Auth error, retrying in 1s... (attempt', retryCount + 1, ')')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          return fetchRequests(retryCount + 1)
+        }
 
         if (response.status === 401) {
           const errorMsg = 'Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản admin.'
@@ -78,20 +87,34 @@ export default function AdminRequests() {
         throw new Error(errData.error || 'Failed to fetch requests')
       }
 
-      const data = await response.json()
-      console.log('[AdminRequests] Requests loaded:', {
-        count: data.requests?.length || 0,
-        total: data.pagination?.total || 0,
-        page: data.pagination?.page || 1,
-        filter
+      const responseData = await response.json()
+      
+      // DEBUG: Log full response to see actual format
+      console.log('[AdminRequests] FULL RAW RESPONSE:', JSON.stringify(responseData, null, 2))
+      
+      // API returns: { success, data: { requests }, meta: { total, page, limit } }
+      const requests = responseData.data?.requests || responseData.requests || []
+      const total = responseData.meta?.total || responseData.pagination?.total || 0
+      const page = responseData.meta?.page || responseData.pagination?.page || 1
+      
+      console.log('[AdminRequests] Parsed data:', {
+        count: requests.length,
+        total: total,
+        page: page,
+        filter,
+        hasDataWrapper: !!responseData.data,
+        hasMeta: !!responseData.meta,
+        dataKeys: responseData.data ? Object.keys(responseData.data) : [],
+        topLevelKeys: Object.keys(responseData)
       })
 
-      setRequests(data.requests || [])
-      setTotalCount(data.pagination?.total || 0)
-      setTotalPages(Math.ceil((data.pagination?.total || 0) / ITEMS_PER_PAGE))
+      setRequests(requests)
+      setTotalCount(total)
+      setTotalPages(Math.ceil(total / ITEMS_PER_PAGE))
+      setHasFetched(true)
 
-      if (data.requests && data.requests.length > 0) {
-        toast.success(`Đã tải ${data.requests.length} yêu cầu (trang ${currentPage}/${Math.ceil((data.pagination?.total || 0) / ITEMS_PER_PAGE)})`)
+      if (requests.length > 0) {
+        toast.success(`Đã tải ${requests.length} yêu cầu (trang ${currentPage}/${Math.ceil(total / ITEMS_PER_PAGE)})`)
       }
     } catch (err: any) {
       console.error('[AdminRequests] Fetch error:', err)
@@ -101,37 +124,20 @@ export default function AdminRequests() {
     }
   }
 
+  // Use ref to prevent double-fetch in React StrictMode
+  const didFetch = useRef(false)
+
   useEffect(() => {
-    console.log('[AdminRequests] useEffect triggered:', {
-      authLoading,
-      hasUser: !!user,
-      userEmail: user?.email,
-      isAdmin,
-      filter
-    })
-
-    // Wait for auth to be ready before fetching
-    if (authLoading) {
-      console.log('[AdminRequests] Auth still loading...')
+    // Prevent double-fetch on mount (React StrictMode)
+    if (didFetch.current && process.env.NODE_ENV === 'development') {
+      console.log('[AdminRequests] Skipping duplicate fetch (StrictMode)')
       return
     }
-
-    if (!user) {
-      console.log('[AdminRequests] No user found')
-      setLoading(false)
-      return
-    }
-
-    if (!isAdmin) {
-      console.log('[AdminRequests] User is not admin')
-      setLoading(false)
-      setError('Bạn không có quyền truy cập trang này')
-      return
-    }
-
-    console.log('[AdminRequests] Fetching requests...')
+    didFetch.current = true
+    
+    console.log('[AdminRequests] Fetching requests with filter:', filter, 'page:', currentPage)
     fetchRequests()
-  }, [filter, currentPage, authLoading, user, isAdmin])
+  }, [filter, currentPage])
 
   // Reset to page 1 when filter changes
   useEffect(() => {
@@ -209,6 +215,73 @@ export default function AdminRequests() {
   const handleViewDetail = (request: UserRequest) => {
     setSelectedRequest(request)
     setShowDetailModal(true)
+  }
+
+  // Handle AI Processing
+  const handleAIProcess = async (request: UserRequest) => {
+    const confirmed = window.confirm(
+      `Bạn có muốn sử dụng AI để xử lý yêu cầu này?\n\nLoại: ${getTypeLabel(request.type)}\nSố ảnh: ${request.original_images?.length || 0}`
+    )
+    
+    if (!confirmed) return
+
+    const loadingToast = toast.loading('🤖 Đang xử lý với AI...')
+    
+    try {
+      const response = await authFetch.post(`/api/admin/requests/${request.id}/process-ai`, {
+        action: request.type === 'restore' ? 'restore' : 'enhance',
+        prompt: `Professional ${request.type} for high quality result`
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'AI processing failed')
+      }
+
+      toast.dismiss(loadingToast)
+
+      if (data.success) {
+        toast.success(`✅ AI đã xử lý thành công ${data.summary.successful}/${data.summary.total} ảnh!`)
+      } else {
+        toast.success(`⚠️ AI đã xử lý ${data.summary.successful}/${data.summary.total} ảnh. Cần hoàn tất thủ công.`, {
+          duration: 5000
+        })
+      }
+
+      // Refresh list
+      fetchRequests()
+
+    } catch (error: any) {
+      toast.dismiss(loadingToast)
+      toast.error(`AI xử lý thất bại: ${error.message}`)
+    }
+  }
+
+  // Handle Reject
+  const handleReject = async (requestId: string) => {
+    const reason = window.prompt('Nhập lý do từ chối (tùy chọn):')
+    
+    if (reason === null) return // User cancelled
+
+    try {
+      const response = await authFetch.patch(`/api/admin/requests/${requestId}/deliver`, {
+        status: 'rejected',
+        rejection_reason: reason || 'Không thể xử lý yêu cầu này',
+        notify_user: true
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to reject')
+      }
+
+      toast.success('Đã từ chối yêu cầu')
+      fetchRequests()
+
+    } catch (error: any) {
+      toast.error(`Lỗi: ${error.message}`)
+    }
   }
 
   return (
@@ -289,25 +362,17 @@ export default function AdminRequests() {
                   {/* Header */}
                   <div className="mb-4">
                     <div className="flex items-center gap-3 mb-2">
-                      {request.user_profiles?.avatar_url ? (
-                        <img
-                          src={request.user_profiles.avatar_url}
-                          alt=""
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-primary font-bold">
-                            {request.user_profiles?.full_name?.[0] || '?'}
-                          </span>
-                        </div>
-                      )}
+                      <SafeAvatar
+                        src={request.user_profiles?.avatar_url}
+                        alt={request.user_profiles?.full_name || 'User'}
+                        size="md"
+                      />
                       <div>
                         <h3 className="font-bold text-text">
                           {request.user_profiles?.full_name || 'Không có tên'}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {request.user_profiles?.phone || request.user_profiles?.facebook_url || 'Chưa có liên hệ'}
+                          {request.user_profiles?.phone || request.user_profiles?.facebook_url || 'Chưa có liên hệ'}}
                         </p>
                       </div>
                     </div>
@@ -348,31 +413,67 @@ export default function AdminRequests() {
                   {/* Actions */}
                   <div className="flex gap-2 flex-wrap">
                     {request.status === 'pending' && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => updateStatus(request.id, 'processing')}
-                      >
-                        <Loader2 className="w-4 h-4 mr-1" />
-                        Bắt đầu xử lý
-                      </Button>
+                      <>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => updateStatus(request.id, 'processing')}
+                        >
+                          <Loader2 className="w-4 h-4 mr-1" />
+                          Tiếp nhận
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleAIProcess(request)}
+                          className="bg-purple-50 text-purple-700 hover:bg-purple-100"
+                        >
+                          🤖 AI Xử lý
+                        </Button>
+                      </>
                     )}
 
                     {request.status === 'processing' && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleDelivery(request)}
-                      >
-                        <Send className="w-4 h-4 mr-1" />
-                        Gửi trả kết quả
-                      </Button>
+                      <>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleDelivery(request)}
+                        >
+                          <Send className="w-4 h-4 mr-1" />
+                          Gửi trả kết quả
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleAIProcess(request)}
+                          className="bg-purple-50 text-purple-700 hover:bg-purple-100"
+                        >
+                          🤖 AI Xử lý
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleReject(request.id)}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />
+                          Từ chối
+                        </Button>
+                      </>
                     )}
 
                     {request.status === 'completed' && request.restored_images && (
                       <div className="flex items-center gap-2 text-green-600">
                         <CheckCircle className="w-4 h-4" />
                         <span className="text-sm">Đã gửi {request.restored_images.length} ảnh</span>
+                      </div>
+                    )}
+
+                    {request.status === 'rejected' && (
+                      <div className="flex items-center gap-2 text-red-600">
+                        <XCircle className="w-4 h-4" />
+                        <span className="text-sm">Đã từ chối</span>
                       </div>
                     )}
 
@@ -436,3 +537,4 @@ export default function AdminRequests() {
     </div>
   )
 }
+

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Pause, Play, Twitter, Linkedin, Github, Mail } from 'lucide-react'
 import { TeamMember } from '@/lib/supabase'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { SafeAvatar } from '@/components/ui/SafeImage'
 
 interface TeamCarousel3DProps {
   team: TeamMember[]
@@ -330,6 +331,18 @@ export default function TeamCarousel3D({
                           alt={member.name}
                           className="w-full h-full object-cover object-top transition-transform duration-500"
                           style={{ transform: isCenter ? 'scale(1)' : 'scale(1.05)' }}
+                          onError={(e) => {
+                            // Fallback to initial if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const fallback = document.createElement('div');
+                              fallback.className = 'w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center';
+                              fallback.innerHTML = `<span class="font-bold text-white ${isCenter ? 'text-6xl md:text-8xl' : 'text-4xl md:text-6xl'}">${member.name.charAt(0)}</span>`;
+                              parent.appendChild(fallback);
+                            }
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
@@ -502,3 +515,4 @@ export default function TeamCarousel3D({
     </div>
   )
 }
+

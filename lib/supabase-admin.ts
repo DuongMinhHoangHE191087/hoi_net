@@ -8,9 +8,15 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
-// Validate environment variables
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  console.warn('⚠️ Supabase admin environment variables not configured. Add SUPABASE_SERVICE_ROLE_KEY to your .env.local file.')
+// Validate environment variables - log once at startup
+const isConfigured = !!(supabaseUrl && supabaseServiceRoleKey)
+if (!isConfigured) {
+  console.error('❌ [supabaseAdmin] CRITICAL: Supabase admin environment variables not configured!')
+  console.error('   - NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓ configured' : '✗ MISSING')
+  console.error('   - SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceRoleKey ? '✓ configured' : '✗ MISSING')
+  console.error('   Add SUPABASE_SERVICE_ROLE_KEY to your .env.local file.')
+} else {
+  console.log('✅ [supabaseAdmin] Configured with service role key')
 }
 
 // Singleton pattern for admin client
@@ -32,3 +38,4 @@ export function getSupabaseAdmin(): SupabaseClient {
 }
 
 export const supabaseAdmin = getSupabaseAdmin()
+

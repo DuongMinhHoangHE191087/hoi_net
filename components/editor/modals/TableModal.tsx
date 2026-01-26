@@ -198,3 +198,4 @@ export default function TableModal({ isOpen, onClose, onInsert }: TableModalProp
     </AnimatePresence>
   )
 }
+

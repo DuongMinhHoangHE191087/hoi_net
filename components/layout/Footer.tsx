@@ -14,8 +14,7 @@ export default function Footer() {
   const contactEmail = settings.contact_email || ''
   const contactPhone = settings.contact_phone || ''
   const contactFacebook = settings.contact_facebook || ''
-  const logoUrl = settings.site_logo_url || ''
-  const logoDarkUrl = settings.site_logo_dark_url || ''
+  const logoUrl = settings.brand_logo_url || ''
 
   // Default column order
   const columnOrder = ['products', 'company', 'legal']
@@ -37,6 +36,7 @@ export default function Footer() {
                       src={logoUrl}
                       alt={brandName}
                       fill
+                      sizes="32px"
                       className="object-contain"
                     />
                   </div>
@@ -186,3 +186,4 @@ function FallbackColumn({ columnName }: { columnName: string }) {
     </div>
   )
 }
+

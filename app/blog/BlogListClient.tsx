@@ -191,3 +191,4 @@ export default function BlogListClient({ posts }: BlogListClientProps) {
     </div>
   )
 }
+

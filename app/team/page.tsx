@@ -8,6 +8,7 @@ import Footer from '@/components/layout/Footer'
 import Card from '@/components/ui/Card'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { db, TeamMember } from '@/lib/supabase'
+import { SafeAvatar } from '@/components/ui/SafeImage'
 
 export default function TeamPage() {
   const [team, setTeam] = useState<TeamMember[]>([])
@@ -42,7 +43,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen gradient-mesh">
       <Navbar />
 
       <section className="pt-32 pb-20 px-4">
@@ -97,19 +98,14 @@ export default function TeamPage() {
                   }}
                 >
                   <Card hover className="text-center">
-                    {member.avatar ? (
-                      <img
-                        src={member.avatar}
+                    <div className="w-32 h-32 rounded-full mx-auto mb-4 overflow-hidden">
+                      <SafeAvatar
+                        src={member.avatar || member.avatar_url}
                         alt={member.name}
-                        className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
+                        size="xl"
+                        className="w-full h-full"
                       />
-                    ) : (
-                      <div className="w-32 h-32 rounded-full mx-auto mb-4 bg-primary/20 flex items-center justify-center">
-                        <span className="text-4xl font-bold text-primary">
-                          {member.name.charAt(0)}
-                        </span>
-                      </div>
-                    )}
+                    </div>
 
                     <h3 className="text-2xl font-bold text-text mb-2">
                       {member.name}
@@ -154,3 +150,4 @@ export default function TeamPage() {
     </div>
   )
 }
+

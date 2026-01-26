@@ -125,3 +125,4 @@ export default function ColorPicker({ type, currentColor, onSelect, onRemove }: 
     </div>
   )
 }
+

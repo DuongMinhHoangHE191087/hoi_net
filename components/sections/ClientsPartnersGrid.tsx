@@ -94,7 +94,7 @@ export default function ClientsPartnersGrid({
   }
 
   return (
-    <section className={`py-20 bg-section-light ${className}`}>
+    <section className={`py-20 relative ${className}`}>
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <motion.div
@@ -157,3 +157,4 @@ export const demoClientsPartners = {
     { name: 'Google Cloud', logo: '/logos/gcp.svg' },
   ],
 }
+

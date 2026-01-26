@@ -141,17 +141,25 @@ export default function GlobalStats({
   )
 
   return (
-    <section className={`py-20 bg-white relative overflow-hidden ${className}`}>
+    <section className={`py-20 relative overflow-hidden ${className}`}>
       <div className="max-w-7xl mx-auto px-4">
-        {/* Title */}
+        {/* Title with gradient animation */}
         <motion.h2
-          className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16"
+          className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {renderTitle()}
+          <motion.span 
+            className="inline-block gradient-text-alt"
+            initial={{ backgroundPosition: '0% 50%' }}
+            animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+            style={{ backgroundSize: '200% 200%' }}
+          >
+            {renderTitle()}
+          </motion.span>
         </motion.h2>
 
         {/* Stats with Globe */}
@@ -282,3 +290,4 @@ export const demoStats: StatItem[] = [
   { value: '33,000+', label: 'Photos Restored', color: 'green' },
   { value: '30+', label: 'Countries Served', color: 'orange' },
 ]
+

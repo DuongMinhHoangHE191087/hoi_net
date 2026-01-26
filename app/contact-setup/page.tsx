@@ -7,7 +7,7 @@ import {
   Phone, Facebook, ArrowRight, Loader2, CheckCircle,
   AlertCircle, Heart, Shield, MessageCircle
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { validatePhone, validateFacebookURL } from '@/lib/security'
 import toast from 'react-hot-toast'
@@ -141,14 +141,14 @@ function ContactSetupContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+      <div className="min-h-screen flex items-center justify-center gradient-mesh">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 py-12 px-4">
+    <div className="min-h-screen gradient-mesh py-12 px-4">
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <motion.div
@@ -347,7 +347,7 @@ function ContactSetupContent() {
 export default function ContactSetupPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+      <div className="min-h-screen flex items-center justify-center gradient-mesh">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     }>
@@ -355,3 +355,4 @@ export default function ContactSetupPage() {
     </Suspense>
   )
 }
+

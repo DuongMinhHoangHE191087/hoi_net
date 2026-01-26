@@ -252,3 +252,4 @@ import Image from 'next/image'
   loader={cloudinaryLoader}
 />
 */
+

@@ -1,10 +1,15 @@
 // ✅ Server Component - SEO Optimized
 import { db } from '@/lib/supabase'
+import { getBrandName } from '@/lib/site-metadata'
 import BlogListClient from './BlogListClient'
+import { Metadata } from 'next'
 
-export const metadata = {
-  title: 'Blog - Photo Restore AI',
-  description: 'Chia sẻ kiến thức, kinh nghiệm và cập nhật mới nhất về công nghệ khôi phục ảnh AI',
+export async function generateMetadata(): Promise<Metadata> {
+  const brandName = await getBrandName()
+  return {
+    title: `Blog - ${brandName}`,
+    description: 'Chia sẻ kiến thức, kinh nghiệm và cập nhật mới nhất về công nghệ khôi phục ảnh AI',
+  }
 }
 
 export default async function BlogPage() {
@@ -18,3 +23,4 @@ export default async function BlogPage() {
     return <BlogListClient posts={[]} />
   }
 }
+

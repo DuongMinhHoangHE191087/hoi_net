@@ -184,6 +184,50 @@ export function conflictResponse(
 }
 
 /**
+ * Return 409 Version Conflict (Optimistic Locking)
+ * Used when concurrent updates cause version mismatch
+ */
+export function versionConflictResponse(
+  expectedVersion: number,
+  currentVersion: number,
+  resource: string = 'Resource'
+): NextResponse<ApiResponse> {
+  return NextResponse.json(
+    {
+      success: false,
+      error: `${resource} was modified by another user. Please refresh and try again.`,
+      code: 'VERSION_CONFLICT',
+      meta: {
+        expectedVersion,
+        currentVersion,
+        retryable: true
+      }
+    },
+    { status: 409 }
+  )
+}
+
+/**
+ * Return 423 Locked
+ * Used when a resource is locked by another user
+ */
+export function lockedResponse(
+  resource: string = 'Resource'
+): NextResponse<ApiResponse> {
+  return NextResponse.json(
+    {
+      success: false,
+      error: `${resource} is currently being edited by another user. Please try again later.`,
+      code: 'RESOURCE_LOCKED',
+      meta: {
+        retryable: true
+      }
+    },
+    { status: 423 }
+  )
+}
+
+/**
  * Return 422 Validation Error
  */
 export function validationErrorResponse(
@@ -319,3 +363,4 @@ export function withNoCacheHeaders<T extends NextResponse>(response: T): T {
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private')
   return response
 }
+
