@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { MessageSquare, FileText, Users, Settings as SettingsIcon, BookOpen, Target, Info, Sparkles, Palette, BarChart3, UserCog, Globe, Link2, Menu, Shield, AlertTriangle, Image as ImageIcon, Layers, Type, Zap, Award, Loader2, Home } from 'lucide-react'
+import { MessageSquare, FileText, Users, Settings as SettingsIcon, BookOpen, Target, Info, Sparkles, Palette, BarChart3, UserCog, Globe, Link2, Menu, Shield, AlertTriangle, Image as ImageIcon, Layers, Type, Zap, Award, Loader2, Home, Heart } from 'lucide-react'
 import Sidebar from '@/components/layout/Sidebar'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -53,6 +53,7 @@ const ADMIN_TAB_LOADERS = {
   'siteContent': () => import('@/components/admin/AdminSiteContent'),
   'branding': () => import('@/components/admin/AdminSiteBranding'),
   'media': () => import('@/components/admin/AdminMediaLibrary'),
+  'donate': () => import('@/components/admin/AdminDonate'),
   'siteSettings': () => import('@/components/admin/AdminSiteSettings'),
   'footerLinks': () => import('@/components/admin/AdminFooterLinks'),
   'navLinks': () => import('@/components/admin/AdminNavigationLinks'),
@@ -211,6 +212,7 @@ export default function AdminPage() {
     { id: 'siteContent' as Tab, label: 'Nội Dung Web', icon: Type },
     { id: 'branding' as Tab, label: 'Site Branding', icon: ImageIcon },
     { id: 'media' as Tab, label: 'Media Library', icon: Layers },
+    { id: 'donate' as Tab, label: 'Donate', icon: Heart },
     { id: 'siteSettings' as Tab, label: 'Cài Đặt Trang', icon: Globe },
     { id: 'footerLinks' as Tab, label: 'Link Footer', icon: Link2 },
     { id: 'navLinks' as Tab, label: 'Menu Nav', icon: Menu },

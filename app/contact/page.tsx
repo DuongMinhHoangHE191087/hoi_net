@@ -1,16 +1,31 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Send, Mail, MessageSquare, Upload, X, Star, CheckCircle, Sparkles, AlertCircle } from 'lucide-react'
+import { Send, Mail, MessageSquare, Upload, X, Star, CheckCircle, Sparkles, AlertCircle, Clock, Shield, ArrowRight, User, LogIn } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { useSiteSettings, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
+import { useAuth } from '@/lib/auth'
 import toast, { Toaster } from 'react-hot-toast'
 
+// Cooldown key for localStorage
+const COOLDOWN_KEY = 'contact_last_submit'
+const COOLDOWN_DURATION = 60 * 1000 // 1 phút
+
+// Rate limits
+const RATE_LIMITS = {
+  anonymous: { max: 1, label: 'Khách' },
+  authenticated: { max: 3, label: 'Thành viên' }
+}
+
 export default function ContactPage() {
+  const router = useRouter()
+  const { user, isLoading: authLoading } = useAuth()
   const { data: settings = DEFAULT_SITE_SETTINGS } = useSiteSettings()
   const contactEmail = settings.contact_email || DEFAULT_SITE_SETTINGS.contact_email
 
@@ -21,10 +36,70 @@ export default function ContactPage() {
     message: '',
     rating: 0
   })
+  // Honeypot field - hidden from users, bots will fill it
+  const [honeypot, setHoneypot] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [cooldownRemaining, setCooldownRemaining] = useState(0)
+  const [redirectCountdown, setRedirectCountdown] = useState(5)
+  const [remainingRequests, setRemainingRequests] = useState<number | null>(null)
+
+  // Pre-fill user info if logged in
+  useEffect(() => {
+    if (user && !formData.name && !formData.email) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        email: user.email || ''
+      }))
+    }
+  }, [user])
+
+  // Check cooldown on mount
+  useEffect(() => {
+    const lastSubmit = localStorage.getItem(COOLDOWN_KEY)
+    if (lastSubmit) {
+      const remaining = COOLDOWN_DURATION - (Date.now() - parseInt(lastSubmit))
+      if (remaining > 0) {
+        setCooldownRemaining(Math.ceil(remaining / 1000))
+      }
+    }
+  }, [])
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldownRemaining > 0) {
+      const timer = setInterval(() => {
+        setCooldownRemaining(prev => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [cooldownRemaining])
+
+  // Redirect countdown after successful submission
+  useEffect(() => {
+    if (submitted && redirectCountdown > 0) {
+      const timer = setInterval(() => {
+        setRedirectCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            router.push('/requests')
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [submitted, redirectCountdown, router])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -41,6 +116,13 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check client-side cooldown
+    if (cooldownRemaining > 0) {
+      toast.error(`Vui lòng đợi ${cooldownRemaining} giây trước khi gửi tiếp`)
+      return
+    }
+
     setLoading(true)
     setUploadProgress(0)
     setEmailError(null)
@@ -91,13 +173,25 @@ export default function ContactPage() {
           email: formData.email,
           message: fullMessage,
           rating: formData.rating || undefined,
-          phone: formData.phone
+          phone: formData.phone,
+          honeypot // Send honeypot for server-side spam detection
         })
       })
 
       const result = await res.json()
 
       if (!res.ok) {
+        // Handle rate limiting
+        if (res.status === 429) {
+          const retryAfter = result.retryAfter || 60
+          setCooldownRemaining(retryAfter)
+          toast.error(result.error || `Vui lòng đợi ${retryAfter} giây`, { 
+            icon: '⏳',
+            duration: 5000 
+          })
+          setLoading(false)
+          return
+        }
         // Check if it's an email validation error
         if (result.error && result.error.includes('Email') || result.error?.includes('.')) {
           setEmailError(result.error)
@@ -109,10 +203,23 @@ export default function ContactPage() {
         return
       }
 
+      // Update remaining requests from API response
+      if (result.remaining !== undefined) {
+        setRemainingRequests(result.remaining)
+      }
+
+      // Save cooldown timestamp
+      localStorage.setItem(COOLDOWN_KEY, String(Date.now()))
+      setCooldownRemaining(Math.ceil(COOLDOWN_DURATION / 1000))
+      
       setSubmitted(true)
-      setFormData({ name: '', email: '', phone: '', message: '', rating: 0 })
+      setFormData({ name: user?.user_metadata?.full_name || '', email: user?.email || '', phone: '', message: '', rating: 0 })
       setFiles([])
-      toast.success('Phản hồi đã được gửi thành công!')
+      setHoneypot('')
+      toast.success(result.message || 'Yêu cầu đã được gửi!', {
+        icon: '🎉',
+        duration: 4000
+      })
     } catch (error) {
       console.error('Error submitting feedback:', error)
       toast.error('Có lỗi xảy ra, vui lòng thử lại')
@@ -168,9 +275,55 @@ export default function ContactPage() {
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
               <span className="gradient-text-alt">Liên Hệ Với Chúng Tôi</span>
             </h1>
-            <p className="text-xl text-gray-700">
+            <p className="text-xl text-gray-700 mb-6">
               Gửi phản hồi, câu hỏi hoặc yêu cầu phục hồi ảnh. Chúng tôi sẽ phản hồi sớm nhất! ✨
             </p>
+
+            {/* User Status & Rate Limit Info */}
+            <div className="flex justify-center">
+              {authLoading ? (
+                <div className="glassmorphism-light px-4 py-2 rounded-full animate-pulse">
+                  <span className="text-gray-500">Đang kiểm tra...</span>
+                </div>
+              ) : user ? (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="glassmorphism-light px-6 py-3 rounded-full flex items-center gap-3 border border-green-200"
+                >
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-green-700">Thành viên</p>
+                    <p className="text-xs text-gray-600">3 yêu cầu/ngày</p>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex flex-col sm:flex-row items-center gap-3"
+                >
+                  <div className="glassmorphism-light px-6 py-3 rounded-full flex items-center gap-3 border border-amber-200">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-amber-700">Khách</p>
+                      <p className="text-xs text-gray-600">1 yêu cầu/ngày</p>
+                    </div>
+                  </div>
+                  <Link 
+                    href="/login?redirect=/contact"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Đăng nhập để gửi thêm
+                  </Link>
+                </motion.div>
+              )}
+            </div>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -229,18 +382,67 @@ export default function ContactPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 className="text-center py-12"
               >
-                <CheckCircle className="w-20 h-20 text-success mx-auto mb-6" />
-                <h2 className="text-3xl font-bold text-text mb-4">Cảm ơn bạn!</h2>
-                <p className="text-xl text-gray-700 mb-8">
-                  Chúng tôi đã nhận được yêu cầu của bạn và sẽ liên hệ sớm nhất.
+                <div className="relative inline-block mb-6">
+                  <CheckCircle className="w-20 h-20 text-success mx-auto" />
+                  <motion.div
+                    className="absolute -top-2 -right-2 bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 1 }}
+                  >
+                    {redirectCountdown}
+                  </motion.div>
+                </div>
+                
+                <h2 className="text-3xl font-bold text-text mb-4">Yêu cầu đã được gửi!</h2>
+                
+                <div className="glassmorphism-light p-6 rounded-2xl max-w-md mx-auto mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Clock className="w-6 h-6 text-primary" />
+                    <p className="text-lg font-medium text-gray-800">Đang đợi Admin xử lý</p>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Yêu cầu của bạn đã được tiếp nhận. Admin sẽ xem xét và phản hồi trong thời gian sớm nhất (thường trong 24 giờ).
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Shield className="w-4 h-4" />
+                    <span>Bạn sẽ nhận email thông báo khi có kết quả</span>
+                  </div>
+                </div>
+
+                <p className="text-gray-600 mb-6">
+                  Đang chuyển đến trang theo dõi yêu cầu trong <span className="font-bold text-primary">{redirectCountdown}</span> giây...
                 </p>
-                <Button
-                  variant="primary"
-                  onClick={() => setSubmitted(false)}
-                  className="btn-glass-primary"
-                >
-                  Gửi Yêu Cầu Khác
-                </Button>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button
+                    variant="primary"
+                    onClick={() => router.push('/requests')}
+                    className="btn-glass-primary"
+                  >
+                    <span className="flex items-center gap-2">
+                      Xem Yêu Cầu Của Tôi
+                      <ArrowRight className="w-5 h-5" />
+                    </span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setSubmitted(false)
+                      setRedirectCountdown(5)
+                    }}
+                    className="btn-glass"
+                    disabled={cooldownRemaining > 0}
+                  >
+                    {cooldownRemaining > 0 ? (
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Đợi {cooldownRemaining}s
+                      </span>
+                    ) : (
+                      'Gửi Yêu Cầu Khác'
+                    )}
+                  </Button>
+                </div>
               </motion.div>
             ) : (
               <>
@@ -249,6 +451,39 @@ export default function ContactPage() {
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Honeypot field - hidden from users, bots will fill it */}
+                  <div className="hidden" aria-hidden="true">
+                    <label htmlFor="website">Website</label>
+                    <input
+                      type="text"
+                      id="website"
+                      name="website"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  {/* Cooldown warning */}
+                  {cooldownRemaining > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3"
+                    >
+                      <Clock className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">
+                          Chờ {cooldownRemaining} giây để gửi yêu cầu tiếp
+                        </p>
+                        <p className="text-xs text-amber-600">
+                          Để đảm bảo chất lượng dịch vụ, mỗi lần gửi cách nhau 2 phút
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-800 mb-2">
@@ -421,15 +656,20 @@ export default function ContactPage() {
 
                   <motion.button
                     type="submit"
-                    disabled={loading}
-                    className="btn-glass-primary w-full"
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
+                    disabled={loading || cooldownRemaining > 0}
+                    className={`btn-glass-primary w-full ${cooldownRemaining > 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    whileHover={cooldownRemaining > 0 ? {} : { scale: 1.02, y: -2 }}
+                    whileTap={cooldownRemaining > 0 ? {} : { scale: 0.98 }}
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
                         <div className="animate-spin rounded-full h-5 w-5 border-3 border-white border-t-transparent" />
                         Đang gửi...
+                      </span>
+                    ) : cooldownRemaining > 0 ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Clock className="w-5 h-5" />
+                        Đợi {cooldownRemaining} giây
                       </span>
                     ) : (
                       <span className="flex items-center justify-center gap-2">
@@ -439,6 +679,12 @@ export default function ContactPage() {
                       </span>
                     )}
                   </motion.button>
+
+                  {/* Security notice */}
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <Shield className="w-4 h-4" />
+                    <span>Yêu cầu được bảo vệ chống spam</span>
+                  </div>
                 </form>
               </>
             )}
