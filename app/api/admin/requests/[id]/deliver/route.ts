@@ -391,17 +391,3 @@ export async function DELETE(
     return internalErrorResponse(error)
   }
 }
-
-    return withTiming(
-      successResponse({
-        message: 'Cập nhật thành công',
-        request: data
-      }),
-      startTime
-    )
-
-  } catch (error: any) {
-    log.error('Unexpected error updating request', { error })
-    return internalErrorResponse(error)
-  }
-}
