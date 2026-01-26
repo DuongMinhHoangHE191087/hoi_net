@@ -2,6 +2,9 @@
 import { getAboutSections, getTeamMembers } from '@/lib/supabase/server-utils'
 import AboutPageClient from './AboutPageClient'
 
+// Force dynamic rendering - required because we use cookies() for Supabase
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Về Chúng Tôi - Khôi Phục Ảnh AI | Bảo Tồn Ký Ức Gia Đình',
   description: 'Khám phá sứ mệnh, tầm nhìn và giá trị cốt lõi của chúng tôi trong việc sử dụng công nghệ AI tiên tiến để khôi phục ảnh cũ, bảo tồn ký ức và kết nối các thế hệ. Đội ngũ chuyên gia tận tâm với từng bức ảnh.',

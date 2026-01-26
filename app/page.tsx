@@ -10,6 +10,9 @@ import { getBrandName } from '@/lib/site-metadata'
 import LandingPageClient from './LandingPageClient'
 import { Metadata } from 'next'
 
+// Force dynamic rendering - required because we use cookies() for Supabase auth
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   const brandName = await getBrandName()
   return {
