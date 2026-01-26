@@ -169,6 +169,71 @@ BEGIN
   VALUES ('donate_message', 'Cảm ơn bạn đã ủng hộ Hồi Nét!', 'Thông điệp cảm ơn')
   ON CONFLICT (key) DO NOTHING;
   
+  -- Hero Section
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_hero_title', 'Ủng Hộ Hồi Nét', 'Tiêu đề trang donate')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_hero_subtitle', 'Dự án phi lợi nhuận giúp khôi phục ảnh cũ miễn phí cho cộng đồng. Mỗi đóng góp của bạn giúp chúng tôi duy trì và phát triển dịch vụ.', 'Mô tả trang donate')
+  ON CONFLICT (key) DO NOTHING;
+  
+  -- Stats
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_stats_photos', '1000+', 'Số ảnh đã phục hồi')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_stats_users', '500+', 'Số người dùng')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_stats_free', '100%', 'Phần trăm miễn phí')
+  ON CONFLICT (key) DO NOTHING;
+  
+  -- Why Donate Section
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_why_title', 'Đóng góp của bạn giúp chúng tôi', 'Tiêu đề phần Why Donate')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_why_1_title', 'Duy trì server', 'Why 1 title')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_why_1_desc', 'Chi phí hosting, domain và các dịch vụ cloud để website luôn hoạt động', 'Why 1 description')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_why_2_title', 'Nâng cấp AI', 'Why 2 title')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_why_2_desc', 'Chi phí API AI để cải thiện chất lượng khôi phục ảnh', 'Why 2 description')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_why_3_title', 'Phục vụ cộng đồng', 'Why 3 title')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_why_3_desc', 'Giữ dịch vụ miễn phí cho mọi người, đặc biệt các gia đình có ảnh cũ', 'Why 3 description')
+  ON CONFLICT (key) DO NOTHING;
+  
+  -- Thank You Section
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_thanks_title', 'Cảm ơn bạn!', 'Tiêu đề phần cảm ơn')
+  ON CONFLICT (key) DO NOTHING;
+  
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_thanks_desc', 'Mỗi đóng góp dù nhỏ đều giúp chúng tôi tiếp tục sứ mệnh bảo tồn ký ức cho cộng đồng. Hồi Nét cam kết sử dụng 100% tiền ủng hộ cho việc phát triển dịch vụ.', 'Mô tả phần cảm ơn')
+  ON CONFLICT (key) DO NOTHING;
+  
+  -- Transfer Content
+  INSERT INTO site_settings (key, value, description) 
+  VALUES ('donate_transfer_content', 'Ung ho Hoi Net', 'Nội dung chuyển khoản')
+  ON CONFLICT (key) DO NOTHING;
+  
   RAISE NOTICE 'Donate settings inserted successfully';
 EXCEPTION WHEN OTHERS THEN
   RAISE NOTICE 'Error inserting donate settings: %', SQLERRM;
@@ -223,6 +288,15 @@ CREATE INDEX IF NOT EXISTS idx_blog_posts_moderation ON blog_posts(moderation_st
 -- ============================================
 -- 6. RLS POLICIES FOR ROLES
 -- ============================================
+
+-- Drop existing functions first to avoid return type conflict
+DO $$
+BEGIN
+  DROP FUNCTION IF EXISTS get_user_role(UUID);
+  DROP FUNCTION IF EXISTS has_permission(UUID, VARCHAR);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Function drop error (can be ignored): %', SQLERRM;
+END $$;
 
 -- Function to check user role
 CREATE OR REPLACE FUNCTION get_user_role(user_id UUID)
