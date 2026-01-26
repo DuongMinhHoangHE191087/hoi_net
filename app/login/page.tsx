@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, Sparkles, Home, LogIn, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mail, Lock, Eye, EyeOff, Sparkles, Home, LogIn, Loader2, AlertCircle, XCircle, Info, RefreshCw } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { loginSchema } from '@/lib/validation'
+import { 
+  validateEmailComprehensive, 
+  loginFormSchema,
+} from '@/lib/auth/validation'
 import { sanitizeInput } from '@/lib/security'
 import toast, { Toaster } from 'react-hot-toast'
 
@@ -42,6 +45,7 @@ function LoginContent() {
   const [loginMethod, setLoginMethod] = useState<'email' | 'google'>('email')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -51,13 +55,30 @@ function LoginContent() {
   // Get redirect URL from search params
   const redirectUrl = searchParams.get('redirect') || '/dashboard'
   const errorParam = searchParams.get('error')
+  const messageParam = searchParams.get('message')
 
-  // Show error from URL params
+  // Show error/success from URL params
   useEffect(() => {
     if (errorParam) {
-      toast.error(decodeURIComponent(errorParam))
+      toast.error(decodeURIComponent(errorParam), { duration: 5000 })
     }
-  }, [errorParam])
+    if (messageParam === 'email-confirmed') {
+      toast.success('Email đã được xác nhận thành công! Bạn có thể đăng nhập ngay.', {
+        duration: 5000,
+        icon: '✅'
+      })
+    } else if (messageParam === 'check-email') {
+      toast.success('Vui lòng kiểm tra email để xác nhận tài khoản.', {
+        duration: 6000,
+        icon: '📧'
+      })
+    } else if (messageParam === 'password-reset') {
+      toast.success('Mật khẩu đã được đặt lại. Hãy đăng nhập với mật khẩu mới.', {
+        duration: 5000,
+        icon: '🔐'
+      })
+    }
+  }, [errorParam, messageParam])
 
   // Redirect if already logged in (don't block initial render)
   useEffect(() => {
@@ -65,6 +86,46 @@ function LoginContent() {
       router.push(isAdmin ? '/admin' : redirectUrl)
     }
   }, [authLoading, user, isAdmin, router, redirectUrl])
+
+  // Real-time email validation
+  const handleEmailChange = useCallback((email: string) => {
+    setFormData(prev => ({ ...prev, email }))
+    setEmailSuggestion(null)
+    
+    if (email.length > 0) {
+      const validation = validateEmailComprehensive(email)
+      if (!validation.valid && email.includes('@')) {
+        if (validation.suggestion) {
+          setEmailSuggestion(validation.suggestion)
+        }
+        if (email.length > 5) {
+          setErrors(prev => ({ ...prev, email: validation.error || '' }))
+        }
+      } else {
+        setErrors(prev => {
+          const { email: _, ...rest } = prev
+          return rest
+        })
+      }
+    } else {
+      setErrors(prev => {
+        const { email: _, ...rest } = prev
+        return rest
+      })
+    }
+  }, [])
+
+  // Accept email suggestion
+  const acceptEmailSuggestion = () => {
+    if (emailSuggestion) {
+      setFormData(prev => ({ ...prev, email: emailSuggestion }))
+      setEmailSuggestion(null)
+      setErrors(prev => {
+        const { email: _, ...rest } = prev
+        return rest
+      })
+    }
+  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,12 +135,24 @@ function LoginContent() {
     try {
       // Sanitize inputs
       const sanitized = {
-        email: sanitizeInput(formData.email, 254).toLowerCase(),
-        password: formData.password, // Don't sanitize password
+        email: sanitizeInput(formData.email, 254).toLowerCase().trim(),
+        password: formData.password,
       }
 
-      // Validate
-      const result = loginSchema.safeParse(sanitized)
+      // Comprehensive email validation
+      const emailValidation = validateEmailComprehensive(sanitized.email)
+      if (!emailValidation.valid) {
+        setErrors({ email: emailValidation.error || 'Email không hợp lệ' })
+        if (emailValidation.suggestion) {
+          setEmailSuggestion(emailValidation.suggestion)
+        }
+        toast.error(emailValidation.error || 'Email không hợp lệ', { icon: '⚠️' })
+        setLoading(false)
+        return
+      }
+
+      // Validate with Zod
+      const result = loginFormSchema.safeParse(sanitized)
 
       if (!result.success) {
         const fieldErrors: Record<string, string> = {}
@@ -102,22 +175,54 @@ function LoginContent() {
       const signInResult = await signInWithEmail(result.data.email, result.data.password)
 
       if (!signInResult.success) {
-        // Handle specific error messages
-        let errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.'
+        // Handle specific error messages with better UX
         const errorString = signInResult.error?.toString() || ''
 
         if (errorString.includes('Invalid login credentials')) {
-          errorMessage = 'Email hoặc mật khẩu không đúng'
+          setErrors({ password: 'Email hoặc mật khẩu không đúng' })
+          toast.error('Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.', {
+            duration: 4000,
+            icon: '🔒',
+          })
         } else if (errorString.includes('Email not confirmed')) {
-          errorMessage = 'Vui lòng xác nhận email trước khi đăng nhập'
-        } else if (signInResult.error) {
-          errorMessage = errorString
+          // Show resend confirmation option
+          toast.custom((t) => (
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-md w-full bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg rounded-2xl p-4 ring-1 ring-amber-200"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-6 w-6 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-900">
+                    Email chưa được xác nhận
+                  </p>
+                  <p className="mt-1 text-sm text-amber-700">
+                    Vui lòng kiểm tra hộp thư để xác nhận email trước khi đăng nhập.
+                  </p>
+                  <Link 
+                    href={`/auth/resend-confirmation?email=${encodeURIComponent(result.data.email)}`}
+                    className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-amber-800 hover:text-amber-900"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Gửi lại email xác nhận
+                  </Link>
+                </div>
+                <button onClick={() => toast.dismiss(t.id)} className="text-amber-400 hover:text-amber-600">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+            </motion.div>
+          ), { duration: 10000 })
+        } else {
+          toast.error(errorString || 'Đăng nhập thất bại. Vui lòng thử lại.', {
+            duration: 4000,
+            icon: '❌',
+          })
         }
-
-        toast.error(errorMessage, {
-          duration: 4000,
-          icon: '❌',
-        })
         setLoading(false)
         return
       }
@@ -281,14 +386,47 @@ function LoginContent() {
                     type="email"
                     placeholder="your@email.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`input-glass pl-12 ${errors.email ? 'border-red-500' : ''}`}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    className={`input-glass pl-12 ${errors.email ? 'border-2 border-red-500' : ''}`}
                     required
                     disabled={loading}
                   />
                 </div>
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                
+                {/* Email suggestion */}
+                <AnimatePresence>
+                  {emailSuggestion && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg"
+                    >
+                      <p className="text-sm text-blue-700 flex items-center gap-2">
+                        <Info className="w-4 h-4" />
+                        Bạn có phải muốn nhập{' '}
+                        <button
+                          type="button"
+                          onClick={acceptEmailSuggestion}
+                          className="font-semibold underline hover:text-blue-900"
+                        >
+                          {emailSuggestion}
+                        </button>
+                        ?
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
+                {errors.email && !emailSuggestion && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-1 text-sm text-red-600 flex items-center gap-1"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    {errors.email}
+                  </motion.p>
                 )}
               </div>
 
@@ -304,7 +442,7 @@ function LoginContent() {
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className={`input-glass pl-12 pr-12 ${errors.password ? 'border-red-500' : ''}`}
+                    className={`input-glass pl-12 pr-12 ${errors.password ? 'border-2 border-red-500' : ''}`}
                     required
                     disabled={loading}
                   />

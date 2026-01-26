@@ -1,19 +1,22 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { Suspense, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, ArrowLeft, CheckCircle, Loader2, AlertCircle, Info, Send } from 'lucide-react'
+import { Mail, ArrowLeft, RefreshCw, Loader2, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { validateEmailComprehensive } from '@/lib/auth/validation'
 import { sanitizeInput } from '@/lib/security'
 import toast, { Toaster } from 'react-hot-toast'
-import { authLogger } from '@/lib/auth-logger'
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
+function ResendConfirmationContent() {
+  const searchParams = useSearchParams()
+  const initialEmail = searchParams.get('email') || ''
+  
+  const [email, setEmail] = useState(initialEmail)
   const [loading, setLoading] = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null)
   const [cooldown, setCooldown] = useState(0)
@@ -78,47 +81,41 @@ export default function ForgotPasswordPage() {
     setLoading(true)
 
     try {
-      // Send reset email via Supabase
       const supabase = createClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
-        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: sanitizedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
+        }
       })
 
       if (error) {
-        console.error('[Forgot Password] Error:', error)
-        authLogger.passwordResetRequest(sanitizedEmail, { error: error.message })
+        console.error('Resend error:', error)
         
-        // Handle specific errors
         if (error.message.includes('rate limit')) {
-          toast.error('Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi một lúc rồi thử lại.')
+          toast.error('Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi một lúc.')
           startCooldown()
-        } else if (error.message.includes('not found')) {
-          // Don't reveal if email exists or not for security
-          // Still show success message
-          setEmailSent(true)
-          startCooldown()
+        } else if (error.message.includes('already confirmed')) {
+          toast.success('Email này đã được xác nhận. Bạn có thể đăng nhập ngay!')
+          setSuccess(true)
         } else {
           toast.error('Không thể gửi email. Vui lòng thử lại sau.')
         }
-        setLoading(false)
-        return
+      } else {
+        toast.success('Email xác nhận đã được gửi!')
+        setSuccess(true)
+        startCooldown()
       }
-
-      // Success
-      authLogger.passwordResetRequest(sanitizedEmail, { success: true })
-      setEmailSent(true)
-      startCooldown()
-      toast.success('Email khôi phục mật khẩu đã được gửi!')
-    } catch (error: any) {
-      console.error('[Forgot Password] Error:', error)
+    } catch (err) {
+      console.error('Resend error:', err)
       toast.error('Đã xảy ra lỗi. Vui lòng thử lại.')
     } finally {
       setLoading(false)
     }
   }
 
-  // Email sent success screen
-  if (emailSent) {
+  if (success) {
     return (
       <div className="min-h-screen gradient-mesh flex items-center justify-center px-4 py-12">
         <Toaster position="top-center" />
@@ -144,46 +141,24 @@ export default function ForgotPasswordPage() {
             </h1>
 
             <p className="text-gray-600 mb-6">
-              Nếu email <strong>{email}</strong> tồn tại trong hệ thống, bạn sẽ nhận được link khôi phục mật khẩu.
+              Chúng tôi đã gửi email xác nhận đến <strong>{email}</strong>.
+              Vui lòng kiểm tra hộp thư và thư mục spam.
             </p>
 
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-6">
-              <div className="flex items-start gap-2">
-                <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-800 text-left">
-                  <p className="font-semibold mb-1">Các bước tiếp theo:</p>
-                  <ol className="text-xs space-y-1 list-decimal list-inside">
-                    <li>Kiểm tra hộp thư email của bạn</li>
-                    <li>Kiểm tra cả thư mục <strong>Spam/Junk</strong></li>
-                    <li>Click vào link trong email</li>
-                    <li>Đặt mật khẩu mới</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-3">
-              {cooldown > 0 ? (
+              {cooldown > 0 && (
                 <p className="text-sm text-gray-500">
-                  Không nhận được email? Có thể gửi lại sau <strong>{cooldown}s</strong>
+                  Có thể gửi lại sau <strong>{cooldown}s</strong>
                 </p>
-              ) : (
-                <button
-                  onClick={() => setEmailSent(false)}
-                  className="text-primary hover:underline font-semibold text-sm"
-                >
-                  Không nhận được email? Gửi lại
-                </button>
               )}
 
               <Link href="/login" className="block">
                 <motion.button
-                  className="w-full px-6 py-3 glassmorphism-light rounded-xl font-semibold text-gray-700 flex items-center justify-center gap-2 hover:bg-white/70 transition-all"
+                  className="w-full btn-glass-primary py-3"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <ArrowLeft className="w-5 h-5" />
-                  Quay về Đăng Nhập
+                  Đi đến Đăng Nhập
                 </motion.button>
               </Link>
             </div>
@@ -211,18 +186,6 @@ export default function ForgotPasswordPage() {
             ease: "easeInOut"
           }}
         />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.5, 0.3, 0.5],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
       </div>
 
       <motion.div
@@ -240,14 +203,14 @@ export default function ForgotPasswordPage() {
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
-              <Mail className="w-8 h-8 text-white" />
+              <RefreshCw className="w-8 h-8 text-white" />
             </motion.div>
 
-            <h1 className="text-3xl md:text-4xl font-bold text-text mb-3">
-              Quên Mật Khẩu?
+            <h1 className="text-3xl font-bold text-text mb-3">
+              Gửi Lại Email Xác Nhận
             </h1>
             <p className="text-gray-600">
-              Nhập email của bạn để nhận link khôi phục mật khẩu
+              Nhập email để nhận lại link xác nhận tài khoản
             </p>
           </div>
 
@@ -325,8 +288,8 @@ export default function ForgotPasswordPage() {
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <Send className="w-5 h-5" />
-                  Gửi Email Khôi Phục
+                  <Mail className="w-5 h-5" />
+                  Gửi Email Xác Nhận
                 </span>
               )}
             </motion.button>
@@ -351,3 +314,23 @@ export default function ForgotPasswordPage() {
   )
 }
 
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen gradient-mesh flex items-center justify-center">
+      <div className="glassmorphism-strong p-8 rounded-2xl">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-600 font-medium">Đang tải...</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function ResendConfirmationPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ResendConfirmationContent />
+    </Suspense>
+  )
+}

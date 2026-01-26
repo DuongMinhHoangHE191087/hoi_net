@@ -2,12 +2,17 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { ImageIcon, Mail, Lock, Sparkles, Chrome, UserPlus, Eye, EyeOff, User, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { useState, useCallback } from 'react'
+import { ImageIcon, Mail, Lock, Sparkles, Chrome, UserPlus, Eye, EyeOff, User, CheckCircle, XCircle, AlertCircle, Loader2, Info } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/lib/auth'
-import { registerSchema } from '@/lib/validation'
-import { sanitizeInput, validatePassword } from '@/lib/security'
+import { 
+  validateEmailComprehensive, 
+  validatePasswordComprehensive,
+  registerFormSchema,
+  type RegisterFormData 
+} from '@/lib/auth/validation'
+import { sanitizeInput } from '@/lib/security'
 import { useSiteSetting } from '@/hooks/useSiteSettings'
 import toast, { Toaster } from 'react-hot-toast'
 
@@ -19,6 +24,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     email: '',
@@ -29,13 +35,64 @@ export default function RegisterPage() {
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak')
+  const [passwordValidation, setPasswordValidation] = useState(() => 
+    validatePasswordComprehensive('')
+  )
 
-  // Password strength indicator
-  const handlePasswordChange = (password: string) => {
-    setFormData({ ...formData, password })
-    const validation = validatePassword(password)
-    setPasswordStrength(validation.strength)
+  // Real-time email validation
+  const handleEmailChange = useCallback((email: string) => {
+    setFormData(prev => ({ ...prev, email }))
+    setEmailSuggestion(null)
+    
+    if (email.length > 0) {
+      const validation = validateEmailComprehensive(email)
+      if (!validation.valid) {
+        if (validation.suggestion) {
+          setEmailSuggestion(validation.suggestion)
+        }
+        // Only show error after user has typed enough
+        if (email.length > 5 && email.includes('@')) {
+          setErrors(prev => ({ ...prev, email: validation.error || '' }))
+        }
+      } else {
+        setErrors(prev => {
+          const { email: _, ...rest } = prev
+          return rest
+        })
+      }
+    } else {
+      setErrors(prev => {
+        const { email: _, ...rest } = prev
+        return rest
+      })
+    }
+  }, [])
+
+  // Real-time password validation
+  const handlePasswordChange = useCallback((password: string) => {
+    setFormData(prev => ({ ...prev, password }))
+    const validation = validatePasswordComprehensive(password)
+    setPasswordValidation(validation)
+    
+    // Clear password error if now valid
+    if (validation.valid) {
+      setErrors(prev => {
+        const { password: _, ...rest } = prev
+        return rest
+      })
+    }
+  }, [])
+
+  // Accept email suggestion
+  const acceptEmailSuggestion = () => {
+    if (emailSuggestion) {
+      setFormData(prev => ({ ...prev, email: emailSuggestion }))
+      setEmailSuggestion(null)
+      setErrors(prev => {
+        const { email: _, ...rest } = prev
+        return rest
+      })
+    }
   }
 
   // Email registration
@@ -47,25 +104,49 @@ export default function RegisterPage() {
     try {
       // Sanitize inputs
       const sanitized = {
-        email: sanitizeInput(formData.email, 254).toLowerCase(),
-        password: formData.password, // Don't sanitize password
+        email: sanitizeInput(formData.email, 254).toLowerCase().trim(),
+        password: formData.password,
         confirmPassword: formData.confirmPassword,
-        fullName: sanitizeInput(formData.fullName || '', 100),
+        fullName: sanitizeInput(formData.fullName || '', 100).trim(),
         agreeTerms: formData.agreeTerms,
       }
 
-      // Validate with Zod
-      const result = registerSchema.safeParse(sanitized)
+      // Comprehensive email validation
+      const emailValidation = validateEmailComprehensive(sanitized.email)
+      if (!emailValidation.valid) {
+        setErrors({ email: emailValidation.error || 'Email không hợp lệ' })
+        if (emailValidation.suggestion) {
+          setEmailSuggestion(emailValidation.suggestion)
+        }
+        toast.error(emailValidation.error || 'Email không hợp lệ', { icon: '⚠️' })
+        setLoading(false)
+        return
+      }
+
+      // Password validation
+      const pwdValidation = validatePasswordComprehensive(sanitized.password)
+      if (!pwdValidation.valid) {
+        setErrors({ password: pwdValidation.errors[0] || 'Mật khẩu không đủ mạnh' })
+        toast.error('Vui lòng kiểm tra lại mật khẩu', { icon: '⚠️' })
+        setLoading(false)
+        return
+      }
+
+      // Validate with Zod schema
+      const result = registerFormSchema.safeParse(sanitized)
 
       if (!result.success) {
         const fieldErrors: Record<string, string> = {}
         result.error.errors.forEach((err) => {
-          if (err.path) {
-            fieldErrors[err.path[0]] = err.message
+          if (err.path && err.path[0]) {
+            fieldErrors[err.path[0].toString()] = err.message
           }
         })
         setErrors(fieldErrors)
-        toast.error('Vui lòng kiểm tra lại thông tin')
+        
+        // Show first error
+        const firstError = result.error.errors[0]
+        toast.error(firstError?.message || 'Vui lòng kiểm tra lại thông tin')
         setLoading(false)
         return
       }
@@ -87,12 +168,15 @@ export default function RegisterPage() {
         // Handle specific error messages
         const errorString = signUpResult.error?.toString() || ''
         
-        if (errorString.includes('already registered')) {
-          setErrors({ email: 'Email này đã được đăng ký' })
-          toast.error('Email này đã được đăng ký')
+        if (errorString.includes('already registered') || errorString.includes('already been registered')) {
+          setErrors({ email: 'Email này đã được đăng ký. Vui lòng đăng nhập hoặc sử dụng email khác.' })
+          toast.error('Email này đã được đăng ký', { icon: '📧' })
         } else if (errorString.includes('Invalid email')) {
           setErrors({ email: 'Email không hợp lệ' })
           toast.error('Email không hợp lệ')
+        } else if (errorString.includes('weak password')) {
+          setErrors({ password: 'Mật khẩu quá yếu' })
+          toast.error('Mật khẩu quá yếu')
         } else {
           toast.error(errorString || 'Đăng ký thất bại. Vui lòng thử lại.')
         }
@@ -103,19 +187,42 @@ export default function RegisterPage() {
       console.log('[Register] Sign up successful')
 
       if (signUpResult.needsConfirmation) {
-        toast.success(
-          'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.',
-          {
-            duration: 8000,
-            style: {
-              maxWidth: '500px'
-            }
-          }
-        )
+        // Show email confirmation required message
+        toast.custom((t) => (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="max-w-md w-full bg-gradient-to-r from-green-50 to-emerald-50 shadow-xl rounded-2xl p-4 ring-1 ring-green-200"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <Mail className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-green-900">
+                  Đăng ký thành công! 🎉
+                </p>
+                <p className="mt-1 text-sm text-green-700">
+                  Chúng tôi đã gửi email xác nhận đến <strong>{result.data.email}</strong>. 
+                  Vui lòng kiểm tra hộp thư (và thư mục spam) để xác nhận tài khoản.
+                </p>
+              </div>
+              <button 
+                onClick={() => toast.dismiss(t.id)}
+                className="text-green-400 hover:text-green-600"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+          </motion.div>
+        ), { duration: 10000 })
 
-        // Redirect to login with check-email message
+        // Redirect to confirmation page
         setTimeout(() => {
-          router.push('/login?message=check-email')
+          router.push(`/auth/confirm-email?email=${encodeURIComponent(result.data.email)}`)
         }, 2000)
       } else {
         // User is auto-confirmed
@@ -168,23 +275,6 @@ export default function RegisterPage() {
       console.error('Google register error:', error)
       toast.error('Đăng ký với Google thất bại')
       setLoading(false)
-    }
-  }
-
-  // Password strength color
-  const getStrengthColor = () => {
-    switch (passwordStrength) {
-      case 'strong': return 'bg-green-500'
-      case 'medium': return 'bg-yellow-500'
-      case 'weak': return 'bg-red-500'
-    }
-  }
-
-  const getStrengthText = () => {
-    switch (passwordStrength) {
-      case 'strong': return 'Mạnh'
-      case 'medium': return 'Trung bình'
-      case 'weak': return 'Yếu'
     }
   }
 
@@ -303,17 +393,47 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="your@email.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => handleEmailChange(e.target.value)}
                   className={`input-glass pl-12 ${errors.email ? 'border-2 border-red-500' : ''}`}
                   required
                   disabled={loading}
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              
+              {/* Email suggestion */}
+              <AnimatePresence>
+                {emailSuggestion && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg"
+                  >
+                    <p className="text-sm text-blue-700 flex items-center gap-2">
+                      <Info className="w-4 h-4" />
+                      Bạn có phải muốn nhập{' '}
+                      <button
+                        type="button"
+                        onClick={acceptEmailSuggestion}
+                        className="font-semibold underline hover:text-blue-900"
+                      >
+                        {emailSuggestion}
+                      </button>
+                      ?
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {errors.email && !emailSuggestion && (
+                <motion.p 
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-1 text-sm text-red-600 flex items-center gap-1"
+                >
                   <XCircle className="w-4 h-4" />
                   {errors.email}
-                </p>
+                </motion.p>
               )}
             </motion.div>
 
@@ -346,72 +466,63 @@ export default function RegisterPage() {
                 </button>
               </div>
 
-              {/* Password Strength Indicator */}
+              {/* Password Strength Indicator - Enhanced */}
               {formData.password && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">Độ mạnh mật khẩu:</span>
-                    <span className={`text-xs font-semibold ${
-                      passwordStrength === 'strong' ? 'text-green-600' :
-                      passwordStrength === 'medium' ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`}>
-                      {getStrengthText()}
-                    </span>
+                <div className="mt-3 space-y-2">
+                  {/* Strength bar */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600">Độ mạnh: {passwordValidation.score}%</span>
+                      <span className={`text-xs font-semibold ${
+                        passwordValidation.strength === 'strong' ? 'text-green-600' :
+                        passwordValidation.strength === 'medium' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {passwordValidation.strength === 'strong' ? 'Mạnh 💪' :
+                         passwordValidation.strength === 'medium' ? 'Trung bình' : 'Yếu'}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <motion.div
+                        className={`h-full ${
+                          passwordValidation.strength === 'strong' ? 'bg-green-500' :
+                          passwordValidation.strength === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${passwordValidation.score}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${getStrengthColor()}`}
-                      style={{
-                        width: passwordStrength === 'strong' ? '100%' :
-                               passwordStrength === 'medium' ? '66%' : '33%'
-                      }}
-                    />
+                  
+                  {/* Requirements checklist */}
+                  <div className="grid grid-cols-2 gap-1">
+                    {passwordValidation.requirements.slice(0, 5).map((req, idx) => (
+                      <div key={idx} className="flex items-center gap-1 text-xs">
+                        {req.met ? (
+                          <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        )}
+                        <span className={req.met ? 'text-green-700' : 'text-gray-500'}>
+                          {req.label.replace('Ít nhất ', '').replace(' (khuyến nghị)', '')}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-1 text-sm text-red-600 flex items-center gap-1"
+                >
                   <XCircle className="w-4 h-4" />
                   {errors.password}
-                </p>
+                </motion.p>
               )}
-
-              {/* Password Requirements */}
-              <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500">Yêu cầu mật khẩu:</p>
-                <ul className="text-xs text-gray-600 space-y-0.5">
-                  <li className="flex items-center gap-1">
-                    {formData.password.length >= 8 ?
-                      <CheckCircle className="w-3 h-3 text-green-500" /> :
-                      <XCircle className="w-3 h-3 text-gray-400" />
-                    }
-                    Ít nhất 8 ký tự
-                  </li>
-                  <li className="flex items-center gap-1">
-                    {/[a-z]/.test(formData.password) ?
-                      <CheckCircle className="w-3 h-3 text-green-500" /> :
-                      <XCircle className="w-3 h-3 text-gray-400" />
-                    }
-                    Ít nhất 1 chữ thường
-                  </li>
-                  <li className="flex items-center gap-1">
-                    {/[A-Z]/.test(formData.password) ?
-                      <CheckCircle className="w-3 h-3 text-green-500" /> :
-                      <XCircle className="w-3 h-3 text-gray-400" />
-                    }
-                    Ít nhất 1 chữ hoa
-                  </li>
-                  <li className="flex items-center gap-1">
-                    {/[0-9]/.test(formData.password) ?
-                      <CheckCircle className="w-3 h-3 text-green-500" /> :
-                      <XCircle className="w-3 h-3 text-gray-400" />
-                    }
-                    Ít nhất 1 số
-                  </li>
-                </ul>
-              </div>
             </motion.div>
 
             {/* Confirm Password */}

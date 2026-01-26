@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Lock, Eye, EyeOff, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react'
+import { Lock, Eye, EyeOff, CheckCircle, XCircle, Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { validatePassword } from '@/lib/security'
+import { validatePasswordComprehensive } from '@/lib/auth/validation'
 import toast, { Toaster } from 'react-hot-toast'
 import { authLogger } from '@/lib/auth-logger'
 
@@ -18,30 +18,40 @@ function ResetPasswordContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak')
+  const [passwordValidation, setPasswordValidation] = useState(() => 
+    validatePasswordComprehensive('')
+  )
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [isValidSession, setIsValidSession] = useState(false)
 
-  // Check if we have access token in URL
+  // Check if we have valid recovery session
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1))
-    const accessToken = hashParams.get('access_token')
-    const type = hashParams.get('type')
+    const checkSession = async () => {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      // Check URL hash for recovery token
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const type = hashParams.get('type')
+      const accessToken = hashParams.get('access_token')
 
-    if (type !== 'recovery') {
-      setError('Link khôi phục không hợp lệ hoặc đã hết hạn')
+      if (session || (type === 'recovery' && accessToken)) {
+        setIsValidSession(true)
+      } else {
+        setError('Link khôi phục không hợp lệ hoặc đã hết hạn')
+      }
     }
-
-    if (!accessToken && type !== 'recovery') {
-      toast.error('Link khôi phục không hợp lệ. Vui lòng yêu cầu link mới.')
-    }
+    
+    checkSession()
   }, [])
 
-  const handlePasswordChange = (newPassword: string) => {
+  // Password validation
+  const handlePasswordChange = useCallback((newPassword: string) => {
     setPassword(newPassword)
-    const validation = validatePassword(newPassword)
-    setPasswordStrength(validation.strength)
-  }
+    const validation = validatePasswordComprehensive(newPassword)
+    setPasswordValidation(validation)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,8 +67,7 @@ function ResetPasswordContent() {
       }
 
       // Validate password strength
-      const validation = validatePassword(password)
-      if (!validation.isValid) {
+      if (!passwordValidation.valid) {
         toast.error('Mật khẩu không đủ mạnh. Vui lòng kiểm tra yêu cầu.')
         setLoading(false)
         return
@@ -72,9 +81,11 @@ function ResetPasswordContent() {
 
       if (error) {
         console.error('[Reset Password] Error:', error)
-        if (error.message.includes('session')) {
+        if (error.message.includes('session') || error.message.includes('expired')) {
           setError('Link đã hết hạn. Vui lòng yêu cầu link mới.')
           toast.error('Link đã hết hạn. Vui lòng yêu cầu link mới.')
+        } else if (error.message.includes('same password')) {
+          toast.error('Mật khẩu mới phải khác mật khẩu cũ.')
         } else {
           toast.error('Không thể đặt lại mật khẩu. Vui lòng thử lại.')
         }
@@ -95,22 +106,6 @@ function ResetPasswordContent() {
       console.error('[Reset Password] Error:', error)
       toast.error('Đã xảy ra lỗi. Vui lòng thử lại.')
       setLoading(false)
-    }
-  }
-
-  const getStrengthColor = () => {
-    switch (passwordStrength) {
-      case 'strong': return 'bg-green-500'
-      case 'medium': return 'bg-yellow-500'
-      case 'weak': return 'bg-red-500'
-    }
-  }
-
-  const getStrengthText = () => {
-    switch (passwordStrength) {
-      case 'strong': return 'Mạnh'
-      case 'medium': return 'Trung bình'
-      case 'weak': return 'Yếu'
     }
   }
 
@@ -239,65 +234,52 @@ function ResetPasswordContent() {
                 </button>
               </div>
 
-              {/* Password Strength */}
+              {/* Password Strength - Enhanced */}
               {password && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">Độ mạnh:</span>
-                    <span className={`text-xs font-semibold ${
-                      passwordStrength === 'strong' ? 'text-green-600' :
-                      passwordStrength === 'medium' ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`}>
-                      {getStrengthText()}
-                    </span>
+                <div className="mt-3 space-y-2">
+                  {/* Strength bar */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600">Độ mạnh: {passwordValidation.score}%</span>
+                      <span className={`text-xs font-semibold ${
+                        passwordValidation.strength === 'strong' ? 'text-green-600' :
+                        passwordValidation.strength === 'medium' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {passwordValidation.strength === 'strong' ? 'Mạnh 💪' :
+                         passwordValidation.strength === 'medium' ? 'Trung bình' : 'Yếu'}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <motion.div
+                        className={`h-full ${
+                          passwordValidation.strength === 'strong' ? 'bg-green-500' :
+                          passwordValidation.strength === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${passwordValidation.score}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${getStrengthColor()}`}
-                      style={{
-                        width: passwordStrength === 'strong' ? '100%' :
-                               passwordStrength === 'medium' ? '66%' : '33%'
-                      }}
-                    />
+                  
+                  {/* Requirements checklist */}
+                  <div className="grid grid-cols-2 gap-1">
+                    {passwordValidation.requirements.slice(0, 5).map((req, idx) => (
+                      <div key={idx} className="flex items-center gap-1 text-xs">
+                        {req.met ? (
+                          <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        )}
+                        <span className={req.met ? 'text-green-700' : 'text-gray-500'}>
+                          {req.label.replace('Ít nhất ', '').replace(' (khuyến nghị)', '')}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-
-              {/* Password Requirements */}
-              <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500">Yêu cầu:</p>
-                <ul className="text-xs text-gray-600 space-y-0.5">
-                  <li className="flex items-center gap-1">
-                    {password.length >= 8 ?
-                      <CheckCircle className="w-3 h-3 text-green-500" /> :
-                      <XCircle className="w-3 h-3 text-gray-400" />
-                    }
-                    Ít nhất 8 ký tự
-                  </li>
-                  <li className="flex items-center gap-1">
-                    {/[a-z]/.test(password) ?
-                      <CheckCircle className="w-3 h-3 text-green-500" /> :
-                      <XCircle className="w-3 h-3 text-gray-400" />
-                    }
-                    Ít nhất 1 chữ thường
-                  </li>
-                  <li className="flex items-center gap-1">
-                    {/[A-Z]/.test(password) ?
-                      <CheckCircle className="w-3 h-3 text-green-500" /> :
-                      <XCircle className="w-3 h-3 text-gray-400" />
-                    }
-                    Ít nhất 1 chữ hoa
-                  </li>
-                  <li className="flex items-center gap-1">
-                    {/[0-9]/.test(password) ?
-                      <CheckCircle className="w-3 h-3 text-green-500" /> :
-                      <XCircle className="w-3 h-3 text-gray-400" />
-                    }
-                    Ít nhất 1 số
-                  </li>
-                </ul>
-              </div>
             </div>
 
             {/* Confirm Password */}

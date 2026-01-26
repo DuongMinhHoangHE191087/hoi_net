@@ -1,0 +1,579 @@
+# 📧 Email Templates cho Supabase - Hồi Nét
+
+> **Thiết kế chuyên nghiệp** - Tương thích mọi email client (Gmail, Outlook, Apple Mail...)
+
+---
+
+## Thông tin thương hiệu
+
+| | |
+|---|---|
+| **Tên dự án** | Hồi Nét |
+| **Slogan** | Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI |
+| **Email** | duongminhhoanginwork@gmail.com |
+| **Hotline** | 039 449 7949 |
+| **Trưởng dự án** | Dương Minh Hoàng |
+| **GVHD** | Nguyễn Thị Phượng |
+
+---
+
+## 📋 Hướng dẫn cấu hình
+
+1. Đăng nhập **[Supabase Dashboard](https://supabase.com/dashboard)**
+2. Vào **Authentication** → **Email Templates**
+3. Chọn template type và paste HTML tương ứng
+4. Cập nhật **Subject** theo hướng dẫn
+
+---
+
+## 1️⃣ Confirm Signup (Xác nhận đăng ký)
+
+**Subject:** `Xác nhận email của bạn - Hồi Nét`
+
+```html
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Xác nhận Email</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding: 32px 40px 24px;">
+              <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="width: 56px; height: 56px; background-color: #6366f1; border-radius: 14px;">
+                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 16px 0 0; font-size: 22px; font-weight: 700; color: #18181b;">Hồi Nét</p>
+            </td>
+          </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="border-top: 1px solid #e4e4e7;"></td></tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #18181b; text-align: center;">Chào mừng bạn!</h1>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 24px; color: #52525b; text-align: center;">
+                Cảm ơn bạn đã đăng ký tài khoản <strong>Hồi Nét</strong>. Vui lòng xác nhận email để bắt đầu khôi phục những kỷ niệm đẹp.
+              </p>
+              
+              <!-- Button -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 8px 0 24px;">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="background-color: #6366f1; border-radius: 8px;">
+                          <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600;">Xác nhận Email</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 0; font-size: 13px; line-height: 20px; color: #a1a1aa; text-align: center;">
+                Link hết hạn sau 24 giờ. Nếu bạn không đăng ký, vui lòng bỏ qua email này.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Alt Link -->
+          <tr>
+            <td style="padding: 0 40px 32px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafafa; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <p style="margin: 0 0 8px; font-size: 12px; color: #71717a; text-align: center;">Hoặc copy link:</p>
+                    <p style="margin: 0; font-size: 11px; color: #6366f1; word-break: break-all; text-align: center;">{{ .ConfirmationURL }}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
+              <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; text-align: center;">
+                Cần hỗ trợ? <a href="mailto:duongminhhoanginwork@gmail.com" style="color: #6366f1; text-decoration: none;">duongminhhoanginwork@gmail.com</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2024 Hồi Nét - Khôi phục ảnh cũ bằng AI
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+```
+
+---
+
+## 2️⃣ Reset Password (Khôi phục mật khẩu)
+
+**Subject:** `Đặt lại mật khẩu - Hồi Nét`
+
+```html
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Đặt lại mật khẩu</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding: 32px 40px 24px;">
+              <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="width: 56px; height: 56px; background-color: #f59e0b; border-radius: 14px;">
+                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 16px 0 0; font-size: 22px; font-weight: 700; color: #18181b;">Hồi Nét</p>
+            </td>
+          </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="border-top: 1px solid #e4e4e7;"></td></tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #18181b; text-align: center;">Đặt lại mật khẩu</h1>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 24px; color: #52525b; text-align: center;">
+                Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Click nút bên dưới để tạo mật khẩu mới.
+              </p>
+              
+              <!-- Button -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 8px 0 24px;">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="background-color: #f59e0b; border-radius: 8px;">
+                          <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600;">Đặt mật khẩu mới</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Warning -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fef2f2; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 12px 16px; border-left: 4px solid #ef4444;">
+                    <p style="margin: 0; font-size: 13px; color: #991b1b;">
+                      <strong>Bảo mật:</strong> Link hết hạn sau 1 giờ. Không chia sẻ với ai.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Alt Link -->
+          <tr>
+            <td style="padding: 0 40px 32px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fafafa; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <p style="margin: 0 0 8px; font-size: 12px; color: #71717a; text-align: center;">Hoặc copy link:</p>
+                    <p style="margin: 0; font-size: 11px; color: #f59e0b; word-break: break-all; text-align: center;">{{ .ConfirmationURL }}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
+              <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; text-align: center;">
+                Không yêu cầu đặt lại? Bỏ qua email này.
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2024 Hồi Nét
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+```
+
+---
+
+## 3️⃣ Magic Link (Đăng nhập nhanh)
+
+**Subject:** `Link đăng nhập của bạn - Hồi Nét`
+
+```html
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Đăng nhập</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding: 32px 40px 24px;">
+              <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="width: 56px; height: 56px; background-color: #10b981; border-radius: 14px;">
+                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 16px 0 0; font-size: 22px; font-weight: 700; color: #18181b;">Hồi Nét</p>
+            </td>
+          </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="border-top: 1px solid #e4e4e7;"></td></tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #18181b; text-align: center;">Đăng nhập nhanh</h1>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 24px; color: #52525b; text-align: center;">
+                Click nút bên dưới để đăng nhập vào Hồi Nét mà không cần mật khẩu.
+              </p>
+              
+              <!-- Button -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 8px 0 24px;">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="background-color: #10b981; border-radius: 8px;">
+                          <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600;">Đăng nhập ngay</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 0; font-size: 13px; line-height: 20px; color: #a1a1aa; text-align: center;">
+                Link chỉ dùng được 1 lần và hết hạn sau 1 giờ.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
+              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2024 Hồi Nét - Khôi phục ảnh cũ bằng AI
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+```
+
+---
+
+## 4️⃣ Invite User (Mời người dùng)
+
+**Subject:** `Bạn được mời tham gia Hồi Nét`
+
+```html
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lời mời</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding: 32px 40px 24px;">
+              <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="width: 56px; height: 56px; background-color: #8b5cf6; border-radius: 14px;">
+                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 16px 0 0; font-size: 22px; font-weight: 700; color: #18181b;">Hồi Nét</p>
+            </td>
+          </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="border-top: 1px solid #e4e4e7;"></td></tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #18181b; text-align: center;">Bạn được mời!</h1>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 24px; color: #52525b; text-align: center;">
+                Bạn đã được mời tham gia <strong>Hồi Nét</strong> - nền tảng khôi phục ảnh cũ và ghép ảnh gia đình bằng AI.
+              </p>
+              
+              <!-- Benefits -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f3ff; border-radius: 8px; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #6366f1;">Quyền lợi:</p>
+                    <p style="margin: 0 0 8px; font-size: 13px; color: #52525b;">✓ Khôi phục ảnh cũ bằng AI</p>
+                    <p style="margin: 0 0 8px; font-size: 13px; color: #52525b;">✓ Ghép ảnh gia đình chuyên nghiệp</p>
+                    <p style="margin: 0; font-size: 13px; color: #52525b;">✓ Lưu trữ an toàn, bảo mật</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Button -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="background-color: #8b5cf6; border-radius: 8px;">
+                          <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600;">Chấp nhận lời mời</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
+              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2024 Hồi Nét
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+```
+
+---
+
+## 5️⃣ Email Change (Thay đổi email)
+
+**Subject:** `Xác nhận email mới - Hồi Nét`
+
+```html
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Thay đổi Email</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding: 32px 40px 24px;">
+              <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="width: 56px; height: 56px; background-color: #06b6d4; border-radius: 14px;">
+                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 16px 0 0; font-size: 22px; font-weight: 700; color: #18181b;">Hồi Nét</p>
+            </td>
+          </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="border-top: 1px solid #e4e4e7;"></td></tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #18181b; text-align: center;">Xác nhận email mới</h1>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 24px; color: #52525b; text-align: center;">
+                Bạn đã yêu cầu thay đổi địa chỉ email. Click nút bên dưới để xác nhận.
+              </p>
+              
+              <!-- Button -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 8px 0 24px;">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="background-color: #06b6d4; border-radius: 8px;">
+                          <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600;">Xác nhận Email mới</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Warning -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fef3c7; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 12px 16px; border-left: 4px solid #f59e0b;">
+                    <p style="margin: 0; font-size: 13px; color: #92400e;">
+                      Nếu bạn không yêu cầu thay đổi này, vui lòng liên hệ hỗ trợ ngay.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
+              <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; text-align: center;">
+                Hỗ trợ: <a href="mailto:duongminhhoanginwork@gmail.com" style="color: #06b6d4; text-decoration: none;">duongminhhoanginwork@gmail.com</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2024 Hồi Nét
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+```
+
+---
+
+## ⚙️ Cấu hình Supabase
+
+### Email Templates
+1. **Authentication** → **Email Templates**
+2. Chọn từng loại template
+3. Paste HTML tương ứng
+4. Cập nhật Subject
+
+### SMTP Settings (Khuyến nghị)
+1. **Project Settings** → **Authentication** → **SMTP Settings**
+2. Bật **Enable Custom SMTP**
+3. Cấu hình:
+   - **Sender email**: duongminhhoanginwork@gmail.com
+   - **Sender name**: Hồi Nét
+
+---
+
+## 🔧 Supabase Variables
+
+| Variable | Mô tả |
+|----------|-------|
+| `{{ .ConfirmationURL }}` | Link xác nhận |
+| `{{ .SiteURL }}` | URL website |
+| `{{ .Email }}` | Email người dùng |
+| `{{ .Token }}` | Token |
+| `{{ .TokenHash }}` | Token hash |
+
+---
+
+## ✅ Checklist
+
+- [ ] Copy HTML vào Supabase Email Templates
+- [ ] Cập nhật Subject cho mỗi template
+- [ ] Test gửi email
+- [ ] Kiểm tra trên mobile
+- [ ] Cấu hình SMTP (tùy chọn)
+
+---
+
+## 📞 Liên hệ
+
+| | |
+|---|---|
+| **Email** | duongminhhoanginwork@gmail.com |
+| **Hotline** | 039 449 7949 |
+| **Trưởng dự án** | Dương Minh Hoàng |
+| **GVHD** | Nguyễn Thị Phượng |

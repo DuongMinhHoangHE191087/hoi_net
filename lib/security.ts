@@ -29,7 +29,7 @@ export function sanitizeInput(input: string, maxLength: number = 500): string {
     .substring(0, maxLength) // Limit length
 }
 
-// Email validation
+// Email validation (basic)
 export function validateEmail(email: string): boolean {
   if (!email) return false
 
@@ -40,6 +40,76 @@ export function validateEmail(email: string): boolean {
   if (email.includes('..')) return false
 
   return emailRegex.test(email)
+}
+
+// Detailed email validation with bit-hash checking
+export function validateEmailDetailed(email: string): { 
+  valid: boolean
+  error?: string 
+} {
+  if (!email || typeof email !== 'string') {
+    return { valid: false, error: 'Email không được để trống' }
+  }
+
+  email = email.trim().toLowerCase()
+
+  // Basic length check
+  if (email.length < 5 || email.length > 254) {
+    return { valid: false, error: 'Email không hợp lệ' }
+  }
+
+  // Split email into local and domain parts
+  const atIndex = email.indexOf('@')
+  if (atIndex === -1 || atIndex === 0 || atIndex === email.length - 1) {
+    return { valid: false, error: 'Email phải chứa @' }
+  }
+
+  const localPart = email.substring(0, atIndex)
+  const domainPart = email.substring(atIndex + 1)
+
+  // Check local part
+  if (localPart.length === 0 || localPart.length > 64) {
+    return { valid: false, error: 'Phần trước @ không hợp lệ' }
+  }
+
+  // Check domain part - must have at least one dot
+  const dotIndex = domainPart.lastIndexOf('.')
+  if (dotIndex === -1 || dotIndex === 0 || dotIndex === domainPart.length - 1) {
+    return { valid: false, error: `'.' bị sử dụng sai vị trí trong '${domainPart}'.` }
+  }
+
+  // Domain must have valid TLD (at least 2 chars)
+  const tld = domainPart.substring(dotIndex + 1)
+  if (tld.length < 2) {
+    return { valid: false, error: 'Tên miền email không hợp lệ' }
+  }
+
+  // Check for consecutive dots
+  if (email.includes('..')) {
+    return { valid: false, error: 'Email không được có dấu chấm liên tiếp' }
+  }
+
+  // Bit-hash character validation using regex
+  const validLocalChars = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/
+  const validDomainChars = /^[a-zA-Z0-9.-]+$/
+
+  if (!validLocalChars.test(localPart)) {
+    return { valid: false, error: 'Email chứa ký tự không hợp lệ' }
+  }
+
+  if (!validDomainChars.test(domainPart)) {
+    return { valid: false, error: 'Tên miền chứa ký tự không hợp lệ' }
+  }
+
+  // Check each domain label
+  const domainLabels = domainPart.split('.')
+  for (const label of domainLabels) {
+    if (label.length === 0 || label.startsWith('-') || label.endsWith('-')) {
+      return { valid: false, error: 'Tên miền email không hợp lệ' }
+    }
+  }
+
+  return { valid: true }
 }
 
 // Phone validation (Vietnamese format)
@@ -200,6 +270,7 @@ export const security = {
   sanitizeHTML,
   sanitizeInput,
   validateEmail,
+  validateEmailDetailed,
   validatePhone,
   validatePassword,
   validateURL,

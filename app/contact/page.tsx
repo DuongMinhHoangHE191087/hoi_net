@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Send, Mail, MessageSquare, Upload, X, Star, CheckCircle, Sparkles } from 'lucide-react'
+import { Send, Mail, MessageSquare, Upload, X, Star, CheckCircle, Sparkles, AlertCircle } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { db } from '@/lib/supabase'
 import { useSiteSettings, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function ContactPage() {
   const { data: settings = DEFAULT_SITE_SETTINGS } = useSiteSettings()
@@ -37,47 +37,85 @@ export default function ContactPage() {
     setFiles(files.filter((_, i) => i !== index))
   }
 
+  const [emailError, setEmailError] = useState<string | null>(null)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setUploadProgress(0)
+    setEmailError(null)
 
     try {
-      // Upload files if any
+      // Upload files if any (use public upload endpoint)
       let fileUrls: string[] = []
       if (files.length > 0) {
         for (let i = 0; i < files.length; i++) {
           const file = files[i]
-          const formData = new FormData()
-          formData.append('file', file)
+          const uploadFormData = new FormData()
+          uploadFormData.append('file', file)
 
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-          })
+          try {
+            const res = await fetch('/api/public-upload', {
+              method: 'POST',
+              body: uploadFormData
+            })
 
-          if (res.ok) {
-            const data = await res.json()
-            fileUrls.push(data.url)
-            setUploadProgress(((i + 1) / files.length) * 100)
+            if (res.ok) {
+              const data = await res.json()
+              fileUrls.push(data.url)
+              setUploadProgress(((i + 1) / files.length) * 100)
+            }
+          } catch (uploadError) {
+            console.warn('File upload failed, continuing without file:', uploadError)
           }
         }
       }
 
-      // Create feedback with file URLs
-      await db.createFeedback({
-        name: formData.name,
-        email: formData.email,
-        message: `${formData.message}\n\nSố điện thoại: ${formData.phone}\n\nFile đính kèm: ${fileUrls.join(', ')}`,
-        rating: formData.rating || undefined
+      // Build message with file URLs
+      let fullMessage = formData.message
+      if (formData.phone) {
+        fullMessage += `\n\nSố điện thoại: ${formData.phone}`
+      }
+      if (fileUrls.length > 0) {
+        fullMessage += `\n\nFile đính kèm: ${fileUrls.join(', ')}`
+      }
+
+      // Submit feedback via API (no auth required)
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          message: fullMessage,
+          rating: formData.rating || undefined,
+          phone: formData.phone
+        })
       })
+
+      const result = await res.json()
+
+      if (!res.ok) {
+        // Check if it's an email validation error
+        if (result.error && result.error.includes('Email') || result.error?.includes('.')) {
+          setEmailError(result.error)
+          toast.error(result.error, { icon: '⚠️' })
+        } else {
+          toast.error(result.error || 'Có lỗi xảy ra, vui lòng thử lại')
+        }
+        setLoading(false)
+        return
+      }
 
       setSubmitted(true)
       setFormData({ name: '', email: '', phone: '', message: '', rating: 0 })
       setFiles([])
+      toast.success('Phản hồi đã được gửi thành công!')
     } catch (error) {
       console.error('Error submitting feedback:', error)
-      alert('Có lỗi xảy ra, vui lòng thử lại')
+      toast.error('Có lỗi xảy ra, vui lòng thử lại')
     } finally {
       setLoading(false)
       setUploadProgress(0)
@@ -86,6 +124,8 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen gradient-mesh relative overflow-hidden">
+      <Toaster position="top-center" />
+      
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -228,18 +268,33 @@ export default function ContactPage() {
                       <label className="block text-sm font-medium text-gray-800 mb-2">
                         Email *
                       </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="input-glass"
-                        placeholder="email@example.com"
-                        required
-                      />
+                      <div className="relative">
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => {
+                            setFormData({ ...formData, email: e.target.value })
+                            setEmailError(null) // Clear error when typing
+                          }}
+                          className={`input-glass ${emailError ? 'border-red-500 border-2' : ''}`}
+                          placeholder="email@example.com"
+                          required
+                        />
+                        {emailError && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="absolute left-0 top-full mt-1 flex items-center gap-1 text-sm text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 shadow-sm"
+                          >
+                            <AlertCircle className="w-4 h-4" />
+                            <span>{emailError}</span>
+                          </motion.div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div>
+                  <div className={emailError ? 'mt-8' : ''}>
                     <label className="block text-sm font-medium text-gray-800 mb-2">
                       Số điện thoại
                     </label>
