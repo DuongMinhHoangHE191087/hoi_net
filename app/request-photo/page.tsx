@@ -7,6 +7,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import BrandLogo from '@/components/ui/BrandLogo'
 import toast, { Toaster } from 'react-hot-toast'
 
 export default function RequestPhotoPage() {
@@ -305,7 +306,7 @@ export default function RequestPhotoPage() {
                       className="inline-block mb-6"
                     >
                       <div className="p-4 bg-gradient-primary rounded-3xl shadow-glow">
-                        <Sparkles className="w-12 h-12 text-white" />
+                        <BrandLogo className="w-12 h-12 object-contain" priority />
                       </div>
                     </motion.div>
 

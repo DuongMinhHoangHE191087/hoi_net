@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Notification, NotificationPreferences } from '@/lib/notifications-client'
+import { useSiteSettingsOptional } from '@/contexts/SiteSettingsContext'
 
 // Query Keys
 export const notificationQueryKeys = {
@@ -106,6 +107,8 @@ export function useDeleteNotification() {
 export function useRealtimeNotifications(userId: string | undefined) {
   const queryClient = useQueryClient()
   const [isSubscribed, setIsSubscribed] = useState(false)
+  const siteSettings = useSiteSettingsOptional()
+  const notificationIconUrl = siteSettings?.siteFaviconUrl || siteSettings?.siteLogoUrl || '/favicon.ico'
   
   // Create supabase client only in browser context
   const supabase = useMemo(() => createClient(), [])
@@ -137,7 +140,7 @@ export function useRealtimeNotifications(userId: string | undefined) {
             const notification = payload.new as Notification
             new Notification(notification.title, {
               body: notification.message,
-              icon: '/favicon.ico',
+              icon: notificationIconUrl,
               tag: notification.id
             })
           }
@@ -166,7 +169,7 @@ export function useRealtimeNotifications(userId: string | undefined) {
       supabase.removeChannel(channel)
       setIsSubscribed(false)
     }
-  }, [userId, queryClient])
+  }, [userId, queryClient, supabase, notificationIconUrl])
 
   return { isSubscribed }
 }

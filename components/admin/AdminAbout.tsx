@@ -7,12 +7,17 @@ import {
   ChevronUp, ChevronDown, Eye, EyeOff, Loader2
 } from 'lucide-react'
 import { db, AboutSection } from '@/lib/supabase'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 
 export default function AdminAbout() {
   const [sections, setSections] = useState<AboutSection[]>([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; sectionId: string | null }>({
+    isOpen: false,
+    sectionId: null,
+  })
   const [formData, setFormData] = useState<Partial<AboutSection>>({
     title: '',
     subtitle: '',
@@ -70,8 +75,14 @@ export default function AdminAbout() {
     setFormData(section)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa section này?')) return
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, sectionId: id })
+  }
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.sectionId
+    if (!id) return
+    setDeleteConfirm({ isOpen: false, sectionId: null })
 
     try {
       await db.deleteAboutSection(id)
@@ -149,6 +160,18 @@ export default function AdminAbout() {
 
   return (
     <div className="space-y-8">
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, sectionId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá Section"
+        message="Bạn có chắc chắn muốn xoá section này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+
       {/* Form Section */}
       <motion.div
         className="glassmorphism-strong p-6"

@@ -10,6 +10,7 @@ import {
 import { useAuth } from '@/lib/auth'
 import toast from 'react-hot-toast'
 import AIConfirmDialog from '@/components/ui/AIConfirmDialog'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { FullScreenLoading } from '@/components/UniversalLoading'
 
 // ✅ React Query hooks
@@ -98,6 +99,14 @@ export default function RequestsPage() {
     colorAccuracy: 0.8,
   })
   const [selectedSystemPromptName, setSelectedSystemPromptName] = useState<string>('')
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; requestId: string | null }>({
+    isOpen: false,
+    requestId: null,
+  })
+  const [sendToAdminConfirm, setSendToAdminConfirm] = useState<{ isOpen: boolean; request: UserRequest | null }>({
+    isOpen: false,
+    request: null,
+  })
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [pendingProcessing, setPendingProcessing] = useState<{
     request: UserRequest
@@ -137,9 +146,14 @@ export default function RequestsPage() {
   }
 
   // Handlers
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa yêu cầu này?')) return
-    if (!user) return
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, requestId: id })
+  }
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.requestId
+    if (!id || !user) return
+    setDeleteConfirm({ isOpen: false, requestId: null })
 
     // ✅ Optimistic update - UI updates immediately
     deleteRequestMutation.mutate({ id, userId: user.id })
@@ -150,9 +164,14 @@ export default function RequestsPage() {
     }
   }
 
-  const handleSendToAdmin = async (request: UserRequest) => {
-    if (!confirm('Gửi yêu cầu này cho Admin xem xét và xử lý thủ công?')) return
-    if (!user) return
+  const handleSendToAdmin = (request: UserRequest) => {
+    setSendToAdminConfirm({ isOpen: true, request })
+  }
+
+  const confirmSendToAdmin = async () => {
+    const request = sendToAdminConfirm.request
+    if (!request || !user) return
+    setSendToAdminConfirm({ isOpen: false, request: null })
 
     // ✅ Optimistic update
     sendToAdminMutation.mutate({ id: request.id, userId: user.id })
@@ -206,6 +225,30 @@ export default function RequestsPage() {
 
   return (
     <div className="min-h-screen gradient-mesh p-6">
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, requestId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá Yêu Cầu"
+        message="Bạn có chắc chắn muốn xoá yêu cầu này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+
+      {/* Send to Admin Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={sendToAdminConfirm.isOpen}
+        onClose={() => setSendToAdminConfirm({ isOpen: false, request: null })}
+        onConfirm={confirmSendToAdmin}
+        title="Gửi cho Admin"
+        message="Bạn có chắc muốn gửi yêu cầu này cho Admin xem xét và xử lý thủ công?"
+        variant="warning"
+        confirmText="Gửi"
+        cancelText="Huỷ"
+      />
+
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex items-center justify-between mb-6">

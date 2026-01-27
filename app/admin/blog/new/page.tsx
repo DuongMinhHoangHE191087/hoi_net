@@ -9,9 +9,10 @@ import {
   AlertCircle, FileText, Image as ImageIcon
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
+import { useUserRole } from '@/hooks/useUserRole'
 import { blogPostSchema } from '@/lib/validation'
 import { sanitizeInput, sanitizeHTML } from '@/lib/security'
-import { supabase } from '@/lib/supabase'
+import { authFetch } from '@/lib/auth-fetch'
 import toast from 'react-hot-toast'
 
 // Lazy load rich text editor
@@ -30,7 +31,8 @@ const AdvancedRichTextEditor = dynamic(
 
 export default function NewBlogPostPage() {
   const router = useRouter()
-  const { user, isAdmin, loading: authLoading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const userRole = useUserRole()
 
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState(false)
@@ -53,7 +55,7 @@ export default function NewBlogPostPage() {
       return
     }
 
-    if (!authLoading && !isAdmin) {
+    if (!authLoading && !userRole.isLoading && !userRole.hasPermission('blog.create')) {
       // Show 404 to hide admin route existence
       router.replace('/404')
       return
@@ -65,7 +67,7 @@ export default function NewBlogPostPage() {
         author_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin'
       }))
     }
-  }, [user, isAdmin, authLoading])
+  }, [user, authLoading, userRole.isLoading, userRole.role])
 
   // Auto-generate slug from title
   const handleTitleChange = (title: string) => {
@@ -116,28 +118,22 @@ export default function NewBlogPostPage() {
         return
       }
 
-      // Check if slug already exists
-      const { data: existing } = await supabase
-        .from('blog_posts')
-        .select('id')
-        .eq('slug', result.data.slug)
-        .single()
+      // Create blog post via server API (permission + RLS safe)
+      const canPublish = userRole.hasPermission('blog.publish')
+      const response = await authFetch.post('/api/admin/blog-posts', {
+        ...result.data,
+        published: canPublish ? result.data.published : false,
+      })
 
-      if (existing) {
-        setErrors({ slug: 'Slug này đã tồn tại' })
-        toast.error('Slug này đã tồn tại')
-        return
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        const msg = data?.error || 'Không thể tạo bài viết'
+        if (String(msg).toLowerCase().includes('slug')) {
+          setErrors({ slug: 'Slug này đã tồn tại' })
+        }
+        throw new Error(msg)
       }
-
-      // Create blog post
-      const { error: insertError } = await supabase
-        .from('blog_posts')
-        .insert({
-          ...result.data,
-          author_id: user?.id,
-        })
-
-      if (insertError) throw insertError
 
       toast.success('Tạo bài viết thành công!')
 
@@ -363,18 +359,26 @@ export default function NewBlogPostPage() {
               </div>
 
               {/* Published */}
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="published"
-                  checked={formData.published}
-                  onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
-                  className="w-5 h-5 accent-primary cursor-pointer"
-                />
-                <label htmlFor="published" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                  Xuất bản ngay
-                </label>
-              </div>
+              {userRole.hasPermission('blog.publish') ? (
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="published"
+                    checked={formData.published}
+                    onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
+                    className="w-5 h-5 accent-primary cursor-pointer"
+                  />
+                  <label htmlFor="published" className="text-sm font-semibold text-gray-700 cursor-pointer">
+                    Xuất bản ngay
+                  </label>
+                </div>
+              ) : (
+                <div className="p-3 bg-white/50 rounded-xl border border-white/20">
+                  <p className="text-sm text-gray-600">
+                    Bài viết sẽ được lưu ở trạng thái nháp. Chỉ admin/moderator mới có quyền xuất bản.
+                  </p>
+                </div>
+              )}
 
               {/* Submit Button */}
               <div className="flex gap-4 pt-6 border-t border-gray-200">

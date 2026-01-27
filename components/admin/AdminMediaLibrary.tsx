@@ -5,6 +5,7 @@ import { Upload, Trash2, Search, Filter, Image as ImageIcon, Video, FileText, Gr
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Pagination from '@/components/ui/Pagination'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 import { useDebounce } from '@/hooks/useDebounce'
 
@@ -43,6 +44,10 @@ export default function AdminMediaLibrary() {
   const [uploadCategory, setUploadCategory] = useState('general')
   const [uploadAltText, setUploadAltText] = useState('')
   const [tableNotExists, setTableNotExists] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; mediaId: string | null }>({
+    isOpen: false,
+    mediaId: null,
+  })
 
   useEffect(() => {
     fetchMedia()
@@ -145,8 +150,14 @@ export default function AdminMediaLibrary() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Xóa file này?')) return
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, mediaId: id })
+  }
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.mediaId
+    if (!id) return
+    setDeleteConfirm({ isOpen: false, mediaId: null })
 
     try {
       const response = await fetch(`/api/admin/media-library?id=${id}`, {
@@ -202,6 +213,18 @@ export default function AdminMediaLibrary() {
 
   return (
     <div className="space-y-6">
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, mediaId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá File"
+        message="Bạn có chắc chắn muốn xoá file này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+
       {/* Table Not Exists Warning */}
       {tableNotExists && (
         <Card className="p-6 bg-yellow-50 border-yellow-200">

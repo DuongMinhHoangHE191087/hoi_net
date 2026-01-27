@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, Sparkles, Home, LogIn, Loader2, AlertCircle, XCircle, Info, RefreshCw, Send, Shield } from 'lucide-react'
+import BrandLogo from '@/components/ui/BrandLogo'
 import { useAuth, getErrorMessage } from '@/lib/auth'
 import { 
   validateEmailComprehensive, 
@@ -464,7 +465,7 @@ function LoginContent() {
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
               <div className="p-3 bg-gradient-primary rounded-2xl shadow-glow-pink">
-                <Sparkles className="w-8 h-8 text-white" />
+                <BrandLogo className="w-8 h-8 object-contain" priority />
               </div>
             </motion.div>
 

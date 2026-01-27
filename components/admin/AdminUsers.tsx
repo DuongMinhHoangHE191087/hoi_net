@@ -13,6 +13,7 @@ import UserProfileEditModal from '@/components/admin/UserProfileEditModal'
 import { SafeAvatar } from '@/components/ui/SafeImage'
 import { authFetch } from '@/lib/auth-fetch'
 import { useAuth } from '@/lib/auth'
+import { useUserRole } from '@/hooks/useUserRole'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -22,7 +23,7 @@ interface UserProfile {
   full_name: string | null
   phone: string | null
   avatar_url: string | null
-  role: 'user' | 'moderator' | 'admin'
+  role: 'user' | 'editor' | 'moderator' | 'admin'
   is_blocked: boolean
   blocked_at: string | null
   blocked_reason: string | null
@@ -33,6 +34,7 @@ interface UserProfile {
 
 const ROLE_OPTIONS = [
   { value: 'user', label: 'Người dùng', icon: Users, color: 'gray', description: 'Quyền cơ bản, có thể gửi yêu cầu' },
+  { value: 'editor', label: 'Biên tập viên', icon: Edit, color: 'emerald', description: 'Chỉ được tạo và sửa bài viết blog' },
   { value: 'moderator', label: 'Kiểm duyệt viên', icon: Shield, color: 'blue', description: 'Có thể xem và xử lý yêu cầu' },
   { value: 'admin', label: 'Quản trị viên', icon: Crown, color: 'purple', description: 'Toàn quyền quản lý hệ thống' },
 ]
@@ -40,6 +42,7 @@ const ROLE_OPTIONS = [
 export default function AdminUsers() {
   // ✅ Get current user to prevent self-actions
   const { user } = useAuth()
+  const actorRole = useUserRole()
   
   // ✅ OPTIMIZED: Trust AdminPage parent - no auth check needed
   // If this component rendered, user IS authenticated and admin
@@ -47,7 +50,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState<'all' | 'user' | 'moderator' | 'admin'>('all')
+  const [roleFilter, setRoleFilter] = useState<'all' | 'user' | 'editor' | 'moderator' | 'admin'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all')
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [showBlockModal, setShowBlockModal] = useState(false)
@@ -66,7 +69,7 @@ export default function AdminUsers() {
     password: '',
     full_name: '',
     phone: '',
-    role: 'user' as 'user' | 'moderator' | 'admin',
+    role: 'user' as 'user' | 'editor' | 'moderator' | 'admin',
   })
   const [showPassword, setShowPassword] = useState(false)
   const didFetch = useRef(false)
@@ -144,7 +147,11 @@ export default function AdminUsers() {
     }
   }
 
-  const handleUpdateRole = async (userId: string, newRole: 'user' | 'moderator' | 'admin') => {
+  const handleUpdateRole = async (userId: string, newRole: 'user' | 'editor' | 'moderator' | 'admin') => {
+    if (actorRole.role !== 'admin') {
+      toast.error('Chỉ admin mới có thể thay đổi phân quyền')
+      return
+    }
     setActionLoading(true)
     try {
       const response = await authFetch.patch(`/api/admin/users/${userId}`, { role: newRole })
@@ -240,6 +247,7 @@ export default function AdminUsers() {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-700 border-purple-200'
       case 'moderator': return 'bg-blue-100 text-blue-700 border-blue-200'
+      case 'editor': return 'bg-emerald-100 text-emerald-700 border-emerald-200'
       case 'user': return 'bg-gray-100 text-gray-700 border-gray-200'
       default: return 'bg-gray-100 text-gray-600'
     }
@@ -249,6 +257,7 @@ export default function AdminUsers() {
     switch (role) {
       case 'admin': return Crown
       case 'moderator': return Shield
+      case 'editor': return Edit
       case 'user': return Users
       default: return Users
     }
@@ -275,6 +284,7 @@ export default function AdminUsers() {
     total: users.length,
     admins: users.filter(u => u.role === 'admin').length,
     moderators: users.filter(u => u.role === 'moderator').length,
+    editors: users.filter(u => u.role === 'editor').length,
     blocked: users.filter(u => u.is_blocked).length,
     active: users.filter(u => !u.is_blocked).length,
   }
@@ -338,7 +348,7 @@ export default function AdminUsers() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <div className="flex gap-1">
-              {(['all', 'user', 'moderator', 'admin'] as const).map((role) => (
+              {(['all', 'user', 'editor', 'moderator', 'admin'] as const).map((role) => (
                 <Button
                   key={role}
                   variant={roleFilter === role ? 'primary' : 'secondary'}
@@ -504,6 +514,10 @@ export default function AdminUsers() {
                           variant="secondary"
                           size="sm"
                           onClick={() => {
+                            if (actorRole.role !== 'admin') {
+                              toast.error('Chỉ admin mới có thể thay đổi phân quyền')
+                              return
+                            }
                             setSelectedUser(userItem)
                             setShowRoleModal(true)
                           }}

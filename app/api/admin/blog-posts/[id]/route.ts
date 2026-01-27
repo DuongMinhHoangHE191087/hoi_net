@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/auth-server'
+import { requirePermissionAuth } from '@/lib/auth-server'
 import { dbServer } from '@/lib/supabase/db-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateWithOptimisticLock, logConflict } from '@/lib/optimistic-lock'
@@ -12,32 +12,29 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  return requirePermissionAuth(request, 'blog.edit', async () => {
+    try {
+      const { id } = params
+      
+      const { data, error } = await supabaseAdmin
+        .from('blog_posts')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error || !data) {
+        return NextResponse.json({ error: 'Blog post not found' }, { status: 404 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        post: data
+      })
+    } catch (error: any) {
+      console.error('[Blog Post API] Error:', error)
+      return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
     }
-
-    const { id } = params
-    
-    const { data, error } = await supabaseAdmin
-      .from('blog_posts')
-      .select('*')
-      .eq('id', id)
-      .single()
-
-    if (error || !data) {
-      return NextResponse.json({ error: 'Blog post not found' }, { status: 404 })
-    }
-
-    return NextResponse.json({
-      success: true,
-      post: data
-    })
-  } catch (error: any) {
-    console.error('[Blog Post API] Error:', error)
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
-  }
+  })
 }
 
 // PATCH: Update blog post with optimistic locking (admin only)
@@ -45,15 +42,16 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  return requirePermissionAuth(request, 'blog.edit', async (user) => {
+    try {
+      const { id } = params
+      const body = await request.json()
+      const { version, ...updates } = body
 
-    const { id } = params
-    const body = await request.json()
-    const { version, ...updates } = body
+      // Enforce publish permission
+      if (updates.published === true && user.role !== 'admin' && user.role !== 'moderator') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
 
     // If version is provided, use optimistic locking
     if (version !== undefined) {
@@ -94,18 +92,19 @@ export async function PATCH(
       })
     }
 
-    // Fallback: Update without version check (backwards compatibility)
-    const updatedPost = await dbServer.updateBlogPost(id, updates)
+      // Fallback: Update without version check (backwards compatibility)
+      const updatedPost = await dbServer.updateBlogPost(id, updates)
 
-    return NextResponse.json({
-      success: true,
-      message: 'Blog post updated successfully',
-      post: updatedPost
-    })
-  } catch (error: any) {
-    console.error('[Blog Post API] Error:', error)
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
-  }
+      return NextResponse.json({
+        success: true,
+        message: 'Blog post updated successfully',
+        post: updatedPost
+      })
+    } catch (error: any) {
+      console.error('[Blog Post API] Error:', error)
+      return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
+    }
+  })
 }
 
 // DELETE: Delete blog post (admin only)
@@ -113,22 +112,19 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  return requirePermissionAuth(request, 'blog.delete', async () => {
+    try {
+      const { id } = params
+
+      await dbServer.deleteBlogPost(id)
+
+      return NextResponse.json({
+        success: true,
+        message: 'Blog post deleted successfully'
+      })
+    } catch (error: any) {
+      console.error('[Blog Post API] Error:', error)
+      return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
     }
-
-    const { id } = params
-
-    await dbServer.deleteBlogPost(id)
-
-    return NextResponse.json({
-      success: true,
-      message: 'Blog post deleted successfully'
-    })
-  } catch (error: any) {
-    console.error('[Blog Post API] Error:', error)
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
-  }
+  })
 }

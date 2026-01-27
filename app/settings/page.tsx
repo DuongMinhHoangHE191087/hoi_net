@@ -6,6 +6,8 @@ import Sidebar from '@/components/layout/Sidebar'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import toast from 'react-hot-toast'
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState({
@@ -26,25 +28,30 @@ export default function SettingsPage() {
     marketing: true
   })
 
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault()
-    alert('Thông tin đã được cập nhật!')
+    toast.success('Thông tin đã được cập nhật!')
   }
 
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault()
     if (password.new !== password.confirm) {
-      alert('Mật khẩu mới không khớp!')
+      toast.error('Mật khẩu mới không khớp!')
       return
     }
-    alert('Mật khẩu đã được thay đổi!')
+    toast.success('Mật khẩu đã được thay đổi!')
     setPassword({ current: '', new: '', confirm: '' })
   }
 
   const handleDeleteAccount = () => {
-    if (confirm('Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.')) {
-      alert('Tài khoản đã được xóa')
-    }
+    setDeleteConfirm(true)
+  }
+
+  const confirmDeleteAccount = () => {
+    setDeleteConfirm(false)
+    toast.success('Tài khoản đã được xóa')
   }
 
   return (
@@ -194,6 +201,18 @@ export default function SettingsPage() {
           </Card>
         </div>
       </main>
+
+      {/* Delete Account Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm}
+        onClose={() => setDeleteConfirm(false)}
+        onConfirm={confirmDeleteAccount}
+        title="Xoá Tài Khoản"
+        message="Bạn có chắc chắn muốn xoá tài khoản? Tất cả dữ liệu của bạn sẽ bị xoá vĩnh viễn. Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá Tài Khoản"
+        cancelText="Huỷ"
+      />
     </div>
   )
 }

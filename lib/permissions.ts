@@ -78,16 +78,20 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   moderator: [
     'admin.access',
+    // Moderator: chỉ xử lý yêu cầu, blog, feedback
     'requests.view_all',
     'requests.process',
     'requests.create',
     'requests.view_own',
     'blog.create',
     'blog.edit',
+    'blog.publish',
     'feedback.view',
     'feedback.respond',
   ],
   editor: [
+    // Editor can access admin area, but only sees Blog tab.
+    'admin.access',
     'requests.create',
     'requests.view_own',
     'blog.create',

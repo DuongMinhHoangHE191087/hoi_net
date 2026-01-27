@@ -8,6 +8,9 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Alert from '@/components/ui/Alert'
 import { BlogPost } from '@/lib/supabase'
+import { authFetch } from '@/lib/auth-fetch'
+import { useUserRole } from '@/hooks/useUserRole'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 
 // Lazy load rich text editor
@@ -29,6 +32,11 @@ export default function AdminBlog() {
   const [loading, setLoading] = useState(true)
   const [editMode, setEditMode] = useState(false)
   const [currentPost, setCurrentPost] = useState<Partial<BlogPost>>({})
+  const userRole = useUserRole()
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; postId: string | null }>({
+    isOpen: false,
+    postId: null,
+  })
 
   useEffect(() => {
     loadPosts()
@@ -36,7 +44,7 @@ export default function AdminBlog() {
 
   const loadPosts = async () => {
     try {
-      const response = await fetch('/api/admin/blog-posts?publishedOnly=false')
+      const response = await authFetch.get('/api/admin/blog-posts?publishedOnly=false')
       const data = await response.json()
 
       if (response.ok) {
@@ -71,17 +79,11 @@ export default function AdminBlog() {
         ? `/api/admin/blog-posts/${currentPost.id}`
         : '/api/admin/blog-posts'
 
-      const method = currentPost.id ? 'PATCH' : 'POST'
+      const response = currentPost.id
+        ? await authFetch.patch(url, currentPost)
+        : await authFetch.post(url, currentPost)
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(currentPost)
-      })
-
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (response.ok) {
         toast.success(data.message || 'Lưu bài viết thành công')
@@ -97,31 +99,44 @@ export default function AdminBlog() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc muốn xóa bài viết này?')) {
-      try {
-        const response = await fetch(`/api/admin/blog-posts/${id}`, {
-          method: 'DELETE'
-        })
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, postId: id })
+  }
 
-        const data = await response.json()
+  const confirmDelete = async () => {
+    const id = deleteConfirm.postId
+    if (!id) return
+    setDeleteConfirm({ isOpen: false, postId: null })
 
-        if (response.ok) {
-          toast.success(data.message || 'Xóa bài viết thành công')
-          loadPosts()
-        } else {
-          throw new Error(data.error || 'Failed to delete post')
-        }
-      } catch (error: any) {
-        console.error('Error deleting post:', error)
-        toast.error(error.message || 'Lỗi khi xóa bài viết')
+    try {
+      const response = await authFetch.delete(`/api/admin/blog-posts/${id}`)
+      const data = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        toast.success(data.message || 'Xóa bài viết thành công')
+        loadPosts()
+      } else {
+        throw new Error(data.error || 'Failed to delete post')
       }
+    } catch (error: any) {
+      console.error('Error deleting post:', error)
+      toast.error(error.message || 'Lỗi khi xóa bài viết')
     }
   }
 
   if (editMode) {
     return (
       <div>
+        <ConfirmDialog
+          isOpen={deleteConfirm.isOpen}
+          onClose={() => setDeleteConfirm({ isOpen: false, postId: null })}
+          onConfirm={confirmDelete}
+          title="Xoá Bài Viết"
+          message="Bạn có chắc chắn muốn xoá bài viết này? Hành động này không thể hoàn tác."
+          variant="danger"
+          confirmText="Xoá"
+          cancelText="Huỷ"
+        />
         <Card>
           <h2 className="text-2xl font-bold text-text mb-6">
             {currentPost.id ? 'Chỉnh Sửa Bài Viết' : 'Tạo Bài Viết Mới'}
@@ -173,15 +188,21 @@ export default function AdminBlog() {
               onChange={(e) => setCurrentPost({ ...currentPost, featured_image: e.target.value })}
             />
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={currentPost.published || false}
-                onChange={(e) => setCurrentPost({ ...currentPost, published: e.target.checked })}
-                className="cursor-pointer"
-              />
-              <span className="text-gray-700">Công khai bài viết</span>
-            </label>
+            {userRole.hasPermission('blog.publish') ? (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={currentPost.published || false}
+                  onChange={(e) => setCurrentPost({ ...currentPost, published: e.target.checked })}
+                  className="cursor-pointer"
+                />
+                <span className="text-gray-700">Công khai bài viết</span>
+              </label>
+            ) : (
+              <Alert type="info">
+                <strong className="font-semibold">Quyền xuất bản:</strong> Bạn có thể tạo/sửa bài, nhưng chỉ admin/moderator mới được xuất bản.
+              </Alert>
+            )}
 
             <div className="flex gap-3">
               <Button variant="primary" onClick={handleSave}>Lưu</Button>
@@ -195,6 +216,16 @@ export default function AdminBlog() {
 
   return (
     <div>
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, postId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá Bài Viết"
+        message="Bạn có chắc chắn muốn xoá bài viết này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-text">Quản Lý Blog</h2>
         <Button variant="primary" onClick={handleCreate}>

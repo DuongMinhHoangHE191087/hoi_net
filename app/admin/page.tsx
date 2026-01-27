@@ -114,10 +114,27 @@ export default function AdminPage() {
   const router = useRouter()
   const { user, loading: authLoading, status } = useAuth()
   const userRole = useUserRole()
-  const [activeTab, setActiveTab] = useState<Tab>('homepage')
   const [isPending, startTransition] = useTransition()
   const [adminChecked, setAdminChecked] = useState(false)
   const [isVerifiedAdmin, setIsVerifiedAdmin] = useState(false)
+
+  // Determine default tab based on role
+  const getDefaultTab = (): Tab => {
+    const role = userRole.role
+    if (role === 'admin') return 'homepage'
+    if (role === 'moderator') return 'requests'
+    if (role === 'editor') return 'blog'
+    return 'homepage'
+  }
+
+  const [activeTab, setActiveTab] = useState<Tab>('homepage')
+
+  // Set default tab when role is loaded
+  useEffect(() => {
+    if (!userRole.isLoading && userRole.role) {
+      setActiveTab(getDefaultTab())
+    }
+  }, [userRole.isLoading, userRole.role])
 
   // Handle tab change with transition for smooth UX
   const handleTabChange = (tab: Tab) => {
@@ -180,27 +197,43 @@ export default function AdminPage() {
 
   // ✅ REMOVED: No more pageLoading check - render immediately when ready
 
+  // Build tabs based on role permissions
+  const isAdmin = userRole.role === 'admin'
+  const isModerator = userRole.role === 'moderator'
+  const isEditor = userRole.role === 'editor'
+
   const tabs = [
-    { id: 'homepage' as Tab, label: 'Trang Chủ', icon: Home },
-    { id: 'analytics' as Tab, label: 'Thống Kê', icon: BarChart3 },
-    { id: 'requests' as Tab, label: 'Yêu Cầu', icon: FileText },
-    ...(roleHasPermission(userRole.role, 'admin.users.manage') ? [{ id: 'users' as Tab, label: 'Người Dùng', icon: UserCog }] : []),
-    ...(roleHasPermission(userRole.role, 'blog.create') ? [{ id: 'blog' as Tab, label: 'Blog', icon: BookOpen }] : []),
-    { id: 'team' as Tab, label: 'Đội Ngũ', icon: Users },
-    { id: 'about' as Tab, label: 'Về Chúng Tôi', icon: Info },
-    { id: 'prompts' as Tab, label: 'AI Prompts', icon: Sparkles },
-    { id: 'values' as Tab, label: 'Giá Trị', icon: Target },
-    { id: 'features' as Tab, label: 'Tính Năng', icon: Zap },
-    { id: 'testimonials' as Tab, label: 'Phản Hồi & Testimonials', icon: MessageSquare },
-    { id: 'siteContent' as Tab, label: 'Nội Dung Web', icon: Type },
-    { id: 'branding' as Tab, label: 'Site Branding', icon: ImageIcon },
-    { id: 'media' as Tab, label: 'Media Library', icon: Layers },
-    { id: 'donate' as Tab, label: 'Donate', icon: Heart },
-    { id: 'siteSettings' as Tab, label: 'Cài Đặt Trang', icon: Globe },
-    { id: 'footerLinks' as Tab, label: 'Link Footer', icon: Link2 },
-    { id: 'navLinks' as Tab, label: 'Menu Nav', icon: Menu },
-    { id: 'uiSettings' as Tab, label: 'Giao Diện', icon: Palette },
-    { id: 'settings' as Tab, label: 'Cài Đặt', icon: SettingsIcon },
+    // Admin-only tabs
+    ...(isAdmin ? [{ id: 'homepage' as Tab, label: 'Trang Chủ', icon: Home }] : []),
+    ...(isAdmin ? [{ id: 'analytics' as Tab, label: 'Thống Kê', icon: BarChart3 }] : []),
+    
+    // Requests: Admin + Moderator
+    ...((isAdmin || isModerator) ? [{ id: 'requests' as Tab, label: 'Yêu Cầu', icon: FileText }] : []),
+    
+    // Users: Admin only
+    ...(isAdmin ? [{ id: 'users' as Tab, label: 'Người Dùng', icon: UserCog }] : []),
+    
+    // Blog: Admin + Moderator + Editor
+    ...((isAdmin || isModerator || isEditor) ? [{ id: 'blog' as Tab, label: 'Blog', icon: BookOpen }] : []),
+    
+    // Feedback: Admin + Moderator
+    ...((isAdmin || isModerator) ? [{ id: 'testimonials' as Tab, label: 'Phản Hồi', icon: MessageSquare }] : []),
+    
+    // Admin-only settings tabs
+    ...(isAdmin ? [{ id: 'team' as Tab, label: 'Đội Ngũ', icon: Users }] : []),
+    ...(isAdmin ? [{ id: 'about' as Tab, label: 'Về Chúng Tôi', icon: Info }] : []),
+    ...(isAdmin ? [{ id: 'prompts' as Tab, label: 'AI Prompts', icon: Sparkles }] : []),
+    ...(isAdmin ? [{ id: 'values' as Tab, label: 'Giá Trị', icon: Target }] : []),
+    ...(isAdmin ? [{ id: 'features' as Tab, label: 'Tính Năng', icon: Zap }] : []),
+    ...(isAdmin ? [{ id: 'siteContent' as Tab, label: 'Nội Dung Web', icon: Type }] : []),
+    ...(isAdmin ? [{ id: 'branding' as Tab, label: 'Site Branding', icon: ImageIcon }] : []),
+    ...(isAdmin ? [{ id: 'media' as Tab, label: 'Media Library', icon: Layers }] : []),
+    ...(isAdmin ? [{ id: 'donate' as Tab, label: 'Donate', icon: Heart }] : []),
+    ...(isAdmin ? [{ id: 'siteSettings' as Tab, label: 'Cài Đặt Trang', icon: Globe }] : []),
+    ...(isAdmin ? [{ id: 'footerLinks' as Tab, label: 'Link Footer', icon: Link2 }] : []),
+    ...(isAdmin ? [{ id: 'navLinks' as Tab, label: 'Menu Nav', icon: Menu }] : []),
+    ...(isAdmin ? [{ id: 'uiSettings' as Tab, label: 'Giao Diện', icon: Palette }] : []),
+    ...(isAdmin ? [{ id: 'settings' as Tab, label: 'Cài Đặt', icon: SettingsIcon }] : []),
   ]
 
   return (
@@ -209,14 +242,20 @@ export default function AdminPage() {
 
       <main className="flex-1 p-8">
         <div className="max-w-7xl mx-auto">
-          {/* Admin Header with Security Badge */}
+          {/* Admin Header with Role Badge */}
           <div className="mb-8 flex items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-text">Admin Panel</h1>
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full flex items-center gap-1">
+                <h1 className="text-3xl font-bold text-text">
+                  {isAdmin ? 'Admin Panel' : isModerator ? 'Moderator Panel' : 'Editor Panel'}
+                </h1>
+                <span className={`px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1 ${
+                  isAdmin ? 'bg-red-100 text-red-700' :
+                  isModerator ? 'bg-purple-100 text-purple-700' :
+                  'bg-blue-100 text-blue-700'
+                }`}>
                   <Shield className="w-3 h-3" />
-                  ADMIN
+                  {isAdmin ? 'ADMIN' : isModerator ? 'MODERATOR' : 'EDITOR'}
                 </span>
               </div>
               <p className="text-gray-600">

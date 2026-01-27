@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase'
 import { useSiteSetting } from '@/hooks/useSiteSettings'
 import { SafeAvatar } from '@/components/ui/SafeImage'
 import { FullScreenLoading } from '@/components/UniversalLoading'
+import BrandLogo from '@/components/ui/BrandLogo'
 
 interface DashboardStats {
   totalRequests: number
@@ -370,7 +371,7 @@ export default function DashboardPage() {
 
               {stats.totalRequests === 0 ? (
                 <div className="text-center py-12">
-                  <Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <BrandLogo className="w-16 h-16 object-contain mx-auto mb-4 opacity-40" />
                   <p className="text-gray-600 mb-4">Bạn chưa có yêu cầu nào</p>
                   <Link href="/requests/new">
                     <motion.button

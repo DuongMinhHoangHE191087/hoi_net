@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/auth-server'
+import { verifyAuth, hasServerPermission } from '@/lib/auth-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
@@ -11,8 +11,11 @@ export async function GET(
 ) {
   try {
     const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (!hasServerPermission(user, 'admin.users.manage')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { userId } = await params
@@ -42,8 +45,11 @@ export async function PATCH(
 ) {
   try {
     const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (!hasServerPermission(user, 'admin.users.manage')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { userId } = await params
@@ -56,6 +62,19 @@ export async function PATCH(
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updates[field] = body[field]
+      }
+    }
+
+    // Only admin can change roles
+    if (updates.role !== undefined && user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Validate role values (defense-in-depth)
+    if (updates.role !== undefined) {
+      const allowedRoles = new Set(['admin', 'moderator', 'editor', 'user'])
+      if (!allowedRoles.has(String(updates.role))) {
+        return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
       }
     }
 
@@ -112,8 +131,11 @@ export async function DELETE(
 ) {
   try {
     const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { userId } = await params

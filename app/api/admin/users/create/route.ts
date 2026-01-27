@@ -20,7 +20,7 @@ const createUserSchema = z.object({
   password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
   full_name: z.string().optional(),
   phone: z.string().optional(),
-  role: z.enum(['user', 'moderator', 'admin']).optional().default('user')
+  role: z.enum(['user', 'editor', 'moderator', 'admin']).optional().default('user')
 })
 
 // POST: Create new user (Admin only)

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Calendar, User, ArrowRight, Sparkles } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import BrandLogo from '@/components/ui/BrandLogo'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { BlogPost } from '@/lib/supabase'
 
@@ -105,7 +106,7 @@ export default function BlogListClient({ posts }: BlogListClientProps) {
           <div className="text-center mb-16 fade-in-up">
             <div className="scale-in inline-block mb-6">
               <div className="p-4 bg-gradient-primary rounded-3xl shadow-glow animate-glow">
-                <Sparkles className="w-10 h-10 text-white" />
+                <BrandLogo className="w-10 h-10 object-contain" priority />
               </div>
             </div>
 

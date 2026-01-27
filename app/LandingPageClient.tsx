@@ -11,6 +11,7 @@ import { TeamMember, ValueSection, Feature, Feedback } from '@/lib/supabase'
 import { demoStats } from '@/components/sections/GlobalStats'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import BrandLogo from '@/components/ui/BrandLogo'
 
 // Dynamic imports cho heavy components (below-the-fold)
 const TeamCarousel3D = dynamic(() => import('@/components/sections/TeamCarousel3D'), {
@@ -52,6 +53,8 @@ export default function LandingPageClient({ team, valueSections, features, testi
 
   // Helper function to get setting with fallback
   const getSetting = (key: string, fallback: string = '') => siteSettings[key] || fallback
+
+  const brandLogoUrl = getSetting('site_logo_url', getSetting('brand_logo_url', getSetting('site_favicon_url', '')))
 
   // ✅ Fix hydration mismatch - only render particles on client
   useEffect(() => {
@@ -331,7 +334,7 @@ export default function LandingPageClient({ team, valueSections, features, testi
         <div className="max-w-7xl mx-auto text-center">
           <div className="scale-in mb-6 inline-block">
             <div className="p-4 bg-gradient-primary rounded-3xl shadow-glow animate-glow">
-              <Sparkles className="w-12 h-12 text-white" />
+              <BrandLogo src={brandLogoUrl} className="w-12 h-12 object-contain" priority />
             </div>
           </div>
 
