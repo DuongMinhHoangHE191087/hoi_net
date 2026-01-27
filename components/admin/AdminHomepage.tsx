@@ -57,8 +57,11 @@ export default function AdminHomepage({ onNavigateToTab }: AdminHomepageProps) {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/site-content')
+      // Add cache-busting timestamp
+      const timestamp = Date.now()
+      const response = await fetch(`/api/admin/site-content?_t=${timestamp}`)
       const data = await response.json()
+      console.log('[AdminHomepage] Loaded settings')
 
       if (response.ok) {
         setHeroSettings({

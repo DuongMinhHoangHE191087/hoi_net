@@ -43,8 +43,11 @@ export default function AdminTestimonials() {
 
     try {
       const headers = await getAuthHeaders()
-      const response = await fetch('/api/admin/feedback', { headers })
+      // Add cache-busting to ensure fresh data
+      const timestamp = Date.now()
+      const response = await fetch(`/api/admin/feedback?_t=${timestamp}`, { headers })
       const result = await response.json()
+      console.log('[AdminTestimonials] Loaded feedback:', result.feedback?.length || 0)
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to load feedback')

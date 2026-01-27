@@ -183,8 +183,11 @@ export default function AdminFeatures() {
   const fetchFeatures = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/features')
+      // Add cache-busting timestamp
+      const timestamp = Date.now()
+      const response = await fetch(`/api/admin/features?_t=${timestamp}`)
       const data = await response.json()
+      console.log('[AdminFeatures] Loaded features:', data.features?.length || 0)
 
       if (data.success) {
         setFeatures(data.features || [])

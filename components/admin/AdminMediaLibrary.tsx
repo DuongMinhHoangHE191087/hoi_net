@@ -66,9 +66,12 @@ export default function AdminMediaLibrary() {
       if (fileType !== 'all') params.append('fileType', fileType)
       params.append('page', currentPage.toString())
       params.append('limit', ITEMS_PER_PAGE.toString())
+      // Add cache-busting timestamp
+      params.append('_t', Date.now().toString())
 
       const response = await fetch(`/api/admin/media-library?${params}`)
       const data = await response.json()
+      console.log('[AdminMediaLibrary] Loaded media:', data.media?.length || 0)
 
       if (response.ok) {
         setMedia(data.media || [])

@@ -44,8 +44,11 @@ export default function AdminBlog() {
 
   const loadPosts = async () => {
     try {
-      const response = await authFetch.get('/api/admin/blog-posts?publishedOnly=false')
+      // Add cache-busting timestamp
+      const timestamp = Date.now()
+      const response = await authFetch.get(`/api/admin/blog-posts?publishedOnly=false&_t=${timestamp}`)
       const data = await response.json()
+      console.log('[AdminBlog] Loaded posts:', data.posts?.length || 0)
 
       if (response.ok) {
         setPosts(data.posts || [])

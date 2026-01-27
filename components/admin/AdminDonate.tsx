@@ -156,7 +156,10 @@ export default function AdminDonate() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/admin/site-settings')
+      // Add cache-busting timestamp
+      const timestamp = Date.now()
+      const res = await fetch(`/api/admin/site-settings?_t=${timestamp}`)
+      console.log('[AdminDonate] Fetching settings...')
       if (res.ok) {
         const data = await res.json()
         const settingsObj: Record<string, string> = {}

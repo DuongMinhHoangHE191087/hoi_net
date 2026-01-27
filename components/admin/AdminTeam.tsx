@@ -28,8 +28,11 @@ export default function AdminTeam() {
 
   const loadMembers = async () => {
     try {
-      const response = await fetch('/api/admin/team-members')
+      // Add cache-busting timestamp
+      const timestamp = Date.now()
+      const response = await fetch(`/api/admin/team-members?_t=${timestamp}`)
       const data = await response.json()
+      console.log('[AdminTeam] Loaded members:', data.teamMembers?.length || 0)
 
       if (response.ok) {
         setMembers(data.teamMembers || [])

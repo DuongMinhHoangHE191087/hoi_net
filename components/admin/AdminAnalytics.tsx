@@ -73,9 +73,11 @@ export default function AdminAnalytics() {
   const fetchAnalytics = async (retryCount = 0) => {
     setLoading(true)
     try {
+      // Add cache-busting timestamp
+      const timestamp = Date.now()
       console.log('[AdminAnalytics] Starting fetch... (retry:', retryCount, ')')
 
-      const res = await authFetch.get('/api/admin/analytics')
+      const res = await authFetch.get(`/api/admin/analytics?_t=${timestamp}`)
 
       console.log('[AdminAnalytics] Response status:', res.status)
 

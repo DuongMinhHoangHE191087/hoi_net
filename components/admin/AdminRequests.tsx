@@ -66,9 +66,11 @@ export default function AdminRequests() {
     setError(null)
 
     try {
+      // Add cache-busting timestamp to ensure fresh data
+      const timestamp = Date.now()
       console.log('[AdminRequests] Fetching requests with filter:', filter, 'page:', currentPage, 'retry:', retryCount)
       const response = await authFetch.get(
-        `/api/admin/requests?status=${filter}&page=${currentPage}&limit=${ITEMS_PER_PAGE}`
+        `/api/admin/requests?status=${filter}&page=${currentPage}&limit=${ITEMS_PER_PAGE}&_t=${timestamp}`
       )
 
       console.log('[AdminRequests] Response status:', response.status)

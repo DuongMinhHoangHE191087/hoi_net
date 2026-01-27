@@ -4,6 +4,12 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
+// Helper to add no-cache headers
+const noCacheHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate',
+  'Pragma': 'no-cache',
+}
+
 // GET: List all users (Admin only)
 export async function GET(request: NextRequest) {
   return requirePermissionAuth(request, 'admin.users.manage', async (_user) => {
@@ -70,7 +76,7 @@ export async function GET(request: NextRequest) {
           limit,
           total: enrichedData.length,
         },
-      })
+      }, { headers: noCacheHeaders })
     } catch (error: any) {
       console.error('[Admin Users] Error:', error)
       return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

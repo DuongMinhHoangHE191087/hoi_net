@@ -91,7 +91,9 @@ export default function AdminUsers() {
 
     try {
       console.log('[AdminUsers] Fetching from /api/admin/users... (retry:', retryCount, ')')
-      const response = await authFetch.get('/api/admin/users')
+      // Add cache-busting query param to prevent caching
+      const timestamp = Date.now()
+      const response = await authFetch.get(`/api/admin/users?_t=${timestamp}`)
       console.log('[AdminUsers] Response status:', response.status)
 
       if (!response.ok) {
@@ -148,21 +150,39 @@ export default function AdminUsers() {
   }
 
   const handleUpdateRole = async (userId: string, newRole: 'user' | 'editor' | 'moderator' | 'admin') => {
+    console.log('[AdminUsers] handleUpdateRole called:', { userId, newRole, actorRole: actorRole.role, isLoading: actorRole.isLoading })
+    
+    if (actorRole.isLoading) {
+      toast.error('Đang tải thông tin phân quyền, vui lòng thử lại')
+      return
+    }
+    
     if (actorRole.role !== 'admin') {
-      toast.error('Chỉ admin mới có thể thay đổi phân quyền')
+      toast.error(`Chỉ admin mới có thể thay đổi phân quyền (Bạn là: ${actorRole.role})`)
       return
     }
     setActionLoading(true)
     try {
+      console.log('[AdminUsers] Updating role for', userId, 'to', newRole)
       const response = await authFetch.patch(`/api/admin/users/${userId}`, { role: newRole })
-      if (!response.ok) throw new Error('Failed to update role')
+      const data = await response.json()
+      console.log('[AdminUsers] Update response:', response.status, data)
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update role')
+      }
 
       toast.success(`Đã cập nhật vai trò thành ${getRoleLabel(newRole)}`)
       setShowRoleModal(false)
       setSelectedUser(null)
-      fetchUsers()
+      
+      // Force refresh with delay to ensure DB is updated
+      console.log('[AdminUsers] Refreshing users list...')
+      await fetchUsers()
+      console.log('[AdminUsers] Users refreshed')
     } catch (err: any) {
-      toast.error('Lỗi khi cập nhật vai trò')
+      console.error('[AdminUsers] Update role error:', err)
+      toast.error(err.message || 'Lỗi khi cập nhật vai trò')
     } finally {
       setActionLoading(false)
     }

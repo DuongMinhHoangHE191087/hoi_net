@@ -99,8 +99,11 @@ export default function AdminValues() {
   const loadSections = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/values')
+      // Add cache-busting timestamp
+      const timestamp = Date.now()
+      const response = await fetch(`/api/admin/values?_t=${timestamp}`)
       const data = await response.json()
+      console.log('[AdminValues] Loaded sections:', data.valueSections?.length || 0)
 
       if (response.ok) {
         setSections(data.valueSections || [])
