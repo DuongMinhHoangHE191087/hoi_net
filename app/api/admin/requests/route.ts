@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { verifyAuth } from '@/lib/auth-server'
+import { requirePermissionAuth } from '@/lib/auth-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import {
   successResponse,
@@ -15,29 +15,22 @@ export const dynamic = 'force-dynamic'
 
 const log = logger.child({ path: '/api/admin/requests' })
 
-// GET: List all requests (Admin only)
+// GET: List all requests (Requires requests.view_all)
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    console.log('[AdminRequests API] Starting verifyAuth...')
-    const user = await verifyAuth(request)
+    return requirePermissionAuth(request, 'requests.view_all', async (_user) => {
+      console.log('[AdminRequests API] Auth result:', {
+        user: _user?.email || 'null',
+        id: _user?.id || 'null',
+        isAdmin: _user?.isAdmin || false,
+        role: _user?.role || 'null'
+      })
     
-    console.log('[AdminRequests API] Auth result:', {
-      user: user?.email || 'null',
-      id: user?.id || 'null',
-      isAdmin: user?.isAdmin || false,
-      role: user?.role || 'null'
-    })
-    
-    if (!user || !user.isAdmin) {
-      console.log('[AdminRequests API] Unauthorized - returning 401')
-      return unauthorizedResponse()
-    }
-
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const { page, limit, offset } = parsePagination(searchParams, { limit: 20 })
+      const { searchParams } = new URL(request.url)
+      const status = searchParams.get('status')
+      const { page, limit, offset } = parsePagination(searchParams, { limit: 20 })
 
     console.log('[AdminRequests API] Query params:', { status, page, limit, offset })
 
@@ -124,7 +117,7 @@ export async function GET(request: NextRequest) {
         startTime
       )
     )
-
+    }) // Close requirePermissionAuth callback
   } catch (error: any) {
     log.error('Unexpected error fetching requests', { error })
     return internalErrorResponse(error)

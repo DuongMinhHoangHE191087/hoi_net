@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, User, Mail, Phone, Facebook, Calendar, FileText,
   Image as ImageIcon, Download, Sparkles, Loader2,
-  CheckCircle, XCircle, Clock, Send, AlertCircle
+  CheckCircle, XCircle, Clock, Send, AlertCircle, History,
+  ExternalLink, Copy, Info
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { SafeAvatar } from '@/components/ui/SafeImage'
@@ -23,6 +24,8 @@ interface UserRequest {
   admin_notes: string | null
   created_at: string
   completed_at: string | null
+  updated_at?: string
+  admin_id?: string
   user_profiles: {
     full_name: string
     phone: string | null
@@ -41,6 +44,7 @@ interface Props {
 export default function RequestDetailModal({ isOpen, onClose, request, onUpdate }: Props) {
   const [processing, setProcessing] = useState(false)
   const [aiAction, setAiAction] = useState<'restore' | 'enhance' | 'colorize'>('restore')
+  const [showHistory, setShowHistory] = useState(false)
 
   const handleAIProcess = async () => {
     setProcessing(true)
@@ -86,6 +90,11 @@ export default function RequestDetailModal({ isOpen, onClose, request, onUpdate 
     } catch (error: any) {
       toast.error(error.message)
     }
+  }
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success(`Đã copy ${label}`)
   }
 
   const getStatusBadge = () => {
@@ -174,6 +183,12 @@ export default function RequestDetailModal({ isOpen, onClose, request, onUpdate 
                     <a href={`tel:${request.user_profiles.phone}`} className="text-primary hover:underline">
                       {request.user_profiles.phone}
                     </a>
+                    <button
+                      onClick={() => copyToClipboard(request.user_profiles!.phone!, 'SĐT')}
+                      className="p-1 hover:bg-gray-200 rounded"
+                    >
+                      <Copy className="w-3 h-3 text-gray-400" />
+                    </button>
                   </div>
                 )}
                 {request.user_profiles?.facebook_url && (
@@ -183,9 +198,10 @@ export default function RequestDetailModal({ isOpen, onClose, request, onUpdate 
                       href={request.user_profiles.facebook_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary hover:underline"
+                      className="text-primary hover:underline flex items-center gap-1"
                     >
                       Facebook Profile
+                      <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 )}
@@ -299,43 +315,113 @@ export default function RequestDetailModal({ isOpen, onClose, request, onUpdate 
             {request.admin_notes && (
               <div>
                 <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-primary" />
-                  Ghi Chú Admin
+                  <History className="w-5 h-5 text-primary" />
+                  Lịch Sử Xử Lý
+                  <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    className="ml-auto text-sm text-primary hover:underline"
+                  >
+                    {showHistory ? 'Thu gọn' : 'Xem chi tiết'}
+                  </button>
                 </h3>
-                <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                    {request.admin_notes}
-                  </pre>
-                </div>
+                {showHistory && (
+                  <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200 max-h-60 overflow-y-auto">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                      {request.admin_notes}
+                    </pre>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Restored Images */}
+            {/* Delivered/Restored Images - DELIVERY HISTORY */}
             {request.restored_images && request.restored_images.length > 0 && (
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
+                <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  Ảnh Đã Xử Lý ({request.restored_images.length})
+                  Ảnh Đã Gửi Trả ({request.restored_images.length})
+                  {request.completed_at && (
+                    <span className="ml-auto text-sm font-normal text-green-600">
+                      Giao lúc: {new Date(request.completed_at).toLocaleString('vi-VN')}
+                    </span>
+                  )}
                 </h3>
+                
+                {/* Delivery Info Banner */}
+                <div className="mb-4 p-3 bg-white/80 rounded-lg border border-green-300 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span className="text-sm text-green-800">
+                    Kết quả đã được gửi cho khách hàng. Họ có thể tải về từ trang yêu cầu.
+                  </span>
+                </div>
+                
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {request.restored_images.map((url, i) => (
                     <div key={i} className="relative group">
                       <img
                         src={url}
                         alt={`Restored ${i + 1}`}
-                        className="w-full h-48 object-cover rounded-lg border-2 border-green-200"
+                        className="w-full h-48 object-cover rounded-lg border-2 border-green-300 shadow-md"
                       />
-                      <a
-                        href={url}
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute top-2 right-2 p-2 bg-black/70 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Download className="w-4 h-4" />
-                      </a>
+                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent rounded-b-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white text-xs font-medium">Ảnh #{i + 1}</span>
+                          <a
+                            href={url}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 bg-white/20 hover:bg-white/40 rounded-lg transition-colors"
+                          >
+                            <Download className="w-4 h-4 text-white" />
+                          </a>
+                        </div>
+                      </div>
                     </div>
                   ))}
+                </div>
+                
+                {/* Download All Button */}
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={() => {
+                      request.restored_images?.forEach((url, i) => {
+                        setTimeout(() => {
+                          const link = document.createElement('a')
+                          link.href = url
+                          link.download = `restored_${request.id.slice(0,8)}_${i+1}.jpg`
+                          link.target = '_blank'
+                          link.click()
+                        }, i * 300)
+                      })
+                      toast.success('Đang tải tất cả ảnh...')
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Download className="w-5 h-5" />
+                    Tải Tất Cả ({request.restored_images.length} ảnh)
+                  </button>
+                  <button
+                    onClick={() => {
+                      const urls = request.restored_images?.join('\n') || ''
+                      navigator.clipboard.writeText(urls)
+                      toast.success('Đã copy tất cả URL')
+                    }}
+                    className="py-2.5 px-4 bg-white border-2 border-green-300 hover:bg-green-50 text-green-700 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy URLs
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* No Restored Images Yet (for completed status without images) */}
+            {request.status === 'completed' && (!request.restored_images || request.restored_images.length === 0) && (
+              <div className="bg-yellow-50 rounded-xl p-4 border-2 border-yellow-200">
+                <div className="flex items-center gap-2 text-yellow-800">
+                  <AlertCircle className="w-5 h-5" />
+                  <span>Yêu cầu đã hoàn thành nhưng chưa có ảnh được gửi trả.</span>
                 </div>
               </div>
             )}

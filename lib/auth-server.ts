@@ -7,9 +7,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { AdminService } from '@/lib/admin-service'
-
-// User roles
-export type UserRole = 'user' | 'premium' | 'admin'
+import type { Permission, UserRole } from '@/lib/permissions'
+import { hasPermission as roleHasPermission } from '@/lib/permissions'
 
 export interface AuthUser {
   id: string
@@ -58,13 +57,13 @@ export async function getServerUser(): Promise<AuthUser | null> {
       return null
     }
 
-    // ✅ IMPROVED: Use centralized AdminService instead of env check
-    const isAdmin = await AdminService.isAdmin(user.id, supabase)
+    const role = await AdminService.getRole(user.id, supabase)
+    const isAdmin = role === 'admin'
 
     return {
       id: user.id,
       email: user.email || '',
-      role: isAdmin ? 'admin' : 'user',
+      role,
       isAdmin,
     }
   } catch {
@@ -100,19 +99,54 @@ export async function verifyAuth(request: NextRequest): Promise<AuthUser | null>
       return null
     }
 
-    // ✅ IMPROVED: Use centralized AdminService instead of env check
-    const isAdmin = await AdminService.isAdmin(user.id, supabase)
+    const role = await AdminService.getRole(user.id, supabase)
+    const isAdmin = role === 'admin'
 
     return {
       id: user.id,
       email: user.email || '',
-      role: isAdmin ? 'admin' : 'user',
+      role,
       isAdmin,
     }
   } catch (err) {
     console.error('[Auth] Verification error:', err)
     return null
   }
+}
+
+/**
+ * Check if user has a permission (server-side)
+ */
+export function hasServerPermission(user: AuthUser | null, permission: Permission): boolean {
+  if (!user) return false
+  return roleHasPermission(user.role, permission)
+}
+
+/**
+ * Require a permission for API routes
+ */
+export async function requirePermissionAuth(
+  request: NextRequest,
+  permission: Permission,
+  handler: (user: AuthUser, request: NextRequest) => Promise<Response>
+): Promise<Response> {
+  const user = await verifyAuth(request)
+
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized', message: 'Vui lòng đăng nhập để tiếp tục' },
+      { status: 401 }
+    )
+  }
+
+  if (!hasServerPermission(user, permission)) {
+    return NextResponse.json(
+      { error: 'Forbidden', message: 'Bạn không có quyền truy cập' },
+      { status: 403 }
+    )
+  }
+
+  return handler(user, request)
 }
 
 /**

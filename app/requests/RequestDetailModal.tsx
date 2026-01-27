@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   X, Download, Calendar, User, FileText, Image as ImageIcon,
-  CheckCircle, XCircle, Clock, Loader2, Sparkles, Send, Key
+  CheckCircle, XCircle, Clock, Loader2, Sparkles, Send, Key, Star, MessageSquare
 } from 'lucide-react'
 import { useGeminiKey } from '@/hooks/useGeminiKey'
 import { geminiClient } from '@/lib/gemini-client'
 import ApiKeySetup from '@/components/ui/ApiKeySetup'
+import RequestFeedbackModal from '@/components/ui/RequestFeedbackModal'
 import toast from 'react-hot-toast'
 
 interface UserRequest {
@@ -94,9 +95,36 @@ export default function RequestDetailModal({
   const [showApiKeySetup, setShowApiKeySetup] = useState(false)
   const [isBYOKProcessing, setIsBYOKProcessing] = useState(false)
   const [byokResult, setBYOKResult] = useState<string | null>(null)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [hasFeedback, setHasFeedback] = useState(false)
+  const [userRating, setUserRating] = useState<number | null>(null)
   
   // BYOK key management
   const { hasKey: hasBYOK, maskedKey } = useGeminiKey()
+
+  // Check if user has already submitted feedback
+  useEffect(() => {
+    if (request.status === 'completed') {
+      checkFeedback()
+    }
+  }, [request.id, request.status])
+
+  const checkFeedback = async () => {
+    try {
+      const response = await fetch(`/api/requests/${request.id}/feedback`, {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setHasFeedback(data.hasFeedback)
+        if (data.feedback) {
+          setUserRating(data.feedback.rating)
+        }
+      }
+    } catch (error) {
+      console.error('Error checking feedback:', error)
+    }
+  }
 
   const statusInfo = STATUS_CONFIG[request.status]
   const StatusIcon = statusInfo.icon
@@ -265,18 +293,59 @@ export default function RequestDetailModal({
                 <p className="text-green-700">Bạn có {request.restored_images.length} ảnh đã được xử lý</p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                request.restored_images?.forEach((url, i) => {
-                  setTimeout(() => handleDownload(url), i * 500)
-                })
-                toast.success('Đang tải tất cả ảnh...')
-              }}
-              className="btn-glass-primary bg-gradient-to-r from-green-500 to-emerald-500 text-white"
-            >
-              <Download className="w-5 h-5 mr-2" />
-              Tải Tất Cả Ảnh ({request.restored_images.length})
-            </button>
+            
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => {
+                  request.restored_images?.forEach((url, i) => {
+                    setTimeout(() => handleDownload(url), i * 500)
+                  })
+                  toast.success('Đang tải tất cả ảnh...')
+                }}
+                className="btn-glass-primary bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Tải Tất Cả Ảnh ({request.restored_images.length})
+              </button>
+              
+              {/* Feedback Button */}
+              <button
+                onClick={() => setShowFeedbackModal(true)}
+                className={`btn-glass-secondary flex items-center gap-2 ${
+                  hasFeedback 
+                    ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                    : 'bg-purple-50 text-purple-700 border-purple-200 animate-pulse'
+                }`}
+              >
+                {hasFeedback ? (
+                  <>
+                    <div className="flex items-center gap-0.5">
+                      {[...Array(userRating || 0)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-current text-yellow-400" />
+                      ))}
+                    </div>
+                    <span>Xem đánh giá</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-5 h-5" />
+                    <span>Đánh giá kết quả</span>
+                  </>
+                )}
+              </button>
+            </div>
+            
+            {/* Prompt to leave feedback if not done */}
+            {!hasFeedback && (
+              <div className="mt-4 p-3 bg-white/80 rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2 text-amber-700">
+                  <Star className="w-5 h-5 text-amber-500" />
+                  <span className="text-sm font-medium">
+                    Hãy để lại đánh giá giúp chúng tôi cải thiện dịch vụ!
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -418,19 +487,19 @@ export default function RequestDetailModal({
           onClose={() => setShowApiKeySetup(false)} 
         />
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-6 border-t border-gray-200">
-          {request.status === 'pending' && (
-            <button
-              onClick={() => onSendToAdmin(request)}
-              disabled={isSending}
-              className="btn-glass-secondary flex-1 disabled:opacity-50"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              {isSending ? 'Đang Gửi...' : 'Gửi Cho Admin'}
-            </button>
-          )}
+        {/* Request Feedback Modal */}
+        <RequestFeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          requestId={request.id}
+          requestType={request.type}
+          onFeedbackSubmitted={() => {
+            checkFeedback()
+          }}
+        />
 
+        {/* Footer Actions */}
+        <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
           <button
             onClick={() => onDelete(request.id)}
             disabled={isDeleting}

@@ -2,10 +2,31 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Upload, Image as ImageIcon, Send, Loader2, CheckCircle, Trash2 } from 'lucide-react'
+import { X, Upload, Image as ImageIcon, Send, Loader2, CheckCircle, Trash2, AlertCircle, FileImage } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
 import { authFetch } from '@/lib/auth-fetch'
+
+// Allowed image types
+const ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/jpg', 
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/tiff'
+]
+
+// Max file size: 50MB (in bytes)
+const MAX_FILE_SIZE = 50 * 1024 * 1024
+
+// Format file size for display
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
 
 interface DeliveryModalProps {
   isOpen: boolean
@@ -32,6 +53,7 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [adminNotes, setAdminNotes] = useState('')
+  const [uploadProgress, setUploadProgress] = useState<number>(0)
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -43,22 +65,35 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
 
     const validFiles: File[] = []
     const validPreviews: string[] = []
+    const errors: string[] = []
 
     files.forEach(file => {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} không phải là ảnh`)
+      // Validate file type
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        errors.push(`${file.name}: Định dạng không hỗ trợ (${file.type || 'unknown'})`)
         return
       }
-      if (file.size > 50 * 1024 * 1024) {
-        toast.error(`${file.name} vượt quá 50MB`)
+      
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        errors.push(`${file.name}: File quá lớn (${formatFileSize(file.size)} > 50MB)`)
         return
       }
+      
       validFiles.push(file)
       validPreviews.push(URL.createObjectURL(file))
     })
 
-    setSelectedFiles([...selectedFiles, ...validFiles])
-    setPreviewUrls([...previewUrls, ...validPreviews])
+    // Show errors if any
+    if (errors.length > 0) {
+      errors.forEach(err => toast.error(err, { duration: 4000 }))
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedFiles([...selectedFiles, ...validFiles])
+      setPreviewUrls([...previewUrls, ...validPreviews])
+      toast.success(`Đã thêm ${validFiles.length} ảnh`)
+    }
   }
 
   const removeFile = (index: number) => {
@@ -69,7 +104,9 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
 
   const uploadImages = async (): Promise<string[]> => {
     setUploading(true)
+    setUploadProgress(0)
     const uploadedUrls: string[] = []
+    const totalFiles = selectedFiles.length
 
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
@@ -77,21 +114,31 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
         const formData = new FormData()
         formData.append('file', file)
 
-        toast.loading(`Đang tải ảnh ${i + 1}/${selectedFiles.length}...`, { id: `upload-${i}` })
+        toast.loading(`Đang tải ảnh ${i + 1}/${totalFiles} (${formatFileSize(file.size)})...`, { id: `upload-${i}` })
 
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         })
 
+        const data = await response.json()
+
         if (!response.ok) {
-          throw new Error(`Upload failed for ${file.name}`)
+          // Handle specific errors
+          if (response.status === 413) {
+            throw new Error(`${file.name}: File quá lớn - vui lòng nén ảnh`)
+          }
+          throw new Error(data.message || `Upload failed for ${file.name}`)
         }
 
-        const data = await response.json()
         uploadedUrls.push(data.url)
-        toast.success(`Tải ảnh ${i + 1}/${selectedFiles.length} thành công`, { id: `upload-${i}` })
+        setUploadProgress(Math.round(((i + 1) / totalFiles) * 100))
+        toast.success(`Tải ảnh ${i + 1}/${totalFiles} thành công`, { id: `upload-${i}` })
       }
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      toast.error(`Lỗi tải ảnh: ${error.message}`)
+      throw error
     } finally {
       setUploading(false)
     }
@@ -108,27 +155,28 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
     setDelivering(true)
 
     try {
-      // Upload images to Cloudinary
+      // Upload images to Cloudinary (NOT using AI/Gemini)
       const imageUrls = await uploadImages()
       setRestoredImages(imageUrls)
 
-      // Send to API
+      // Send to delivery API (this does NOT call Gemini)
       const response = await authFetch.post(`/api/admin/requests/${request.id}/deliver`, {
-          restored_images: imageUrls,
-          admin_notes: adminNotes || undefined
-        })
+        restored_images: imageUrls,
+        admin_notes: adminNotes || undefined,
+        notify_user: true
+      })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to deliver')
+        throw new Error(error.error || error.message || 'Failed to deliver')
       }
 
-      toast.success('Gửi trả thành công!')
+      toast.success('🎉 Gửi trả thành công! Người dùng đã được thông báo.')
       onDelivered()
       onClose()
     } catch (error: any) {
       console.error('Delivery error:', error)
-      toast.error(error.message || 'Không thể gửi trả')
+      toast.error(`Lỗi: ${error.message}`)
     } finally {
       setDelivering(false)
     }
@@ -201,12 +249,30 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
 
             {/* Upload Restored Images */}
             <div>
-              <h3 className="font-semibold mb-3">Ảnh đã xử lý</h3>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <FileImage className="w-5 h-5 text-green-600" />
+                Ảnh đã xử lý
+              </h3>
+              
+              {/* File requirements info */}
+              <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-blue-800">
+                    <p className="font-semibold">Yêu cầu file:</p>
+                    <ul className="mt-1 space-y-0.5">
+                      <li>• Định dạng: JPEG, PNG, GIF, WebP, BMP, TIFF</li>
+                      <li>• Kích thước tối đa: 50MB mỗi file</li>
+                      <li>• Số lượng: Tối đa 10 ảnh</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
               
               <label className="block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
                 <input
                   type="file"
-                  accept="image/*"
+                  accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff"
                   multiple
                   onChange={handleFileSelect}
                   className="hidden"
@@ -214,30 +280,70 @@ export default function DeliveryModal({ isOpen, onClose, request, onDelivered }:
                 />
                 <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-700 font-medium">Click để chọn ảnh đã xử lý</p>
-                <p className="text-sm text-gray-500 mt-1">Tối đa 10 ảnh, mỗi ảnh 10MB</p>
+                <p className="text-sm text-gray-500 mt-1">JPEG, PNG, GIF, WebP • Tối đa 50MB/ảnh</p>
               </label>
+
+              {/* Upload Progress */}
+              {uploading && uploadProgress > 0 && (
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Đang tải lên...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Preview Grid */}
               {previewUrls.length > 0 && (
-                <div className="grid grid-cols-3 gap-3 mt-4">
-                  {previewUrls.map((url, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={url}
-                        alt={`Restored ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border-2 border-green-500"
-                      />
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      Đã chọn {selectedFiles.length} ảnh ({selectedFiles.reduce((acc, f) => acc + f.size, 0) > 0 ? formatFileSize(selectedFiles.reduce((acc, f) => acc + f.size, 0)) : '0 B'})
+                    </span>
+                    {selectedFiles.length > 0 && (
                       <button
-                        onClick={() => removeFile(index)}
-                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {
+                          previewUrls.forEach(url => URL.revokeObjectURL(url))
+                          setSelectedFiles([])
+                          setPreviewUrls([])
+                        }}
+                        className="text-xs text-red-600 hover:underline"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        Xóa tất cả
                       </button>
-                      <div className="absolute bottom-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded">
-                        Đã xử lý
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {previewUrls.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Restored ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border-2 border-green-500"
+                        />
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <div className="absolute bottom-2 left-2 right-2 flex justify-between">
+                          <span className="px-2 py-1 bg-green-500 text-white text-xs rounded">
+                            Đã xử lý
+                          </span>
+                          <span className="px-2 py-1 bg-black/70 text-white text-xs rounded">
+                            {formatFileSize(selectedFiles[index]?.size || 0)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

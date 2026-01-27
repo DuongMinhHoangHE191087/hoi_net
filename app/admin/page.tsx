@@ -8,6 +8,8 @@ import Sidebar from '@/components/layout/Sidebar'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { useAuth } from '@/lib/auth'
+import { useUserRole } from '@/hooks/useUserRole'
+import { hasPermission as roleHasPermission } from '@/lib/permissions'
 import toast from 'react-hot-toast'
 
 // Tab loading skeleton component
@@ -110,7 +112,8 @@ function TabRenderer({ tabId }: { tabId: Tab }) {
 
 export default function AdminPage() {
   const router = useRouter()
-  const { user, loading: authLoading, isAdmin, status } = useAuth()
+  const { user, loading: authLoading, status } = useAuth()
+  const userRole = useUserRole()
   const [activeTab, setActiveTab] = useState<Tab>('homepage')
   const [isPending, startTransition] = useTransition()
   const [adminChecked, setAdminChecked] = useState(false)
@@ -130,38 +133,18 @@ export default function AdminPage() {
       return
     }
 
-    // If already admin from store, we're good
-    if (isAdmin) {
-      setIsVerifiedAdmin(true)
+    if (!user) {
       setAdminChecked(true)
+      setIsVerifiedAdmin(false)
       return
     }
 
-    // If we have a user but isAdmin is false, do an explicit check
-    // This handles the race condition where admin check runs in background
-    if (user) {
-      const checkAdmin = async () => {
-        try {
-          // Import dynamically to avoid circular deps
-          const { AdminService } = await import('@/lib/admin-service')
-          const { createClient } = await import('@/lib/supabase/client')
-          const supabase = createClient()
-          const adminStatus = await AdminService.isAdmin(user.id, supabase)
-          setIsVerifiedAdmin(adminStatus)
-        } catch (e) {
-          console.error('[AdminPage] Admin check failed:', e)
-          setIsVerifiedAdmin(false)
-        } finally {
-          setAdminChecked(true)
-        }
-      }
-      checkAdmin()
-    } else {
-      // No user = not admin
+    // Role-based access: admin.access (admin OR moderator)
+    if (!userRole.isLoading) {
+      setIsVerifiedAdmin(userRole.canAccessAdmin)
       setAdminChecked(true)
-      setIsVerifiedAdmin(false)
     }
-  }, [user, isAdmin, authLoading, status])
+  }, [user, authLoading, status, userRole.isLoading, userRole.canAccessAdmin])
 
   // Show loading state while auth or admin check is in progress
   if (authLoading || !adminChecked) {
@@ -177,7 +160,7 @@ export default function AdminPage() {
     )
   }
 
-  // Access denied if not admin (only show after admin check completed)
+  // Access denied if no admin panel permission (only show after check completed)
   if (!user || !isVerifiedAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-mesh">
@@ -201,8 +184,8 @@ export default function AdminPage() {
     { id: 'homepage' as Tab, label: 'Trang Chủ', icon: Home },
     { id: 'analytics' as Tab, label: 'Thống Kê', icon: BarChart3 },
     { id: 'requests' as Tab, label: 'Yêu Cầu', icon: FileText },
-    { id: 'users' as Tab, label: 'Người Dùng', icon: UserCog },
-    { id: 'blog' as Tab, label: 'Blog', icon: BookOpen },
+    ...(roleHasPermission(userRole.role, 'admin.users.manage') ? [{ id: 'users' as Tab, label: 'Người Dùng', icon: UserCog }] : []),
+    ...(roleHasPermission(userRole.role, 'blog.create') ? [{ id: 'blog' as Tab, label: 'Blog', icon: BookOpen }] : []),
     { id: 'team' as Tab, label: 'Đội Ngũ', icon: Users },
     { id: 'about' as Tab, label: 'Về Chúng Tôi', icon: Info },
     { id: 'prompts' as Tab, label: 'AI Prompts', icon: Sparkles },

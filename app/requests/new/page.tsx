@@ -80,29 +80,65 @@ export default function NewRequestPage() {
     return <FullScreenLoading message="Đang chuẩn bị..." />
   }
 
+  // Allowed image types for user uploads
+  const ALLOWED_TYPES = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/bmp',
+    'image/tiff'
+  ]
+
+  // Max file size: 50MB
+  const MAX_FILE_SIZE = 50 * 1024 * 1024
+  const MAX_FILES = 5
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
 
     // Validate file count
-    if (selectedFiles.length + files.length > 5) {
-      toast.error('Tối đa 5 ảnh')
+    if (selectedFiles.length + files.length > MAX_FILES) {
+      toast.error(`Tối đa ${MAX_FILES} ảnh`)
       return
     }
 
     // Validate each file
     const validFiles: File[] = []
     const validPreviews: string[] = []
+    const errors: string[] = []
 
     files.forEach(file => {
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} không phải là ảnh`)
+      // Check file type - strict validation
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        const ext = file.name.split('.').pop()?.toUpperCase() || 'unknown'
+        errors.push(`${file.name}: Định dạng ${ext} không được hỗ trợ`)
         return
       }
 
       // Check file size (50MB max)
-      if (file.size > 50 * 1024 * 1024) {
-        toast.error(`${file.name} vượt quá 50MB`)
+      if (file.size > MAX_FILE_SIZE) {
+        errors.push(`${file.name}: File ${formatFileSize(file.size)} vượt quá 50MB`)
+        return
+      }
+
+      // Check for empty files
+      if (file.size === 0) {
+        errors.push(`${file.name}: File rỗng`)
+        return
+      }
+
+      // Check filename length
+      if (file.name.length > 200) {
+        errors.push(`${file.name.slice(0, 50)}...: Tên file quá dài`)
         return
       }
 
@@ -110,9 +146,20 @@ export default function NewRequestPage() {
       validPreviews.push(URL.createObjectURL(file))
     })
 
-    setSelectedFiles([...selectedFiles, ...validFiles])
-    setPreviewUrls([...previewUrls, ...validPreviews])
-    setUploadedUrls([]) // Reset uploaded URLs when new files selected
+    // Show errors if any
+    if (errors.length > 0) {
+      errors.slice(0, 3).forEach(err => toast.error(err, { duration: 4000 }))
+      if (errors.length > 3) {
+        toast.error(`Và ${errors.length - 3} lỗi khác...`)
+      }
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedFiles([...selectedFiles, ...validFiles])
+      setPreviewUrls([...previewUrls, ...validPreviews])
+      setUploadedUrls([]) // Reset uploaded URLs when new files selected
+      toast.success(`Đã thêm ${validFiles.length} ảnh (${formatFileSize(validFiles.reduce((acc, f) => acc + f.size, 0))})`)
+    }
   }
 
   const removeFile = (index: number) => {
@@ -137,7 +184,7 @@ export default function NewRequestPage() {
         const formData = new FormData()
         formData.append('file', file)
 
-        toast.loading(`Đang tải ảnh ${i + 1}/${selectedFiles.length}...`, { id: `upload-${i}` })
+        toast.loading(`Đang tải ảnh ${i + 1}/${selectedFiles.length} (${formatFileSize(file.size)})...`, { id: `upload-${i}` })
 
         const response = await fetch('/api/upload', {
           method: 'POST',
@@ -145,18 +192,24 @@ export default function NewRequestPage() {
           credentials: 'include'
         })
 
+        const data = await response.json()
+
         if (!response.ok) {
-          const error = await response.json().catch(() => ({ message: 'Upload failed' }))
-          throw new Error(error.message || `Upload failed for ${file.name}`)
+          // Handle specific error codes
+          if (response.status === 413) {
+            throw new Error(`File quá lớn - vui lòng nén ảnh ${file.name}`)
+          }
+          if (response.status === 400) {
+            throw new Error(data.message || `Định dạng file không hợp lệ`)
+          }
+          throw new Error(data.message || `Upload failed for ${file.name}`)
         }
 
-        const data = await response.json()
         uploadedImageUrls.push(data.url)
-
         toast.success(`Tải ảnh ${i + 1}/${selectedFiles.length} thành công`, { id: `upload-${i}` })
       } catch (error: any) {
         console.error('Upload error:', error)
-        toast.error(`Không thể tải ${file.name}: ${error.message}`, { id: `upload-${i}` })
+        toast.error(`Lỗi tải ${file.name}: ${error.message}`, { id: `upload-${i}`, duration: 5000 })
         throw error
       }
     }
@@ -446,17 +499,32 @@ export default function NewRequestPage() {
                 Ảnh <span className="text-red-500">*</span>
               </label>
 
+              {/* File Requirements Info */}
+              <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-blue-800">
+                    <p className="font-semibold">Yêu cầu file:</p>
+                    <ul className="mt-1 space-y-0.5">
+                      <li>• Định dạng: JPEG, PNG, GIF, WebP, BMP, TIFF</li>
+                      <li>• Kích thước tối đa: 50MB mỗi file</li>
+                      <li>• Số lượng: Tối đa 5 ảnh</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               {/* Upload Button */}
               <label
                 className={`block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                   errors.images
                     ? 'border-red-500 bg-red-50/50'
                     : 'border-gray-300 hover:border-primary hover:bg-primary/5'
-                }`}
+                } ${selectedFiles.length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <input
                   type="file"
-                  accept="image/*"
+                  accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff"
                   multiple
                   onChange={handleFileSelect}
                   className="hidden"
@@ -464,11 +532,18 @@ export default function NewRequestPage() {
                 />
                 <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-700 font-medium mb-1">
-                  Click để chọn ảnh hoặc kéo thả vào đây
+                  {selectedFiles.length >= 5 
+                    ? 'Đã đạt giới hạn 5 ảnh'
+                    : 'Click để chọn ảnh hoặc kéo thả vào đây'}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Hỗ trợ: JPG, PNG, WEBP (Tối đa 5 ảnh, mỗi ảnh 10MB)
+                  JPEG, PNG, WebP, GIF, BMP, TIFF • Tối đa 50MB/ảnh
                 </p>
+                {selectedFiles.length > 0 && (
+                  <p className="text-sm text-primary mt-2">
+                    Đã chọn {selectedFiles.length}/5 ảnh ({formatFileSize(selectedFiles.reduce((acc, f) => acc + f.size, 0))})
+                  </p>
+                )}
               </label>
 
               {errors.images && (

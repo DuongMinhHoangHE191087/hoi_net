@@ -1,4 +1,8 @@
-import { db } from '@/lib/supabase'
+// ✅ Force dynamic rendering for database access
+export const dynamic = 'force-dynamic'
+export const revalidate = 60 // Revalidate every 60 seconds
+
+import { dbServer } from '@/lib/supabase/db-server'
 import { getBrandName } from '@/lib/site-metadata'
 import { notFound } from 'next/navigation'
 import FeatureDetailClient from './FeatureDetailClient'
@@ -12,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   try {
     const [features, brandName] = await Promise.all([
-      db.getActiveFeatures(),
+      dbServer.getActiveFeatures(),
       getBrandName()
     ])
     const feature = features.find(f => f.id === id)
@@ -35,7 +39,7 @@ export default async function FeatureDetailPage({ params }: Props) {
   
   try {
     const [allFeatures] = await Promise.all([
-      db.getActiveFeatures()
+      dbServer.getActiveFeatures()
     ])
 
     const feature = allFeatures.find(f => f.id === id)

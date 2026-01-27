@@ -104,6 +104,7 @@ export default function UserProfileEditModal({
                 size="lg"
                 uploading={uploading}
                 setUploading={setUploading}
+                uploadForUserId={user.id}
               />
 
               <Input

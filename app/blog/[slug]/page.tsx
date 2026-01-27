@@ -1,5 +1,8 @@
-// ✅ Server Component with Static Generation - CRITICAL for SEO!
-import { db } from '@/lib/supabase'
+// ✅ Server Component with Dynamic Rendering - Database access required
+export const dynamic = 'force-dynamic'
+export const revalidate = 60 // Revalidate every 60 seconds
+
+import { dbServer } from '@/lib/supabase/db-server'
 import { getBrandName } from '@/lib/site-metadata'
 import { notFound } from 'next/navigation'
 import BlogPostClient from './BlogPostClient'
@@ -14,7 +17,7 @@ interface BlogPostPageProps {
 // ✅ Generate static paths at build time for all blog posts
 export async function generateStaticParams() {
   try {
-    const { data: posts } = await db.getBlogPosts(true)
+    const { data: posts } = await dbServer.getBlogPosts(true)
     return posts.map((post) => ({
       slug: post.slug,
     }))
@@ -28,7 +31,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   try {
     const [post, brandName] = await Promise.all([
-      db.getBlogPost(params.slug),
+      dbServer.getBlogPost(params.slug),
       getBrandName()
     ])
 
@@ -61,7 +64,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   // ✅ Fetch post data on server - Perfect for SEO!
   try {
-    const post = await db.getBlogPost(params.slug)
+    const post = await dbServer.getBlogPost(params.slug)
     return <BlogPostClient post={post} />
   } catch (error) {
     console.error('Error loading blog post:', error)

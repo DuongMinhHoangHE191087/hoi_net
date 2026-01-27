@@ -24,6 +24,8 @@ interface UserRequest {
   admin_notes: string | null
   created_at: string
   completed_at: string | null
+  updated_at?: string
+  admin_id?: string
   user_profiles: {
     full_name: string
     phone: string | null
@@ -463,17 +465,33 @@ export default function AdminRequests() {
                       </>
                     )}
 
-                    {request.status === 'completed' && request.restored_images && (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm">Đã gửi {request.restored_images.length} ảnh</span>
+                    {request.status === 'completed' && (
+                      <div className="flex items-center gap-2">
+                        {request.restored_images && request.restored_images.length > 0 ? (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg border border-green-200">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-700 font-medium">
+                              Đã gửi {request.restored_images.length} ảnh
+                            </span>
+                            {request.completed_at && (
+                              <span className="text-xs text-green-600 ml-1">
+                                ({new Date(request.completed_at).toLocaleDateString('vi-VN')})
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <AlertCircle className="w-4 h-4 text-yellow-600" />
+                            <span className="text-sm text-yellow-700">Hoàn thành - chưa gửi ảnh</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {request.status === 'rejected' && (
-                      <div className="flex items-center gap-2 text-red-600">
-                        <XCircle className="w-4 h-4" />
-                        <span className="text-sm">Đã từ chối</span>
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-lg border border-red-200">
+                        <XCircle className="w-4 h-4 text-red-600" />
+                        <span className="text-sm text-red-700 font-medium">Đã từ chối</span>
                       </div>
                     )}
 

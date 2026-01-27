@@ -105,22 +105,24 @@ export default function ProfilePage() {
       return
     }
 
-    // Validate file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('Kích thước ảnh không được vượt quá 50MB')
+    // Validate file size (5MB max - matching bucket config)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast.error('Kích thước ảnh không được vượt quá 5MB')
       return
     }
 
     try {
       setUploading(true)
 
-      // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user?.id}-${Date.now()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
+      // Upload to Supabase Storage (bucket: avatars)
+      const fileExt = file.name.split('.').pop() || 'png'
+      const fileName = `avatar-${Date.now()}.${fileExt}`
+      // Path structure: {userId}/{fileName} - matches RLS policy
+      const filePath = `${user?.id}/${fileName}`
 
       const { error: uploadError } = await supabase.storage
-        .from('user-uploads')
+        .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
@@ -130,7 +132,7 @@ export default function ProfilePage() {
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('user-uploads')
+        .from('avatars')
         .getPublicUrl(filePath)
 
       setAvatarUrl(publicUrl)

@@ -1,4 +1,8 @@
-import { db } from '@/lib/supabase'
+// ✅ Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
+export const revalidate = 60 // Revalidate every 60 seconds
+
+import { dbServer } from '@/lib/supabase/db-server'
 import { getBrandName } from '@/lib/site-metadata'
 import FeaturesPageClient from './FeaturesPageClient'
 import { Metadata } from 'next'
@@ -13,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function FeaturesPage() {
   try {
-    const features = await db.getActiveFeatures()
+    const features = await dbServer.getActiveFeatures()
     
     return <FeaturesPageClient features={features} />
   } catch (error) {

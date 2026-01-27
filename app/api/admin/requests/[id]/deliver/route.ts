@@ -10,7 +10,7 @@
  */
 
 import { NextRequest } from 'next/server'
-import { verifyAuth } from '@/lib/auth-server'
+import { requirePermissionAuth } from '@/lib/auth-server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import {
   successResponse,
@@ -56,14 +56,10 @@ export async function POST(
 ) {
   const startTime = Date.now()
 
-  try {
-    const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
-      return unauthorizedResponse()
-    }
-
-    const { id: requestId } = await params
-    const body = await request.json()
+  return requirePermissionAuth(request, 'requests.process', async (user) => {
+    try {
+      const { id: requestId } = await params
+      const body = await request.json()
 
     // Validate input
     const validation = deliverSchema.safeParse(body)
@@ -160,27 +156,24 @@ ${admin_notes ? `📝 Ghi chú:\n${admin_notes}` : ''}
       startTime
     )
 
-  } catch (error: any) {
-    log.error('Unexpected error delivering request', { error })
-    return internalErrorResponse(error)
-  }
+    } catch (error: any) {
+      log.error('Unexpected error delivering request', { error })
+      return internalErrorResponse(error)
+    }
+  })
 }
 
-// PATCH: Update request status (Admin only)
+// PATCH: Update request status (Requires requests.process)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const startTime = Date.now()
 
-  try {
-    const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
-      return unauthorizedResponse()
-    }
-
-    const { id: requestId } = await params
-    const body = await request.json()
+  return requirePermissionAuth(request, 'requests.process', async (user) => {
+    try {
+      const { id: requestId } = await params
+      const body = await request.json()
 
     // Validate input
     const validation = updateStatusSchema.safeParse(body)
@@ -331,26 +324,23 @@ Thời gian: ${new Date().toLocaleString('vi-VN')}
       startTime
     )
 
-  } catch (error: any) {
-    log.error('Unexpected error updating request', { error })
-    return internalErrorResponse(error)
-  }
+    } catch (error: any) {
+      log.error('Unexpected error updating request', { error })
+      return internalErrorResponse(error)
+    }
+  })
 }
 
-// DELETE: Cancel/Delete a request (Admin only)
+// DELETE: Cancel/Delete a request (Requires requests.delete)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const startTime = Date.now()
 
-  try {
-    const user = await verifyAuth(request)
-    if (!user || !user.isAdmin) {
-      return unauthorizedResponse()
-    }
-
-    const { id: requestId } = await params
+  return requirePermissionAuth(request, 'requests.delete', async (user) => {
+    try {
+      const { id: requestId } = await params
 
     // Get existing request
     const { data: existingRequest, error: fetchError } = await supabaseAdmin
@@ -386,8 +376,9 @@ export async function DELETE(
       startTime
     )
 
-  } catch (error: any) {
-    log.error('Unexpected error deleting request', { error })
-    return internalErrorResponse(error)
-  }
+    } catch (error: any) {
+      log.error('Unexpected error deleting request', { error })
+      return internalErrorResponse(error)
+    }
+  })
 }

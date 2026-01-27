@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/auth-server'
+import { requirePermissionAuth } from '@/lib/auth-server'
 import { processImageWithGemini } from '@/lib/gemini'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { logger } from '@/lib/logger'
@@ -37,20 +37,9 @@ export async function POST(
 ) {
   const startTime = Date.now()
 
-  try {
-    // ============================================
-    // Step 1: Verify Admin Authentication
-    // ============================================
-    const user = await verifyAuth(request)
-
-    if (!user || !user.isAdmin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
-
-    const { id: requestId } = await params
+  return requirePermissionAuth(request, 'requests.process', async (user) => {
+    try {
+      const { id: requestId } = await params
 
     // ============================================
     // Step 2: Parse Request Body
@@ -147,9 +136,7 @@ export async function POST(
             error: result.error
           }
         } catch (err: any) {
-          log.error('AI processing failed for image', {
-            metadata: { request_id: requestId, image_index: index, error: err.message }
-          })
+          log.error('Error processing single image with AI', { error: err, imageUrl, index })
           return {
             index,
             original: imageUrl,
@@ -307,4 +294,5 @@ ${r.success
       { status: 500 }
     )
   }
+  }) // Close requirePermissionAuth callback
 }

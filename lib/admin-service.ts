@@ -91,6 +91,58 @@ function isAdminByEmail(email: string): boolean {
 // ==========================================
 
 export class AdminService {
+  static async getRole(
+    userId: string,
+    supabase: any
+  ): Promise<'admin' | 'moderator' | 'editor' | 'user'> {
+    // 1) Prefer user_profiles.role (this is what the Admin UI edits)
+    try {
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (!error) {
+        const role = (profile?.role || 'user') as string
+        if (role === 'admin' || role === 'moderator' || role === 'editor' || role === 'user') {
+          return role
+        }
+        return 'user'
+      }
+    } catch {
+      // ignore
+    }
+
+    // 2) Fallback to admin_users table (legacy)
+    try {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      if (!error && data) {
+        return 'admin'
+      }
+    } catch {
+      // ignore
+    }
+
+    // 3) Final fallback: env-based email list (dev/bootstrap only)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const email = user?.email
+      if (email && isAdminByEmail(email)) {
+        return 'admin'
+      }
+    } catch {
+      // ignore
+    }
+
+    return 'user'
+  }
+
   /**
    * Check if user is admin (Server-side with Supabase client)
    * Use this in API routes, server components, middleware
@@ -104,44 +156,10 @@ export class AdminService {
         return cached
       }
 
-      // Try to get user email first for fallback
-      let userEmail: string | null = null
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        userEmail = user?.email || null
-      } catch (e) {
-        // Ignore - will try database next
-      }
-
-      // Query database - use maybeSingle() to handle 0 rows gracefully
-      try {
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('user_id')
-          .eq('user_id', userId)
-          .maybeSingle()
-
-        if (!error) {
-          const isAdmin = !!data
-          console.log('[AdminService] Database check:', { userId, isAdmin })
-          adminCache.set(userId, isAdmin)
-          return isAdmin
-        }
-
-        console.log('[AdminService] Database query failed:', error.message)
-      } catch (dbError: any) {
-        console.log('[AdminService] Database query exception:', dbError.message)
-      }
-
-      // Fallback to env-based check if database fails
-      if (userEmail) {
-        const adminStatus = isAdminByEmail(userEmail)
-        console.log('[AdminService] Using env fallback:', { userId, email: userEmail, isAdmin: adminStatus })
-        adminCache.set(userId, adminStatus)
-        return adminStatus
-      }
-
-      return false
+      const role = await this.getRole(userId, supabase)
+      const isAdmin = role === 'admin'
+      adminCache.set(userId, isAdmin)
+      return isAdmin
     } catch (error) {
       console.error('[AdminService] Error checking admin:', error)
       return false

@@ -11,9 +11,9 @@
 | **Tên dự án** | Hồi Nét |
 | **Slogan** | Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI |
 | **Email** | duongminhhoanginwork@gmail.com |
-| **Hotline** | 039 449 7949 |
-| **Trưởng dự án** | Dương Minh Hoàng |
-| **GVHD** | Nguyễn Thị Phượng |
+| **Hotline: ** | 039 449 7949 |
+| **Trưởng dự án: ** | Dương Minh Hoàng |
+| **Giảng Viên Hướng Dẫn: ** | Nguyễn Thị Phượng |
 
 ---
 
@@ -49,8 +49,8 @@
             <td align="center" style="padding: 32px 40px 24px;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="width: 56px; height: 56px; background-color: #6366f1; border-radius: 14px;">
-                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  <td align="center">
+                    <img src="https://jfnexrrdygcxgizzpyxc.supabase.co/storage/v1/object/public/gmail/HoiNetLogo.png" alt="Hồi Nét Logo" style="width: 56px; height: 56px; border-radius: 14px;">
                   </td>
                 </tr>
               </table>
@@ -93,6 +93,8 @@
               <p style="margin: 0; font-size: 13px; line-height: 20px; color: #a1a1aa; text-align: center;">
                 Link hết hạn sau 24 giờ. Nếu bạn không đăng ký, vui lòng bỏ qua email này.
               </p>
+              
+              <p style="margin: 16px 0 0; font-size: 14px; color: #52525b; text-align: center;">Xin cảm ơn bạn,<br>Hồi Nét Team</p>
             </td>
           </tr>
           
@@ -116,9 +118,44 @@
               <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; text-align: center;">
                 Cần hỗ trợ? <a href="mailto:duongminhhoanginwork@gmail.com" style="color: #6366f1; text-decoration: none;">duongminhhoanginwork@gmail.com</a>
               </p>
-              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
-                © 2024 Hồi Nét - Khôi phục ảnh cũ bằng AI
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                This email was sent to {{ .Email }} to notify you of an update that was made to your Hồi Nét Account.
               </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2025 Hồi Nét. Việt Nam.
+              </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #71717a; text-align: center;">
+                <a href="#" style="color: #6366f1; text-decoration: none;">Chính sách Quyền riêng tư</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Liên hệ với chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Đọc blog của chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Tham gia Cộng đồng Hồi Nét</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #71717a; text-align: center;">
+                Facebook   TikTok   Website
+              </p>
+              
+              <!-- Contact Info -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 16px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
+                <tr>
+                  <td style="text-align: center;">
+                    <table border="0" cellpadding="4" cellspacing="0" style="margin: 0 auto;">
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Email</td>
+                        <td style="font-size: 12px; color: #52525b;">duongminhhoanginwork@gmail.com</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Hotline: </td>
+                        <td style="font-size: 12px; color: #52525b;">039 449 7949</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Trưởng dự án: </td>
+                        <td style="font-size: 12px; color: #52525b;">Dương Minh Hoàng</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Giảng Viên Hướng Dẫn: </td>
+                        <td style="font-size: 12px; color: #52525b;">Nguyễn Thị Phượng</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
@@ -155,8 +192,8 @@
             <td align="center" style="padding: 32px 40px 24px;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="width: 56px; height: 56px; background-color: #f59e0b; border-radius: 14px;">
-                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  <td align="center">
+                    <img src="https://jfnexrrdygcxgizzpyxc.supabase.co/storage/v1/object/public/gmail/HoiNetLogo.png" alt="Hồi Nét Logo" style="width: 56px; height: 56px; border-radius: 14px;">
                   </td>
                 </tr>
               </table>
@@ -206,6 +243,8 @@
                   </td>
                 </tr>
               </table>
+              
+              <p style="margin: 16px 0 0; font-size: 14px; color: #52525b; text-align: center;">Xin cảm ơn bạn,<br>Hồi Nét Team</p>
             </td>
           </tr>
           
@@ -229,9 +268,44 @@
               <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; text-align: center;">
                 Không yêu cầu đặt lại? Bỏ qua email này.
               </p>
-              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
-                © 2024 Hồi Nét
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                This email was sent to {{ .Email }} to notify you of an update that was made to your Hồi Nét Account.
               </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2025 Hồi Nét. Việt Nam.
+              </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #71717a; text-align: center;">
+                <a href="#" style="color: #6366f1; text-decoration: none;">Chính sách Quyền riêng tư</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Liên hệ với chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Đọc blog của chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Tham gia Cộng đồng Hồi Nét</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #71717a; text-align: center;">
+                Facebook   TikTok   Website
+              </p>
+              
+              <!-- Contact Info -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 16px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
+                <tr>
+                  <td style="text-align: center;">
+                    <table border="0" cellpadding="4" cellspacing="0" style="margin: 0 auto;">
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Email</td>
+                        <td style="font-size: 12px; color: #52525b;">duongminhhoanginwork@gmail.com</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Hotline: </td>
+                        <td style="font-size: 12px; color: #52525b;">039 449 7949</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Trưởng dự án: </td>
+                        <td style="font-size: 12px; color: #52525b;">Dương Minh Hoàng</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Giảng Viên Hướng Dẫn: </td>
+                        <td style="font-size: 12px; color: #52525b;">Nguyễn Thị Phượng</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
@@ -268,8 +342,8 @@
             <td align="center" style="padding: 32px 40px 24px;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="width: 56px; height: 56px; background-color: #10b981; border-radius: 14px;">
-                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  <td align="center">
+                    <img src="https://jfnexrrdygcxgizzpyxc.supabase.co/storage/v1/object/public/gmail/HoiNetLogo.png" alt="Hồi Nét Logo" style="width: 56px; height: 56px; border-radius: 14px;">
                   </td>
                 </tr>
               </table>
@@ -312,15 +386,52 @@
               <p style="margin: 0; font-size: 13px; line-height: 20px; color: #a1a1aa; text-align: center;">
                 Link chỉ dùng được 1 lần và hết hạn sau 1 giờ.
               </p>
+              
+              <p style="margin: 16px 0 0; font-size: 14px; color: #52525b; text-align: center;">Xin cảm ơn bạn,<br>Hồi Nét Team</p>
             </td>
           </tr>
           
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
-              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
-                © 2024 Hồi Nét - Khôi phục ảnh cũ bằng AI
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                This email was sent to {{ .Email }} to notify you of an update that was made to your Hồi Nét Account.
               </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2025 Hồi Nét. Việt Nam.
+              </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #71717a; text-align: center;">
+                <a href="#" style="color: #6366f1; text-decoration: none;">Chính sách Quyền riêng tư</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Liên hệ với chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Đọc blog của chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Tham gia Cộng đồng Hồi Nét</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #71717a; text-align: center;">
+                Facebook   TikTok   Website
+              </p>
+              
+              <!-- Contact Info -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 16px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
+                <tr>
+                  <td style="text-align: center;">
+                    <table border="0" cellpadding="4" cellspacing="0" style="margin: 0 auto;">
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Email</td>
+                        <td style="font-size: 12px; color: #52525b;">duongminhhoanginwork@gmail.com</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Hotline: </td>
+                        <td style="font-size: 12px; color: #52525b;">039 449 7949</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Trưởng dự án: </td>
+                        <td style="font-size: 12px; color: #52525b;">Dương Minh Hoàng</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Giảng Viên Hướng Dẫn: </td>
+                        <td style="font-size: 12px; color: #52525b;">Nguyễn Thị Phượng</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
@@ -357,8 +468,8 @@
             <td align="center" style="padding: 32px 40px 24px;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="width: 56px; height: 56px; background-color: #8b5cf6; border-radius: 14px;">
-                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  <td align="center">
+                    <img src="https://jfnexrrdygcxgizzpyxc.supabase.co/storage/v1/object/public/gmail/HoiNetLogo.png" alt="Hồi Nét Logo" style="width: 56px; height: 56px; border-radius: 14px;">
                   </td>
                 </tr>
               </table>
@@ -409,15 +520,52 @@
                   </td>
                 </tr>
               </table>
+              
+              <p style="margin: 16px 0 0; font-size: 14px; color: #52525b; text-align: center;">Xin cảm ơn bạn,<br>Hồi Nét Team</p>
             </td>
           </tr>
           
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
-              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
-                © 2024 Hồi Nét
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                This email was sent to {{ .Email }} to notify you of an update that was made to your Hồi Nét Account.
               </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2025 Hồi Nét. Việt Nam.
+              </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #71717a; text-align: center;">
+                <a href="#" style="color: #6366f1; text-decoration: none;">Chính sách Quyền riêng tư</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Liên hệ với chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Đọc blog của chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Tham gia Cộng đồng Hồi Nét</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #71717a; text-align: center;">
+                Facebook   TikTok   Website
+              </p>
+              
+              <!-- Contact Info -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 16px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
+                <tr>
+                  <td style="text-align: center;">
+                    <table border="0" cellpadding="4" cellspacing="0" style="margin: 0 auto;">
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Email: </td>
+                        <td style="font-size: 12px; color: #52525b;">duongminhhoanginwork@gmail.com</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Hotline: </td>
+                        <td style="font-size: 12px; color: #52525b;">039 449 7949</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Trưởng dự án: </td>
+                        <td style="font-size: 12px; color: #52525b;">Dương Minh Hoàng</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Giảng Viên Hướng Dẫn: </td>
+                        <td style="font-size: 12px; color: #52525b;">Nguyễn Thị Phượng</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
@@ -454,8 +602,8 @@
             <td align="center" style="padding: 32px 40px 24px;">
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="width: 56px; height: 56px; background-color: #06b6d4; border-radius: 14px;">
-                    <span style="font-size: 28px; line-height: 56px; color: #ffffff; font-weight: 700;">H</span>
+                  <td align="center">
+                    <img src="https://jfnexrrdygcxgizzpyxc.supabase.co/storage/v1/object/public/gmail/HoiNetLogo.png" alt="Hồi Nét Logo" style="width: 56px; height: 56px; border-radius: 14px;">
                   </td>
                 </tr>
               </table>
@@ -505,6 +653,8 @@
                   </td>
                 </tr>
               </table>
+              
+              <p style="margin: 16px 0 0; font-size: 14px; color: #52525b; text-align: center;">Xin cảm ơn bạn,<br>Hồi Nét Team</p>
             </td>
           </tr>
           
@@ -514,9 +664,44 @@
               <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; text-align: center;">
                 Hỗ trợ: <a href="mailto:duongminhhoanginwork@gmail.com" style="color: #06b6d4; text-decoration: none;">duongminhhoanginwork@gmail.com</a>
               </p>
-              <p style="margin: 0; font-size: 12px; color: #a1a1aa; text-align: center;">
-                © 2024 Hồi Nét
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                This email was sent to {{ .Email }} to notify you of an update that was made to your Hồi Nét Account.
               </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #a1a1aa; text-align: center;">
+                © 2025 Hồi Nét. Việt Nam.
+              </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #71717a; text-align: center;">
+                <a href="#" style="color: #6366f1; text-decoration: none;">Chính sách Quyền riêng tư</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Liên hệ với chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Đọc blog của chúng tôi</a> • <a href="#" style="color: #6366f1; text-decoration: none;">Tham gia Cộng đồng Hồi Nét</a>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #71717a; text-align: center;">
+                Facebook   TikTok   Website
+              </p>
+              
+              <!-- Contact Info -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 16px; border-top: 1px solid #e4e4e7; padding-top: 16px;">
+                <tr>
+                  <td style="text-align: center;">
+                    <table border="0" cellpadding="4" cellspacing="0" style="margin: 0 auto;">
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Email</td>
+                        <td style="font-size: 12px; color: #52525b;">duongminhhoanginwork@gmail.com</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Hotline: </td>
+                        <td style="font-size: 12px; color: #52525b;">039 449 7949</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Trưởng dự án: </td>
+                        <td style="font-size: 12px; color: #52525b;">Dương Minh Hoàng</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size: 12px; color: #71717a; font-weight: 600;">Giảng Viên Hướng Dẫn: </td>
+                        <td style="font-size: 12px; color: #52525b;">Nguyễn Thị Phượng</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
@@ -574,6 +759,6 @@
 | | |
 |---|---|
 | **Email** | duongminhhoanginwork@gmail.com |
-| **Hotline** | 039 449 7949 |
-| **Trưởng dự án** | Dương Minh Hoàng |
-| **GVHD** | Nguyễn Thị Phượng |
+| **Hotline: ** | 039 449 7949 |
+| **Trưởng dự án: ** | Dương Minh Hoàng |
+| **Giảng Viên Hướng Dẫn: ** | Nguyễn Thị Phượng |

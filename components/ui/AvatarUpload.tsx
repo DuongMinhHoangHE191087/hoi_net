@@ -15,6 +15,8 @@ interface AvatarUploadProps {
   required?: boolean
   uploading?: boolean
   setUploading?: (uploading: boolean) => void
+  /** User ID to upload avatar for (admin use - uploads to that user's folder) */
+  uploadForUserId?: string
 }
 
 export default function AvatarUpload({
@@ -25,7 +27,8 @@ export default function AvatarUpload({
   label = 'Avatar',
   required = false,
   uploading: externalUploading,
-  setUploading: externalSetUploading
+  setUploading: externalSetUploading,
+  uploadForUserId
 }: AvatarUploadProps) {
   const [internalUploading, setInternalUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatar || null)
@@ -50,9 +53,9 @@ export default function AvatarUpload({
       return
     }
 
-    // Validate file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('File không được vượt quá 50MB')
+    // Validate file size (5MB max - matching bucket config)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File không được vượt quá 5MB')
       return
     }
 
@@ -67,6 +70,10 @@ export default function AvatarUpload({
     setUploading(true)
     const formData = new FormData()
     formData.append('file', file)
+    // If admin is uploading for another user, include their userId
+    if (uploadForUserId) {
+      formData.append('userId', uploadForUserId)
+    }
 
     try {
       const response = await fetch('/api/upload-avatar', {

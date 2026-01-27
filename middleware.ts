@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { AdminService } from '@/lib/admin-service'
+import { canAccessAdmin } from '@/lib/permissions'
 import {
   checkRateLimit,
   getRateLimitType,
@@ -90,8 +91,10 @@ export async function middleware(req: NextRequest) {
 
   const userId = user?.id || null
 
-  // ✅ IMPROVED: Use AdminService for consistent admin check
-  const isAdmin = user ? await AdminService.isAdmin(user.id, supabase) : false
+  // ✅ RBAC: Use user_profiles.role as source of truth
+  const role = user ? await AdminService.getRole(user.id, supabase) : 'user'
+  const isAdmin = role === 'admin'
+  const canAccessAdminPanel = canAccessAdmin(role)
 
   // Define route checks
   const isAdminRoute = pathname.startsWith('/admin')
@@ -106,6 +109,7 @@ export async function middleware(req: NextRequest) {
     hasUser: !!user,
     userEmail: user?.email,
     isAdmin,
+    role,
     isLoginRoute,
     isAdminRoute,
     isDashboardRoute
@@ -114,7 +118,7 @@ export async function middleware(req: NextRequest) {
   // ============================================
   // Rate Limiting (skip for admins)
   // ============================================
-  if (!isAdmin) {
+  if (!canAccessAdminPanel) {
     const rateLimitType = getRateLimitType(pathname)
     const rateLimitKey = generateRateLimitKey(userId || clientIP, rateLimitType)
     const rateLimitResult = checkRateLimit(rateLimitKey, rateLimitType)
@@ -169,7 +173,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Admin routes require admin role
-  if (isAdminRoute && user && !isAdmin) {
+  if (isAdminRoute && user && !canAccessAdminPanel) {
     console.log('[Middleware] Non-admin tried to access admin route')
     const redirectResponse = NextResponse.redirect(new URL('/unauthorized', req.url))
     applySecurityHeaders(redirectResponse)
@@ -182,7 +186,7 @@ export async function middleware(req: NextRequest) {
 
     // Check for redirect parameter
     const redirect = req.nextUrl.searchParams.get('redirect')
-    const targetUrl = redirect || (isAdmin ? '/admin' : '/dashboard')
+    const targetUrl = redirect || (canAccessAdminPanel ? '/admin' : '/dashboard')
 
     const redirectResponse = NextResponse.redirect(new URL(targetUrl, req.url))
     applySecurityHeaders(redirectResponse)

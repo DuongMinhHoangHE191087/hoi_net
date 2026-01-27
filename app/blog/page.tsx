@@ -1,5 +1,9 @@
 // ✅ Server Component - SEO Optimized
-import { db } from '@/lib/supabase'
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
+export const revalidate = 60 // Revalidate every 60 seconds
+
+import { dbServer } from '@/lib/supabase/db-server'
 import { getBrandName } from '@/lib/site-metadata'
 import BlogListClient from './BlogListClient'
 import { Metadata } from 'next'
@@ -13,9 +17,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BlogPage() {
-  // ✅ Fetch blog posts on server - SEO friendly!
+  // ✅ Fetch blog posts on server using dbServer (server-safe)
   try {
-    const { data: posts } = await db.getBlogPosts(true)
+    const { data: posts } = await dbServer.getBlogPosts(true)
     return <BlogListClient posts={posts} />
   } catch (error) {
     console.error('Error loading blog posts:', error)
