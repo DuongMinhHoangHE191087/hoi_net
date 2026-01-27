@@ -4,14 +4,35 @@ import { useState, useEffect, Suspense, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, Sparkles, Home, LogIn, Loader2, AlertCircle, XCircle, Info, RefreshCw } from 'lucide-react'
-import { useAuth } from '@/lib/auth'
+import { Mail, Lock, Eye, EyeOff, Sparkles, Home, LogIn, Loader2, AlertCircle, XCircle, Info, RefreshCw, Send, Shield } from 'lucide-react'
+import { useAuth, getErrorMessage } from '@/lib/auth'
 import { 
   validateEmailComprehensive, 
   loginFormSchema,
 } from '@/lib/auth/validation'
 import { sanitizeInput } from '@/lib/security'
 import toast, { Toaster } from 'react-hot-toast'
+import { HCaptcha } from '@/components/auth/HCaptcha'
+
+// ============================================
+// Types for API Response
+// ============================================
+
+interface SignInResponse {
+  success: boolean
+  error?: {
+    code: string
+    message: string
+    lockoutUntil?: string
+    remainingAttempts?: number
+    requiresCaptcha?: boolean
+  }
+  locked?: boolean
+  lockoutUntil?: string
+  requiresCaptcha?: boolean
+  remainingAttempts?: number
+  canUseMagicLink?: boolean
+}
 
 // Loading fallback for Suspense
 function LoginLoading() {
@@ -38,7 +59,7 @@ export default function LoginPage() {
 
 // Actual login content that uses useSearchParams
 function LoginContent() {
-  const { signInWithGoogle, signInWithEmail, user, isAdmin, loading: authLoading } = useAuth()
+  const { signInWithGoogle, user, isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -51,6 +72,14 @@ function LoginContent() {
     password: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // Lockout & Captcha state
+  const [requiresCaptcha, setRequiresCaptcha] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [isLocked, setIsLocked] = useState(false)
+  const [lockoutUntil, setLockoutUntil] = useState<string | null>(null)
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null)
+  const [sendingMagicLink, setSendingMagicLink] = useState(false)
 
   // Get redirect URL from search params
   const redirectUrl = searchParams.get('redirect') || '/dashboard'
@@ -166,25 +195,97 @@ function LoginContent() {
         return
       }
 
-      // Sign in
-      console.log('[Login] Attempting sign in:', {
+      // Check if captcha required but not provided
+      if (requiresCaptcha && !captchaToken) {
+        toast.error('Vui lòng hoàn thành xác minh CAPTCHA', { icon: '🔒' })
+        setLoading(false)
+        return
+      }
+
+      // Sign in via API (with lockout protection)
+      console.log('[Login] Attempting sign in via API:', {
         email: result.data.email,
-        hasPassword: !!result.data.password
+        hasPassword: !!result.data.password,
+        hasCaptcha: !!captchaToken
       })
 
-      const signInResult = await signInWithEmail(result.data.email, result.data.password)
+      const response = await fetch('/api/auth/sign-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: result.data.email,
+          password: result.data.password,
+          captchaToken: captchaToken || undefined,
+        }),
+      })
 
-      if (!signInResult.success) {
-        // Handle specific error messages with better UX
-        const errorString = signInResult.error?.toString() || ''
+      const data: SignInResponse = await response.json()
 
-        if (errorString.includes('Invalid login credentials')) {
-          setErrors({ password: 'Email hoặc mật khẩu không đúng' })
-          toast.error('Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.', {
-            duration: 4000,
-            icon: '🔒',
-          })
-        } else if (errorString.includes('Email not confirmed')) {
+      if (!data.success) {
+        // Handle lockout
+        if (data.locked && data.lockoutUntil) {
+          setIsLocked(true)
+          setLockoutUntil(data.lockoutUntil)
+          const lockoutDate = new Date(data.lockoutUntil)
+          const diffMins = Math.ceil((lockoutDate.getTime() - Date.now()) / 60000)
+          
+          toast.error(
+            `Tài khoản bị khóa do đăng nhập sai nhiều lần. Thử lại sau ${diffMins} phút hoặc dùng Magic Link.`,
+            { duration: 6000, icon: '🔒' }
+          )
+          setLoading(false)
+          return
+        }
+        
+        // Handle captcha required
+        if (data.requiresCaptcha) {
+          setRequiresCaptcha(true)
+          setCaptchaToken(null)
+        }
+        
+        // Update remaining attempts
+        if (data.remainingAttempts !== undefined) {
+          setRemainingAttempts(data.remainingAttempts)
+        }
+
+        // Get error message (always string, never [object Object])
+        const errorMessage = data.error?.message || getErrorMessage(data.error) || 'Đăng nhập thất bại'
+        const errorCode = data.error?.code || 'UNKNOWN'
+        
+        // Handle specific error codes
+        if (errorCode === 'USER_NOT_FOUND') {
+          setErrors({ email: errorMessage })
+          toast.custom((t) => (
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-md w-full bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg rounded-2xl p-4 ring-1 ring-blue-200"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <Info className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-900">
+                    Tài khoản chưa được đăng ký
+                  </p>
+                  <p className="mt-1 text-sm text-blue-700">
+                    Email này chưa có trong hệ thống. Bạn có muốn tạo tài khoản mới?
+                  </p>
+                  <Link 
+                    href={`/register?email=${encodeURIComponent(result.data.email)}`}
+                    className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-800 hover:text-blue-900"
+                  >
+                    Đăng ký ngay →
+                  </Link>
+                </div>
+                <button onClick={() => toast.dismiss(t.id)} className="text-blue-400 hover:text-blue-600">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+            </motion.div>
+          ), { duration: 8000 })
+        } else if (errorCode === 'EMAIL_NOT_CONFIRMED') {
           // Show resend confirmation option
           toast.custom((t) => (
             <motion.div
@@ -217,12 +318,24 @@ function LoginContent() {
               </div>
             </motion.div>
           ), { duration: 10000 })
-        } else {
-          toast.error(errorString || 'Đăng nhập thất bại. Vui lòng thử lại.', {
-            duration: 4000,
-            icon: '❌',
+        } else if (errorCode === 'INVALID_CREDENTIALS') {
+          setErrors({ password: errorMessage })
+          toast.error(errorMessage, { 
+            duration: 4000, 
+            icon: '🔒',
           })
+          
+          // Show remaining attempts warning
+          if (data.remainingAttempts !== undefined && data.remainingAttempts <= 2) {
+            toast.error(`Còn ${data.remainingAttempts} lần thử trước khi bị khóa`, {
+              duration: 5000,
+              icon: '⚠️',
+            })
+          }
+        } else {
+          toast.error(errorMessage, { duration: 4000, icon: '❌' })
         }
+        
         setLoading(false)
         return
       }
@@ -235,29 +348,10 @@ function LoginContent() {
         icon: '✅',
       })
 
-      // ✅ WAIT for session to be fully established
+      // Wait for session to be established then redirect
       await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // ✅ VERIFY session exists before redirect
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const { data: { session: verifiedSession }, error: sessionError } = await supabase.auth.getSession()
-
-      if (sessionError || !verifiedSession) {
-        console.error('[Login] Session verification failed:', sessionError)
-        toast.error('Không thể xác thực phiên đăng nhập. Vui lòng thử lại.', {
-          duration: 4000,
-          icon: '❌',
-        })
-        setLoading(false)
-        return
-      }
-
-      console.log('[Login] Session verified successfully')
-      console.log('[Login] Redirecting to:', redirectUrl)
-
-      // Use window.location.href for hard redirect to ensure middleware picks up auth
       window.location.href = redirectUrl
+
     } catch (err: any) {
       console.error('[Login] Sign in failed:', {
         error: err.message,
@@ -270,6 +364,40 @@ function LoginContent() {
         icon: '❌',
       })
       setLoading(false)
+    }
+  }
+
+  // Handle sending magic link
+  const handleSendMagicLink = async () => {
+    if (!formData.email) {
+      toast.error('Vui lòng nhập email', { icon: '⚠️' })
+      return
+    }
+
+    setSendingMagicLink(true)
+
+    try {
+      const response = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast.success(data.message || 'Link đăng nhập đã được gửi đến email của bạn!', {
+          duration: 6000,
+          icon: '📧',
+        })
+        setIsLocked(false)
+      } else {
+        toast.error(data.error?.message || 'Không thể gửi magic link', { icon: '❌' })
+      }
+    } catch (err) {
+      toast.error('Lỗi kết nối. Vui lòng thử lại.', { icon: '❌' })
+    } finally {
+      setSendingMagicLink(false)
     }
   }
 
@@ -462,6 +590,90 @@ function LoginContent() {
                   <p className="mt-1 text-sm text-red-600">{errors.password}</p>
                 )}
               </div>
+
+              {/* Lockout Warning */}
+              <AnimatePresence>
+                {isLocked && lockoutUntil && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="p-4 bg-red-50 border border-red-200 rounded-xl"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Shield className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-red-800">
+                          Tài khoản tạm thời bị khóa
+                        </p>
+                        <p className="text-xs text-red-700 mt-1">
+                          Do đăng nhập sai nhiều lần. Vui lòng sử dụng Magic Link để đăng nhập.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleSendMagicLink}
+                          disabled={sendingMagicLink}
+                          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-red-800 hover:text-red-900"
+                        >
+                          {sendingMagicLink ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Đang gửi...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              Gửi Magic Link
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Remaining Attempts Warning */}
+              <AnimatePresence>
+                {remainingAttempts !== null && remainingAttempts <= 2 && !isLocked && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="p-3 bg-amber-50 border border-amber-200 rounded-lg"
+                  >
+                    <p className="text-xs text-amber-800 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Còn {remainingAttempts} lần thử trước khi tài khoản bị khóa
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* hCaptcha (shown after failed attempts) */}
+              <AnimatePresence>
+                {requiresCaptcha && !isLocked && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <HCaptcha
+                      onVerify={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken(null)}
+                      onError={() => setCaptchaToken(null)}
+                      theme="light"
+                      className="flex justify-center"
+                    />
+                    {captchaToken && (
+                      <p className="text-xs text-green-600 text-center mt-2 flex items-center justify-center gap-1">
+                        <Shield className="w-3 h-3" />
+                        Xác minh thành công
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Remember & Forgot */}
               <div className="flex items-center justify-between text-sm">

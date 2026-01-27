@@ -38,6 +38,24 @@ export {
 // Service (for non-React usage)
 export { AuthService } from './service'
 
+// Error Normalizer (for consistent error handling)
+export {
+  normalizeAuthError,
+  getErrorMessage,
+  getErrorCode,
+  requiresCaptcha,
+  isAccountLocked,
+  getLockoutMessage,
+  createAuthError,
+  createLockoutError,
+  type ExtendedAuthError,
+  type ExtendedAuthErrorCode,
+} from './error-normalizer'
+
+// Security Hash (server-side only)
+// Note: Only import these in server components/API routes
+// export { hashEmail, hashIP, hashEmailIP, getClientIP } from './security-hash'
+
 // Types
 export type {
   AuthState,

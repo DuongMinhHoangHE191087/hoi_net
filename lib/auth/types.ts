@@ -38,11 +38,24 @@ export type AuthErrorCode =
   | 'RATE_LIMITED'
   | 'SERVER_ERROR'
   | 'UNKNOWN'
+  // Extended error codes
+  | 'USER_ALREADY_REGISTERED'
+  | 'ACCOUNT_LOCKED'
+  | 'CAPTCHA_REQUIRED'
+  | 'CAPTCHA_FAILED'
+  | 'MAGIC_LINK_SENT'
+  | 'TOO_MANY_ATTEMPTS'
+  | 'WEAK_PASSWORD'
+  | 'INVALID_EMAIL'
 
 export interface AuthError {
   code: AuthErrorCode
   message: string
-  originalError?: Error
+  originalError?: Error | unknown
+  // Extended fields for lockout
+  lockoutUntil?: string // ISO date string
+  remainingAttempts?: number
+  requiresCaptcha?: boolean
 }
 
 // ============================================

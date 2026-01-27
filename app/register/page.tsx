@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState, useCallback } from 'react'
-import { ImageIcon, Mail, Lock, Sparkles, Chrome, UserPlus, Eye, EyeOff, User, CheckCircle, XCircle, AlertCircle, Loader2, Info } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useCallback, useEffect, Suspense } from 'react'
+import { ImageIcon, Mail, Lock, Sparkles, Chrome, UserPlus, Eye, EyeOff, User, CheckCircle, XCircle, AlertCircle, Loader2, Info, LogIn } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '@/lib/auth'
+import { useAuth, getErrorMessage } from '@/lib/auth'
 import { 
   validateEmailComprehensive, 
   validatePasswordComprehensive,
@@ -16,9 +16,48 @@ import { sanitizeInput } from '@/lib/security'
 import { useSiteSetting } from '@/hooks/useSiteSettings'
 import toast, { Toaster } from 'react-hot-toast'
 
+// ============================================
+// Types for API Response
+// ============================================
+
+interface SignUpResponse {
+  success: boolean
+  needsConfirmation?: boolean
+  message?: string
+  error?: {
+    code: string
+    message: string
+  }
+  exists?: boolean
+}
+
+// Loading fallback
+function RegisterLoading() {
+  return (
+    <div className="min-h-screen gradient-mesh flex items-center justify-center">
+      <div className="glassmorphism-strong p-8 rounded-2xl">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-600 font-medium">Đang tải...</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main wrapper
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<RegisterLoading />}>
+      <RegisterContent />
+    </Suspense>
+  )
+}
+
+function RegisterContent() {
   const router = useRouter()
-  const { signUpWithEmail, signInWithGoogle, loading: authLoading } = useAuth()
+  const searchParams = useSearchParams()
+  const { signInWithGoogle, loading: authLoading } = useAuth()
   const brandName = useSiteSetting('brand_name')
 
   const [showPassword, setShowPassword] = useState(false)
@@ -26,8 +65,11 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null)
 
+  // Pre-fill email from URL params (from login redirect)
+  const emailFromUrl = searchParams.get('email')
+
   const [formData, setFormData] = useState({
-    email: '',
+    email: emailFromUrl || '',
     password: '',
     confirmPassword: '',
     fullName: '',
@@ -95,7 +137,7 @@ export default function RegisterPage() {
     }
   }
 
-  // Email registration
+  // Email registration - using API
   const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
@@ -151,42 +193,74 @@ export default function RegisterPage() {
         return
       }
 
-      // Sign up with Supabase
-      console.log('[Register] Attempting sign up:', {
+      // Sign up via API
+      console.log('[Register] Attempting sign up via API:', {
         email: result.data.email,
         hasPassword: !!result.data.password,
         fullName: result.data.fullName
       })
 
-      const signUpResult = await signUpWithEmail(
-        result.data.email,
-        result.data.password,
-        { full_name: result.data.fullName }
-      )
+      const response = await fetch('/api/auth/sign-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: result.data.email,
+          password: result.data.password,
+          fullName: result.data.fullName,
+        }),
+      })
 
-      if (!signUpResult.success) {
-        // Handle specific error messages
-        const errorString = signUpResult.error?.toString() || ''
+      const data: SignUpResponse = await response.json()
+
+      if (!data.success) {
+        const errorCode = data.error?.code || 'UNKNOWN'
+        const errorMessage = data.error?.message || getErrorMessage(data.error) || 'Đăng ký thất bại'
         
-        if (errorString.includes('already registered') || errorString.includes('already been registered')) {
-          setErrors({ email: 'Email này đã được đăng ký. Vui lòng đăng nhập hoặc sử dụng email khác.' })
-          toast.error('Email này đã được đăng ký', { icon: '📧' })
-        } else if (errorString.includes('Invalid email')) {
-          setErrors({ email: 'Email không hợp lệ' })
-          toast.error('Email không hợp lệ')
-        } else if (errorString.includes('weak password')) {
-          setErrors({ password: 'Mật khẩu quá yếu' })
-          toast.error('Mật khẩu quá yếu')
+        // Handle "already registered" explicitly
+        if (errorCode === 'USER_ALREADY_REGISTERED' || data.exists) {
+          setErrors({ email: errorMessage })
+          toast.custom((t) => (
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-md w-full bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg rounded-2xl p-4 ring-1 ring-amber-200"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-6 w-6 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-900">
+                    Email đã được đăng ký
+                  </p>
+                  <p className="mt-1 text-sm text-amber-700">
+                    Tài khoản với email này đã tồn tại. Bạn có muốn đăng nhập?
+                  </p>
+                  <Link 
+                    href={`/login?email=${encodeURIComponent(result.data.email)}`}
+                    className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-amber-800 hover:text-amber-900"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Đăng nhập ngay
+                  </Link>
+                </div>
+                <button onClick={() => toast.dismiss(t.id)} className="text-amber-400 hover:text-amber-600">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+            </motion.div>
+          ), { duration: 10000 })
         } else {
-          toast.error(errorString || 'Đăng ký thất bại. Vui lòng thử lại.')
+          toast.error(errorMessage, { icon: '❌' })
         }
+        
         setLoading(false)
         return
       }
 
       console.log('[Register] Sign up successful')
 
-      if (signUpResult.needsConfirmation) {
+      if (data.needsConfirmation) {
         // Show email confirmation required message
         toast.custom((t) => (
           <motion.div
@@ -228,27 +302,9 @@ export default function RegisterPage() {
         // User is auto-confirmed
         toast.success('Đăng ký thành công!', { duration: 2000 })
 
-        // ✅ WAIT for session to be fully established
+        // Wait then redirect
         await new Promise(resolve => setTimeout(resolve, 1000))
-
-        // ✅ VERIFY session before redirect
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-        if (sessionError || !session) {
-          console.error('[Register] Session not created, redirecting to login')
-          toast.error('Vui lòng đăng nhập để tiếp tục.', { duration: 3000 })
-          setTimeout(() => {
-            router.push('/login')
-          }, 1000)
-          return
-        }
-
-        console.log('[Register] Session verified, redirecting to dashboard')
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 500)
+        window.location.href = '/dashboard'
       }
 
     } catch (error: any) {
@@ -256,7 +312,6 @@ export default function RegisterPage() {
         error: error.message,
         code: error.code,
         name: error.name,
-        status: error.status
       })
 
       toast.error('Đăng ký thất bại. Vui lòng thử lại.')
