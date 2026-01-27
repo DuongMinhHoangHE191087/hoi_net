@@ -160,20 +160,20 @@ export default function AdminPage() {
     )
   }
 
-  // Access denied if no admin panel permission (only show after check completed)
+  // Access denied - Show 404 to hide admin route existence
   if (!user || !isVerifiedAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-mesh">
-        <Card className="max-w-md p-8 text-center">
-          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Truy cập bị từ chối</h2>
-          <p className="text-gray-600 mb-6">
-            Bạn không có quyền truy cập trang này.
+        <div className="text-center">
+          <h1 className="text-9xl font-bold text-gray-200">404</h1>
+          <h2 className="text-2xl font-bold text-gray-800 mt-4">Không tìm thấy trang</h2>
+          <p className="text-gray-600 mt-2 mb-6">
+            Trang bạn đang tìm kiếm không tồn tại hoặc đã bị di chuyển.
           </p>
-          <Button onClick={() => window.location.href = '/dashboard'}>
-            Quay về Dashboard
+          <Button onClick={() => window.location.href = '/'}>
+            Quay về Trang Chủ
           </Button>
-        </Card>
+        </div>
       </div>
     )
   }

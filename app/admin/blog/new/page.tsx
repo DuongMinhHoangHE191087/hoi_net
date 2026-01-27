@@ -54,7 +54,8 @@ export default function NewBlogPostPage() {
     }
 
     if (!authLoading && !isAdmin) {
-      router.push('/unauthorized')
+      // Show 404 to hide admin route existence
+      router.replace('/404')
       return
     }
 

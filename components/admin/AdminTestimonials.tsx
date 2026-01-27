@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Star, Trash2, Eye, Archive, Loader2, AlertCircle, RefreshCw, CheckCircle, XCircle, Upload, Home, MessageSquare, Award } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { Feedback } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
@@ -25,6 +26,12 @@ export default function AdminTestimonials() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  
+  // Confirm Dialog State
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    feedbackId: string | null
+  }>({ isOpen: false, feedbackId: null })
 
   useEffect(() => {
     loadFeedback()
@@ -89,11 +96,16 @@ export default function AdminTestimonials() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xoá phản hồi này? Hành động này không thể hoàn tác.')) {
-      return
-    }
+    setConfirmDialog({ isOpen: true, feedbackId: id })
+  }
 
+  const confirmDelete = async () => {
+    const id = confirmDialog.feedbackId
+    if (!id) return
+    
+    setConfirmDialog({ isOpen: false, feedbackId: null })
     setDeletingId(id)
+    
     try {
       const headers = await getAuthHeaders()
       const response = await fetch(`/api/admin/feedback/${id}`, {
@@ -231,11 +243,24 @@ export default function AdminTestimonials() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-text flex items-center gap-2">
+    <>
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, feedbackId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá phản hồi"
+        message="Bạn có chắc chắn muốn xoá phản hồi này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <div>
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-text flex items-center gap-2">
               <MessageSquare className="w-6 h-6" />
               Quản Lý Phản Hồi & Testimonials
             </h2>
@@ -480,7 +505,8 @@ export default function AdminTestimonials() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 

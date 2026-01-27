@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Pagination from '@/components/ui/Pagination'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import DeliveryModal from './DeliveryModal'
 import RequestDetailModal from './RequestDetailModal'
 import { SafeAvatar } from '@/components/ui/SafeImage'
@@ -46,6 +47,12 @@ export default function AdminRequests() {
   const [showDeliveryModal, setShowDeliveryModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [hasFetched, setHasFetched] = useState(false) // Track if initial fetch completed
+  
+  // AI Process confirmation
+  const [aiConfirm, setAiConfirm] = useState<{ isOpen: boolean; request: UserRequest | null }>({
+    isOpen: false,
+    request: null
+  })
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -220,12 +227,15 @@ export default function AdminRequests() {
   }
 
   // Handle AI Processing
-  const handleAIProcess = async (request: UserRequest) => {
-    const confirmed = window.confirm(
-      `Bạn có muốn sử dụng AI để xử lý yêu cầu này?\n\nLoại: ${getTypeLabel(request.type)}\nSố ảnh: ${request.original_images?.length || 0}`
-    )
+  const handleAIProcess = (request: UserRequest) => {
+    setAiConfirm({ isOpen: true, request })
+  }
+
+  const confirmAIProcess = async () => {
+    const request = aiConfirm.request
+    if (!request) return
     
-    if (!confirmed) return
+    setAiConfirm({ isOpen: false, request: null })
 
     const loadingToast = toast.loading('🤖 Đang xử lý với AI...')
     
@@ -287,37 +297,49 @@ export default function AdminRequests() {
   }
 
   return (
-    <div>
-      {/* Filters */}
-      <Card className="mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="Tìm kiếm theo tên, mô tả, ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {['all', 'pending', 'processing', 'completed', 'rejected'].map((status) => (
-              <Button 
-                key={status}
-                variant={filter === status ? 'primary' : 'secondary'} 
-                onClick={() => setFilter(status as any)}
-                size="sm"
-              >
-                {status === 'all' ? 'Tất cả' : getStatusLabel(status)}
+    <>
+      <ConfirmDialog
+        isOpen={aiConfirm.isOpen}
+        onClose={() => setAiConfirm({ isOpen: false, request: null })}
+        onConfirm={confirmAIProcess}
+        title="Xử lý với AI"
+        message={`Bạn có muốn sử dụng AI để xử lý yêu cầu này?\n\nLoại: ${aiConfirm.request ? getTypeLabel(aiConfirm.request.type) : ''}\nSố ảnh: ${aiConfirm.request?.original_images?.length || 0}`}
+        variant="info"
+        confirmText="Xử lý"
+        cancelText="Huỷ"
+      />
+      
+      <div>
+        {/* Filters */}
+        <Card className="mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                type="text"
+                placeholder="Tìm kiếm theo tên, mô tả, ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {['all', 'pending', 'processing', 'completed', 'rejected'].map((status) => (
+                <Button 
+                  key={status}
+                  variant={filter === status ? 'primary' : 'secondary'} 
+                  onClick={() => setFilter(status as any)}
+                  size="sm"
+                >
+                  {status === 'all' ? 'Tất cả' : getStatusLabel(status)}
+                </Button>
+              ))}
+              <Button variant="secondary" onClick={() => fetchRequests()} size="sm">
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
-            ))}
-            <Button variant="secondary" onClick={() => fetchRequests()} size="sm">
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Loading State */}
+        {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -552,7 +574,8 @@ export default function AdminRequests() {
           />
         </>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 

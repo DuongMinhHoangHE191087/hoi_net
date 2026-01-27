@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Edit2, Trash2, Loader2, ExternalLink, GripVertical, X, Check, Smartphone, ShieldCheck, Lock } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   useAllNavigationLinks,
   useCreateNavigationLink,
@@ -105,8 +106,20 @@ export default function AdminNavigationLinks() {
     setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa menu này?')) return
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; linkId: string | null }>({
+    isOpen: false,
+    linkId: null
+  })
+
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, linkId: id })
+  }
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.linkId
+    if (!id) return
+    
+    setDeleteConfirm({ isOpen: false, linkId: null })
 
     try {
       await deleteLink.mutateAsync(id)
@@ -146,45 +159,57 @@ export default function AdminNavigationLinks() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-text">Quản Lý Navigation Menu</h2>
-        <Button
-          variant="primary"
-          onClick={() => {
-            resetForm()
-            setShowForm(true)
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm Menu
-        </Button>
-      </div>
+    <>
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, linkId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá Menu"
+        message="Bạn có chắc chắn muốn xoá menu này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-text">Quản Lý Navigation Menu</h2>
+          <Button
+            variant="primary"
+            onClick={() => {
+              resetForm()
+              setShowForm(true)
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm Menu
+          </Button>
+        </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <Card>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-text">
-              {editingId ? 'Sửa Menu' : 'Thêm Menu Mới'}
-            </h3>
-            <button onClick={resetForm} className="text-gray-500 hover:text-gray-700">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+        {/* Add/Edit Form */}
+        {showForm && (
+          <Card>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-text">
+                {editingId ? 'Sửa Menu' : 'Thêm Menu Mới'}
+              </h3>
+              <button onClick={resetForm} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên menu *
-                </label>
-                <input
-                  type="text"
-                  value={formData.label}
-                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
-                  placeholder="Blog"
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tên menu *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.label}
+                    onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none"
+                    placeholder="Blog"
                   required
                 />
               </div>
@@ -365,8 +390,9 @@ export default function AdminNavigationLinks() {
         ) : (
           <p className="text-gray-500 text-sm">Chưa có menu nào</p>
         )}
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </>
   )
 }
 

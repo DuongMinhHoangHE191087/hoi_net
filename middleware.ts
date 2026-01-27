@@ -172,12 +172,11 @@ export async function middleware(req: NextRequest) {
     return redirectResponse
   }
 
-  // Admin routes require admin role
+  // Admin routes require admin role - Show 404 to hide admin existence
   if (isAdminRoute && user && !canAccessAdminPanel) {
-    console.log('[Middleware] Non-admin tried to access admin route')
-    const redirectResponse = NextResponse.redirect(new URL('/unauthorized', req.url))
-    applySecurityHeaders(redirectResponse)
-    return redirectResponse
+    console.log('[Middleware] Non-admin tried to access admin route, showing 404')
+    // Return 404 response instead of redirect to hide admin route
+    return new NextResponse(null, { status: 404 })
   }
 
   // Redirect logged-in users away from login/register page

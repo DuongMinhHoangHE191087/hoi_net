@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Upload, Image as ImageIcon, Save, Trash2, Eye, EyeOff, Info, Palette } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 import { useSiteSettings } from '@/hooks/useSiteSettings'
 
@@ -195,8 +196,20 @@ export default function AdminSiteBranding() {
     }
   }
 
-  const handleDeleteLogo = async (type: 'light' | 'dark') => {
-    if (!confirm(`Xóa logo ${type === 'light' ? 'chính' : 'dark mode'}?`)) return
+  const [deleteLogoConfirm, setDeleteLogoConfirm] = useState<{ isOpen: boolean; type: 'light' | 'dark' | null }>({
+    isOpen: false,
+    type: null
+  })
+
+  const handleDeleteLogo = (type: 'light' | 'dark') => {
+    setDeleteLogoConfirm({ isOpen: true, type })
+  }
+
+  const confirmDeleteLogo = async () => {
+    const type = deleteLogoConfirm.type
+    if (!type) return
+    
+    setDeleteLogoConfirm({ isOpen: false, type: null })
 
     try {
       const response = await fetch(`/api/admin/site-settings/logo?type=${type}`, {
@@ -247,34 +260,46 @@ export default function AdminSiteBranding() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Site Branding</h2>
-          <p className="text-gray-600 mt-1">Quản lý logo, favicon, và thông tin website</p>
+    <>
+      <ConfirmDialog
+        isOpen={deleteLogoConfirm.isOpen}
+        onClose={() => setDeleteLogoConfirm({ isOpen: false, type: null })}
+        onConfirm={confirmDeleteLogo}
+        title="Xoá Logo"
+        message={`Bạn có chắc chắn muốn xoá logo ${deleteLogoConfirm.type === 'light' ? 'chính' : 'dark mode'}?`}
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Site Branding</h2>
+            <p className="text-gray-600 mt-1">Quản lý logo, favicon, và thông tin website</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setShowPreview(!showPreview)}
+            >
+              {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+              {showPreview ? 'Ẩn' : 'Xem'} Preview
+            </Button>
+            <Button
+              onClick={handleSaveSettings}
+              loading={saving}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Lưu Cài Đặt
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => setShowPreview(!showPreview)}
-          >
-            {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-            {showPreview ? 'Ẩn' : 'Xem'} Preview
-          </Button>
-          <Button
-            onClick={handleSaveSettings}
-            loading={saving}
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Lưu Cài Đặt
-          </Button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Logo Upload */}
-        <Card className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Logo Upload */}
+          <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <ImageIcon className="w-5 h-5" />
             Logo Chính
@@ -602,9 +627,10 @@ export default function AdminSiteBranding() {
               </div>
             </div>
           </div>
-        </Card>
-      )}
-    </div>
+          </Card>
+        )}
+      </div>
+    </>
   )
 }
 

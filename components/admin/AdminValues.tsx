@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Edit2, Trash2, Save, X, ChevronUp, ChevronDown, Eye, EyeOff, Target, Heart, Sparkles, Users, Zap, Star, Loader2, Rocket, Shield, Award, TrendingUp, Lightbulb, Globe, CheckCircle, Clock, Cpu, Camera, Palette, Smile, Code, Lock, Layers, MessageCircle, Flame, RefreshCw } from 'lucide-react'
 import { ValueSection } from '@/lib/supabase'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 
 // Helper to get auth headers
@@ -86,6 +87,10 @@ export default function AdminValues() {
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState<FormData>(defaultFormData)
   const [error, setError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; itemId: string | null }>({
+    isOpen: false,
+    itemId: null
+  })
 
   useEffect(() => {
     loadSections()
@@ -179,10 +184,15 @@ export default function AdminValues() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa mục này?')) {
-      return
-    }
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, itemId: id })
+  }
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.itemId
+    if (!id) return
+    
+    setDeleteConfirm({ isOpen: false, itemId: null })
 
     try {
       setSaving(true)
@@ -313,21 +323,33 @@ export default function AdminValues() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      {/* Header */}
-      <motion.div
-        className="mb-8"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold">
-              <span className="gradient-text-alt">Quản Lý Giá Trị</span>
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Quản lý các phần sứ mệnh, tầm nhìn và giá trị của công ty
-            </p>
+    <>
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, itemId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá mục"
+        message="Bạn có chắc chắn muốn xoá mục này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Header */}
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold">
+                <span className="gradient-text-alt">Quản Lý Giá Trị</span>
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Quản lý các phần sứ mệnh, tầm nhìn và giá trị của công ty
+              </p>
           </div>
 
           <motion.button
@@ -677,8 +699,9 @@ export default function AdminValues() {
             )
           })
         )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

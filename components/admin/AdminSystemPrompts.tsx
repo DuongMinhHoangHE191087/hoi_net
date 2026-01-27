@@ -7,6 +7,7 @@ import {
   Sparkles, AlertCircle, ChevronDown, ChevronUp, Search
 } from 'lucide-react'
 import { db, SystemPrompt } from '@/lib/supabase'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 
 const CATEGORIES = [
@@ -25,6 +26,10 @@ export default function AdminSystemPrompts() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; promptId: string | null }>({
+    isOpen: false,
+    promptId: null
+  })
 
   const [formData, setFormData] = useState<Partial<SystemPrompt>>({
     name: '',
@@ -92,8 +97,15 @@ export default function AdminSystemPrompts() {
     setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa system prompt này?')) return
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, promptId: id })
+  }
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.promptId
+    if (!id) return
+    
+    setDeleteConfirm({ isOpen: false, promptId: null })
 
     try {
       await db.deleteSystemPrompt(id)
@@ -170,22 +182,34 @@ export default function AdminSystemPrompts() {
   })
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
-            Quản Lý System Prompts
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Cấu hình prompts cho Gemini AI xử lý ảnh
-          </p>
-        </div>
+    <>
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, promptId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá System Prompt"
+        message="Bạn có chắc chắn muốn xoá system prompt này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-primary" />
+              Quản Lý System Prompts
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Cấu hình prompts cho Gemini AI xử lý ảnh
+            </p>
+          </div>
 
-        <motion.button
-          onClick={() => setShowForm(!showForm)}
-          className="px-6 py-3 bg-gradient-primary text-white rounded-xl font-semibold shadow-lg flex items-center gap-2"
+          <motion.button
+            onClick={() => setShowForm(!showForm)}
+            className="px-6 py-3 bg-gradient-primary text-white rounded-xl font-semibold shadow-lg flex items-center gap-2"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -434,7 +458,8 @@ export default function AdminSystemPrompts() {
           ))
         )}
       </div>
-    </div>
+      </div>
+    </>
   )
 }
 

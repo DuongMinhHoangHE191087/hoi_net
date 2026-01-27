@@ -70,6 +70,7 @@ import {
   Wind,
   Wrench
 } from 'lucide-react'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 
@@ -162,6 +163,10 @@ export default function AdminFeatures() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; featureId: string | null }>({
+    isOpen: false,
+    featureId: null
+  })
 
   const [formData, setFormData] = useState({
     title: '',
@@ -298,8 +303,15 @@ export default function AdminFeatures() {
     setIsAdding(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa tính năng này?')) return
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, featureId: id })
+  }
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.featureId
+    if (!id) return
+    
+    setDeleteConfirm({ isOpen: false, featureId: null })
 
     try {
       const headers = await getAuthHeaders()
@@ -411,51 +423,63 @@ export default function AdminFeatures() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Quản Lý Tính Năng</h2>
-          <p className="text-gray-600 mt-1">
-            Thêm, chỉnh sửa và sắp xếp các tính năng nổi bật
-          </p>
-        </div>
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          {isAdding ? (
-            <>
-              <X className="w-4 h-4" />
-              Hủy
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4" />
-              Thêm Tính Năng
-            </>
-          )}
-        </button>
-      </div>
-
-      <AnimatePresence>
-        {isAdding && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-white rounded-lg border-2 border-primary/20 p-6"
+    <>
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, featureId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá Tính Năng"
+        message="Bạn có chắc chắn muốn xoá tính năng này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Quản Lý Tính Năng</h2>
+            <p className="text-gray-600 mt-1">
+              Thêm, chỉnh sửa và sắp xếp các tính năng nổi bật
+            </p>
+          </div>
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
-            <h3 className="text-lg font-semibold mb-4">
-              {editingId ? 'Chỉnh Sửa Tính Năng' : 'Thêm Tính Năng Mới'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tiêu đề
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
+            {isAdding ? (
+              <>
+                <X className="w-4 h-4" />
+                Hủy
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                Thêm Tính Năng
+              </>
+            )}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {isAdding && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-white rounded-lg border-2 border-primary/20 p-6"
+            >
+              <h3 className="text-lg font-semibold mb-4">
+                {editingId ? 'Chỉnh Sửa Tính Năng' : 'Thêm Tính Năng Mới'}
+              </h3>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tiêu đề
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
                   }
@@ -781,8 +805,9 @@ export default function AdminFeatures() {
             </motion.div>
           ))
         )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

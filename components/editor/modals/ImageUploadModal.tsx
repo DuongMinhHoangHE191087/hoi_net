@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { X, Upload, Link2, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import toast from 'react-hot-toast'
 
 interface ImageUploadModalProps {
   isOpen: boolean
@@ -20,12 +21,12 @@ export default function ImageUploadModal({ isOpen, onClose, onInsert }: ImageUpl
 
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn file ảnh')
+      toast.error('Vui lòng chọn file ảnh')
       return
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      alert('File không được vượt quá 50MB')
+      toast.error('File không được vượt quá 50MB')
       return
     }
 
@@ -49,7 +50,7 @@ export default function ImageUploadModal({ isOpen, onClose, onInsert }: ImageUpl
       setImageUrl(data.url)
     } catch (error) {
       console.error('Upload error:', error)
-      alert('Lỗi khi upload ảnh. Vui lòng thử lại.')
+      toast.error('Lỗi khi upload ảnh. Vui lòng thử lại.')
     } finally {
       setIsUploading(false)
     }
@@ -243,7 +244,7 @@ export default function ImageUploadModal({ isOpen, onClose, onInsert }: ImageUpl
                     className="max-h-48 mx-auto rounded-lg object-contain"
                     onError={() => {
                       setPreviewUrl(null)
-                      alert('Không thể tải ảnh từ URL này')
+                      toast.error('Không thể tải ảnh từ URL này')
                     }}
                   />
                 )}

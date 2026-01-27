@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Edit2, Trash2, Loader2, ExternalLink, GripVertical, X, Check } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   useAllFooterLinks,
   useCreateFooterLink,
@@ -98,8 +99,20 @@ export default function AdminFooterLinks() {
     setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa link này?')) return
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; linkId: string | null }>({
+    isOpen: false,
+    linkId: null
+  })
+
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, linkId: id })
+  }
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm.linkId
+    if (!id) return
+    
+    setDeleteConfirm({ isOpen: false, linkId: null })
 
     try {
       await deleteLink.mutateAsync(id)
@@ -148,23 +161,35 @@ export default function AdminFooterLinks() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-text">Quản Lý Footer Links</h2>
-        <Button
-          variant="primary"
-          onClick={() => {
-            resetForm()
-            setShowForm(true)
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm Link
-        </Button>
-      </div>
+    <>
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, linkId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá Link"
+        message="Bạn có chắc chắn muốn xoá link này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-text">Quản Lý Footer Links</h2>
+          <Button
+            variant="primary"
+            onClick={() => {
+              resetForm()
+              setShowForm(true)
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm Link
+          </Button>
+        </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
+        {/* Add/Edit Form */}
+        {showForm && (
         <Card>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold text-text">
@@ -335,9 +360,10 @@ export default function AdminFooterLinks() {
           ) : (
             <p className="text-gray-500 text-sm">Chưa có link nào trong nhóm này</p>
           )}
-        </Card>
-      ))}
-    </div>
+          </Card>
+        ))}
+      </div>
+    </>
   )
 }
 

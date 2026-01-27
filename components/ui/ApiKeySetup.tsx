@@ -7,6 +7,7 @@ import {
   Eye, EyeOff, Trash2, Info, Copy, Check, Shield
 } from 'lucide-react'
 import { useGeminiKey } from '@/hooks/useGeminiKey'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 
 interface ApiKeySetupProps {
@@ -29,6 +30,7 @@ export default function ApiKeySetup({ isOpen, onClose, onSuccess }: ApiKeySetupP
   const [showKey, setShowKey] = useState(false)
   const [step, setStep] = useState<'intro' | 'guide' | 'input'>(hasKey ? 'input' : 'intro')
   const [copied, setCopied] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const handleSaveKey = async () => {
     const result = await saveKey(inputKey)
@@ -44,11 +46,14 @@ export default function ApiKeySetup({ isOpen, onClose, onSuccess }: ApiKeySetupP
   }
 
   const handleRemoveKey = () => {
-    if (confirm('Bạn có chắc muốn xóa API key?')) {
-      removeKey()
-      toast.success('Đã xóa API key')
-      setStep('intro')
-    }
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmRemoveKey = () => {
+    setShowDeleteConfirm(false)
+    removeKey()
+    toast.success('Đã xóa API key')
+    setStep('intro')
   }
 
   const copyToClipboard = (text: string) => {
@@ -60,29 +65,41 @@ export default function ApiKeySetup({ isOpen, onClose, onSuccess }: ApiKeySetupP
   if (!isOpen) return null
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-        onClick={onClose}
-      >
+    <>
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmRemoveKey}
+        title="Xoá API Key"
+        message="Bạn có chắc chắn muốn xoá API key này? Bạn sẽ cần nhập lại để sử dụng AI."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <AnimatePresence>
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="glassmorphism-strong max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8"
-          onClick={e => e.stopPropagation()}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={onClose}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600">
-                <Key className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-text">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="glassmorphism-strong max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600">
+                  <Key className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-text">
                   {hasKey ? 'Quản lý API Key' : 'Thiết lập API Key'}
                 </h2>
                 <p className="text-sm text-gray-600">
@@ -349,9 +366,10 @@ export default function ApiKeySetup({ isOpen, onClose, onSuccess }: ApiKeySetupP
               </motion.div>
             )}
           </AnimatePresence>
+          </motion.div>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </AnimatePresence>
+    </>
   )
 }
 

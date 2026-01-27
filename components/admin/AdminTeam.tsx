@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import AvatarUpload from '@/components/ui/AvatarUpload'
 import { SafeAvatar } from '@/components/ui/SafeImage'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { TeamMember } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -16,6 +17,10 @@ export default function AdminTeam() {
   const [editMode, setEditMode] = useState(false)
   const [currentMember, setCurrentMember] = useState<Partial<TeamMember>>({})
   const [uploading, setUploading] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; memberId: string | null }>({
+    isOpen: false,
+    memberId: null
+  })
 
   useEffect(() => {
     loadMembers()
@@ -86,25 +91,32 @@ export default function AdminTeam() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc muốn xóa thành viên này?')) {
-      try {
-        const response = await fetch(`/api/admin/team-members/${id}`, {
-          method: 'DELETE'
-        })
+  const handleDelete = (id: string) => {
+    setDeleteConfirm({ isOpen: true, memberId: id })
+  }
 
-        const data = await response.json()
+  const confirmDelete = async () => {
+    const id = deleteConfirm.memberId
+    if (!id) return
+    
+    setDeleteConfirm({ isOpen: false, memberId: null })
+    
+    try {
+      const response = await fetch(`/api/admin/team-members/${id}`, {
+        method: 'DELETE'
+      })
 
-        if (response.ok) {
-          toast.success(data.message || 'Đã xóa thành viên')
-          loadMembers()
-        } else {
-          throw new Error(data.error || 'Failed to delete team member')
-        }
-      } catch (error: any) {
-        console.error('Error deleting member:', error)
-        toast.error(error.message || 'Lỗi khi xóa thành viên')
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success(data.message || 'Đã xóa thành viên')
+        loadMembers()
+      } else {
+        throw new Error(data.error || 'Failed to delete team member')
       }
+    } catch (error: any) {
+      console.error('Error deleting member:', error)
+      toast.error(error.message || 'Lỗi khi xóa thành viên')
     }
   }
 
@@ -204,51 +216,64 @@ export default function AdminTeam() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-text">Quản Lý Đội Ngũ</h2>
-        <Button variant="primary" onClick={handleCreate}>
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm Thành Viên
-        </Button>
-      </div>
-
-      {members.length === 0 ? (
-        <Card>
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có thành viên</h3>
-            <p className="text-gray-500">Thêm thành viên đầu tiên</p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {members.map((member) => (
-            <Card key={member.id} hover>
-              <div className="flex items-start gap-4">
-                <SafeAvatar 
-                  src={member.avatar || member.avatar_url} 
-                  alt={member.name} 
-                  size="lg" 
-                />
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-text">{member.name}</h3>
-                  <p className="text-primary font-medium mb-2">{member.role}</p>
-                  {member.bio && <p className="text-gray-600">{member.bio}</p>}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" onClick={() => { setCurrentMember(member); setEditMode(true) }}>
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" onClick={() => handleDelete(member.id)}>
-                    <Trash2 className="w-4 h-4 text-error" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+    <>
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, memberId: null })}
+        onConfirm={confirmDelete}
+        title="Xoá thành viên"
+        message="Bạn có chắc chắn muốn xoá thành viên này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Huỷ"
+      />
+      
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-text">Quản Lý Đội Ngũ</h2>
+          <Button variant="primary" onClick={handleCreate}>
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm Thành Viên
+          </Button>
         </div>
-      )}
-    </div>
+
+        {members.length === 0 ? (
+          <Card>
+            <div className="text-center py-12">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có thành viên</h3>
+              <p className="text-gray-500">Thêm thành viên đầu tiên</p>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {members.map((member) => (
+              <Card key={member.id} hover>
+                <div className="flex items-start gap-4">
+                  <SafeAvatar 
+                    src={member.avatar || member.avatar_url} 
+                    alt={member.name} 
+                    size="lg" 
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-text">{member.name}</h3>
+                    <p className="text-primary font-medium mb-2">{member.role}</p>
+                    {member.bio && <p className="text-gray-600">{member.bio}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" onClick={() => { setCurrentMember(member); setEditMode(true) }}>
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" onClick={() => handleDelete(member.id)}>
+                      <Trash2 className="w-4 h-4 text-error" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 
