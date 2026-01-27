@@ -115,13 +115,14 @@ if (file.size > 10 * 1024 * 1024) {
 
 **Server-side Validation (Supabase Storage Policies):**
 ```sql
-CREATE POLICY "Users can upload own files"
+-- For avatars bucket (users upload to their own folder)
+CREATE POLICY "Users can upload own avatar"
   ON storage.objects
   FOR INSERT
   TO authenticated
   WITH CHECK (
-    bucket_id = 'user-uploads' AND
-    (storage.foldername(name))[1] IN ('avatars', 'requests')
+    bucket_id = 'avatars' AND
+    (storage.foldername(name))[1] = auth.uid()::text
   );
 ```
 

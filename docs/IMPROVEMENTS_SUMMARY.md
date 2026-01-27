@@ -18,12 +18,13 @@
 **File**: `app/requests/new/page.tsx`
 
 ```typescript
-// TRƯỚC: Upload lên Supabase Storage (không hoạt động)
+// TRƯỚC: Upload lên Supabase Storage (user-uploads bucket - không tồn tại)
 const { error: uploadError } = await supabase.storage
   .from('user-uploads')
   .upload(filePath, file)
 
-// SAU: Upload lên Cloudinary với progress
+// SAU: Request images - upload lên Cloudinary với progress
+// Note: Avatar uploads now use Supabase Storage bucket 'avatars'
 for (let i = 0; i < selectedFiles.length; i++) {
   const file = selectedFiles[i]
 

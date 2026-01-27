@@ -8,12 +8,12 @@ VALUES (
   'avatars',
   'avatars',
   true,  -- Public bucket so avatars are accessible
-  5242880,  -- 5MB limit
+  52428800,  -- 50MB limit for testing
   ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 )
 ON CONFLICT (id) DO UPDATE SET
   public = true,
-  file_size_limit = 5242880,
+  file_size_limit = 52428800,
   allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 -- Step 2: Create RLS policies for avatars bucket
@@ -100,7 +100,7 @@ BEGIN
   RAISE NOTICE 'Bucket details:';
   RAISE NOTICE '- Name: avatars';
   RAISE NOTICE '- Public: Yes';
-  RAISE NOTICE '- Max size: 5MB';
+  RAISE NOTICE '- Max size: 50MB (testing)';
   RAISE NOTICE '- Allowed types: JPEG, PNG, GIF, WebP';
   RAISE NOTICE '';
   RAISE NOTICE 'Policies created:';

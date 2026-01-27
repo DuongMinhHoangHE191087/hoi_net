@@ -245,8 +245,9 @@ Create bucket and policies:
 
 ```bash
 # In Supabase Dashboard:
-# 1. Storage → Create bucket "user-uploads" (Public)
-# 2. Run database-storage-setup.sql
+# 1. Storage → Create bucket "avatars" (Public) for avatar uploads
+# 2. Run CREATE_STORAGE_BUCKET.sql
+# 3. (Optional) Create bucket "user-uploads" for request images
 ```
 
 ### 3. Environment Variables

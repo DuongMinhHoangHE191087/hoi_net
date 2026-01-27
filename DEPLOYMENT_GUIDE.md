@@ -5,8 +5,8 @@
 Before deploying to production, ensure you have completed:
 
 - [ ] Run database migration (`COMPLETE_DATABASE_MIGRATION.sql`)
-- [ ] Create storage bucket (`user-uploads`)
-- [ ] Apply storage policies (`COMPLETE_STORAGE_SETUP.sql`)
+- [ ] Create storage bucket (`avatars` for avatars, optionally `user-uploads` for requests)
+- [ ] Apply storage policies (`CREATE_STORAGE_BUCKET.sql`)
 - [ ] Update admin emails in code (3 locations)
 - [ ] Test all features locally
 - [ ] Build succeeds without errors (`npm run build`)

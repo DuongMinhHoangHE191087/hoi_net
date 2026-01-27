@@ -690,9 +690,10 @@ Types           | Enum Types        | ✅ PASS
 3. Check Supabase dashboard → Database → Policies
 
 ### If Storage Check Fails
-1. Go to Storage → Create bucket named `user-uploads`
+1. Go to Storage → Create bucket named `avatars` (for avatars)
 2. Check "Public bucket" checkbox
-3. Re-run `COMPLETE_STORAGE_SETUP.sql`
+3. Re-run `CREATE_STORAGE_BUCKET.sql`
+4. For requests, optionally create `user-uploads` bucket
 
 ### If Policies Check Fails
 1. Drop existing policies: `DROP POLICY [policy_name] ON [table_name];`

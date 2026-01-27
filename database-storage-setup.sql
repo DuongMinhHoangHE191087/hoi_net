@@ -1,4 +1,10 @@
--- Supabase Storage Setup for User Uploads
+-- =====================================================
+-- DEPRECATED: This file is for `user-uploads` bucket
+-- For AVATAR uploads, use CREATE_STORAGE_BUCKET.sql instead
+-- which sets up the `avatars` bucket with proper per-user folder policies
+-- =====================================================
+
+-- Supabase Storage Setup for User Uploads (Requests, Blog images)
 -- Run this in Supabase SQL Editor after creating the storage bucket
 
 -- 1. FIRST: Create storage bucket via Supabase Dashboard

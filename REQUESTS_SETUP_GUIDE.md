@@ -39,16 +39,19 @@ This creates:
 - Triggers for auto-update timestamps
 - Statistics view for dashboard
 
-### 2. Verify Storage Bucket
+### 2. Verify Image Upload
 
-Ensure `user-uploads` bucket exists with proper policies:
+Request images are uploaded to **Cloudinary** (not Supabase Storage):
 
 ```bash
-# Should already exist from profile setup
-# If not, create bucket and run database-storage-setup.sql
+# Ensure Cloudinary env variables are set:
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
 ```
 
-The bucket should have a `requests/` folder for request images.
+**Note:** Avatar uploads use Supabase Storage bucket `avatars`.
+Request images use Cloudinary for better CDN and transformations.
 
 ## File Structure
 

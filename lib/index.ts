@@ -50,7 +50,8 @@ export {
   requireAdminAuth,
   authServer
 } from './auth-server'
-export type { AuthUser, UserRole } from './auth-server'
+export type { AuthUser } from './auth-server'
+export type { UserRole } from './permissions'
 
 // ============================================
 // API Response Helpers

@@ -5,7 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 export const dynamic = 'force-dynamic'
 
 const AVATAR_BUCKET = 'avatars'
-const MAX_AVATAR_SIZE = 5 * 1024 * 1024 // 5MB - matches bucket config
+const MAX_AVATAR_SIZE = 50 * 1024 * 1024 // 50MB for testing
 
 /**
  * Get file extension from File object
@@ -68,10 +68,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (5MB max - matches bucket config)
+    // Validate file size (50MB max for testing)
     if (file.size > MAX_AVATAR_SIZE) {
       return NextResponse.json(
-        { error: 'File too large', message: 'File không được vượt quá 5MB' },
+        { error: 'File too large', message: 'File không được vượt quá 50MB' },
         { status: 400 }
       )
     }

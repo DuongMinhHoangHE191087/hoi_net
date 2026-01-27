@@ -40,7 +40,7 @@ This creates:
 **Via Supabase Dashboard:**
 
 1. Go to **Storage** → **Create new bucket**
-2. Bucket name: `user-uploads`
+2. Bucket name: `avatars`
 3. **Public bucket**: ✅ Yes (checked)
 4. Click **Create bucket**
 
@@ -50,14 +50,15 @@ This creates:
 # In Supabase Dashboard:
 # 1. Go to SQL Editor
 # 2. New Query
-# 3. Copy contents from database-storage-setup.sql
+# 3. Copy contents from CREATE_STORAGE_BUCKET.sql
 # 4. Run query
 ```
 
 This creates:
-- Upload policies (users can upload to their own folder)
+- Upload policies (users can upload to their own folder: `{userId}/avatar-xxx.ext`)
 - Read policies (public can view uploaded images)
 - Delete policies (users can delete their own files)
+- Admin policy (admins can manage all avatars)
 
 ## Environment Variables
 
@@ -120,9 +121,9 @@ database-storage-setup.sql   # Storage policies
 - Optional
 
 ### Avatar
-- File types: image/jpeg, image/png, image/webp
+- File types: image/jpeg, image/png, image/webp, image/gif
 - Max size: 5MB
-- Uploaded to: `user-uploads/avatars/{userId}-{timestamp}.ext`
+- Uploaded to: `avatars/{userId}/avatar-{timestamp}.ext`
 
 ## Usage Flow
 
@@ -164,12 +165,12 @@ database-storage-setup.sql   # Storage policies
 - [ ] Test as admin (can see all profiles)
 
 ### Storage
-- [ ] Create `user-uploads` bucket
+- [ ] Create `avatars` bucket (run CREATE_STORAGE_BUCKET.sql)
 - [ ] Set bucket to public
 - [ ] Run storage policies SQL
 - [ ] Test file upload
 - [ ] Verify public URL works
-- [ ] Test file size limits
+- [ ] Test file size limits (5MB max)
 
 ### Profile Page
 - [ ] Navigate to `/profile` without login → redirects to login
@@ -289,13 +290,13 @@ const { error } = await supabase
 
 // Upload avatar
 const { error } = await supabase.storage
-  .from('user-uploads')
-  .upload('avatars/filename.jpg', file)
+  .from('avatars')
+  .upload(`${userId}/avatar-${Date.now()}.jpg`, file)
 
 // Get public URL
 const { data } = supabase.storage
-  .from('user-uploads')
-  .getPublicUrl('avatars/filename.jpg')
+  .from('avatars')
+  .getPublicUrl(`${userId}/avatar-${Date.now()}.jpg`)
 ```
 
 ## Support

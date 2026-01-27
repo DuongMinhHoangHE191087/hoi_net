@@ -61,14 +61,14 @@ blog_posts       | 0
 
 ## 💾 Step 3: Storage Setup
 
-### 3.1 Create Storage Bucket
+### 3.1 Create Storage Bucket for Avatars
 
 1. **Go to Storage**
    - Click "Storage" in Supabase Dashboard sidebar
 
-2. **Create Bucket**
+2. **Create Avatars Bucket**
    - Click "Create new bucket"
-   - Name: `user-uploads`
+   - Name: `avatars`
    - **Public bucket**: ✅ CHECK THIS BOX (Important!)
    - Click "Create bucket"
 
@@ -78,13 +78,15 @@ blog_posts       | 0
    - SQL Editor → New Query
 
 2. **Run Storage Setup**
-   - Open file: `COMPLETE_STORAGE_SETUP.sql`
+   - Open file: `CREATE_STORAGE_BUCKET.sql`
    - Copy ALL contents
    - Paste and Run
 
 3. **Verify Success**
    - You should see the bucket listed
    - Policies should be created
+
+**Note:** Avatar uploads use path `{userId}/avatar-xxx.ext` to match RLS policies.
 
 ---
 
@@ -280,9 +282,10 @@ npm run dev
 
 ### Issue: "storage bucket not found"
 **Solution:**
-1. Create `user-uploads` bucket in Supabase Storage
+1. Create `avatars` bucket in Supabase Storage (for avatar uploads)
 2. Make sure "Public" is checked
-3. Run `COMPLETE_STORAGE_SETUP.sql`
+3. Run `CREATE_STORAGE_BUCKET.sql`
+4. For request images, check Cloudinary config is correct
 
 ### Issue: "Failed to upload image"
 **Solution:**

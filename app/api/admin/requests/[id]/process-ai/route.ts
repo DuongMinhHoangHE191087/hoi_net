@@ -136,7 +136,7 @@ export async function POST(
             error: result.error
           }
         } catch (err: any) {
-          log.error('Error processing single image with AI', { error: err, imageUrl, index })
+          log.error('Error processing single image with AI', { error: err, metadata: { imageUrl, index } })
           return {
             index,
             original: imageUrl,

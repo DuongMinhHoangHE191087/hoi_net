@@ -53,9 +53,9 @@ export default function AvatarUpload({
       return
     }
 
-    // Validate file size (5MB max - matching bucket config)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File không được vượt quá 5MB')
+    // Validate file size (50MB max for testing)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File không được vượt quá 50MB')
       return
     }
 
@@ -204,7 +204,7 @@ export default function AvatarUpload({
           </div>
 
           <p className="text-xs text-gray-500">
-            JPG, PNG hoặc WEBP. Tối đa 5MB.
+            JPG, PNG hoặc WEBP. Tối đa 50MB.
           </p>
         </div>
       </div>

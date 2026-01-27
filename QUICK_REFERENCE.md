@@ -121,9 +121,9 @@ WHERE schemaname = 'public';
 
 ### Storage Error
 ```sql
--- Check if bucket exists
+-- Check if avatars bucket exists
 SELECT * FROM storage.buckets
-WHERE name = 'user-uploads';
+WHERE name = 'avatars';
 
 -- Should show 1 row with public = true
 ```
@@ -146,7 +146,7 @@ WHERE name = 'user-uploads';
 ### Setup Files
 - `SETUP_INSTRUCTIONS.md` - Complete setup guide
 - `COMPLETE_DATABASE_MIGRATION.sql` - All database tables
-- `COMPLETE_STORAGE_SETUP.sql` - Storage policies
+- `CREATE_STORAGE_BUCKET.sql` - Avatar storage policies
 
 ### Documentation
 - `PROFILE_SETUP_GUIDE.md` - Profile system docs

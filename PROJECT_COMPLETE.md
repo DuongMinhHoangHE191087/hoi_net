@@ -190,15 +190,15 @@
 ### 10. Storage Setup ✅
 
 **Features Implemented:**
-- ✅ Storage bucket (user-uploads)
+- ✅ Storage bucket (`avatars` for avatars)
 - ✅ Public read access
 - ✅ Upload policies for authenticated users
-- ✅ Folder structure (avatars/, requests/, blog/)
+- ✅ Folder structure (`{userId}/avatar-xxx.ext`)
 - ✅ File naming conventions
-- ✅ Size and type validation
+- ✅ Size (5MB) and type validation
 
 **Files:**
-- COMPLETE_STORAGE_SETUP.sql (100 lines)
+- CREATE_STORAGE_BUCKET.sql (120 lines)
 
 ---
 

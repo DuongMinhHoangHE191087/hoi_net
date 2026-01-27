@@ -1,6 +1,9 @@
 -- ==============================================
 -- STORAGE SETUP FOR PHOTO RESTORE APP
--- Run AFTER creating the 'user-uploads' bucket
+-- For user-uploads bucket (requests, blog images)
+-- ==============================================
+-- NOTE: For AVATAR uploads, use CREATE_STORAGE_BUCKET.sql
+-- which sets up the 'avatars' bucket with per-user folder policies
 -- ==============================================
 
 -- IMPORTANT: Before running this SQL

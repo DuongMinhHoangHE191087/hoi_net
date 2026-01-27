@@ -105,10 +105,10 @@ export default function ProfilePage() {
       return
     }
 
-    // Validate file size (5MB max - matching bucket config)
-    const maxSize = 5 * 1024 * 1024
+    // Validate file size (50MB max for testing)
+    const maxSize = 50 * 1024 * 1024
     if (file.size > maxSize) {
-      toast.error('Kích thước ảnh không được vượt quá 5MB')
+      toast.error('Kích thước ảnh không được vượt quá 50MB')
       return
     }
 
