@@ -23,9 +23,11 @@ import { cookies } from 'next/headers'
 // ============================================
 
 const getRedirectUrl = () => {
-  return process.env.NEXT_PUBLIC_SITE_URL || 
-         process.env.NEXT_PUBLIC_APP_URL || 
-         'http://localhost:3000'
+  const url = process.env.NEXT_PUBLIC_SITE_URL || 
+              process.env.NEXT_PUBLIC_APP_URL || 
+              'http://localhost:3000'
+  // Remove trailing slash to avoid double slashes
+  return url.replace(/\/$/, '')
 }
 
 // ============================================
@@ -220,6 +222,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createSignUpClient()
     const redirectUrl = `${getRedirectUrl()}/auth/callback`
     
+    // Pass captcha token to Supabase (required when Supabase captcha is enabled)
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: email.toLowerCase().trim(),
       password,
@@ -228,6 +231,7 @@ export async function POST(request: NextRequest) {
           full_name: fullName || '',
         },
         emailRedirectTo: redirectUrl,
+        captchaToken: captchaToken || undefined,
       },
     })
     

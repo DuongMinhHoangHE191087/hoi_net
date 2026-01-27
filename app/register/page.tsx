@@ -15,6 +15,8 @@ import {
 import { sanitizeInput } from '@/lib/security'
 import { useSiteSetting } from '@/hooks/useSiteSettings'
 import toast, { Toaster } from 'react-hot-toast'
+import Captcha, { useCaptcha } from '@/components/auth/Captcha'
+import { useAuthSettings, useFailedAttempts } from '@/hooks/useAuthSettings'
 
 // ============================================
 // Types for API Response
@@ -64,6 +66,11 @@ function RegisterContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null)
+
+  // Auth settings & captcha from admin
+  const { settings } = useAuthSettings()
+  const { attempts: failedAttempts, increment: incrementAttempts, reset: resetAttempts } = useFailedAttempts('register')
+  const captcha = useCaptcha()
 
   // Pre-fill email from URL params (from login redirect)
   const emailFromUrl = searchParams.get('email')
@@ -193,11 +200,32 @@ function RegisterContent() {
         return
       }
 
+      // Check if captcha is required - Supabase ALWAYS requires captcha when enabled
+      const needsCaptcha = settings.captcha.enabled && settings.captcha.forms.register
+      
+      console.log('[Register] Captcha check:', {
+        enabled: settings.captcha.enabled,
+        formEnabled: settings.captcha.forms.register,
+        needsCaptcha,
+        isVerified: captcha.isVerified,
+        hasToken: !!captcha.token,
+      })
+      
+      if (needsCaptcha && !captcha.isVerified) {
+        toast.error('Vui lòng xác minh captcha (hộp checkbox bên dưới)', {
+          icon: '🔒',
+          duration: 5000,
+        })
+        setLoading(false)
+        return
+      }
+
       // Sign up via API
       console.log('[Register] Attempting sign up via API:', {
         email: result.data.email,
         hasPassword: !!result.data.password,
-        fullName: result.data.fullName
+        fullName: result.data.fullName,
+        hasCaptcha: !!captcha.token
       })
 
       const response = await fetch('/api/auth/sign-up', {
@@ -207,6 +235,7 @@ function RegisterContent() {
           email: result.data.email,
           password: result.data.password,
           fullName: result.data.fullName,
+          captchaToken: captcha.token || undefined,
         }),
       })
 
@@ -215,6 +244,10 @@ function RegisterContent() {
       if (!data.success) {
         const errorCode = data.error?.code || 'UNKNOWN'
         const errorMessage = data.error?.message || getErrorMessage(data.error) || 'Đăng ký thất bại'
+        
+        // Increment failed attempts and reset captcha
+        incrementAttempts()
+        captcha.reset()
         
         // Handle "already registered" explicitly
         if (errorCode === 'USER_ALREADY_REGISTERED' || data.exists) {
@@ -647,6 +680,18 @@ function RegisterContent() {
                 <AlertCircle className="w-4 h-4" />
                 {errors.agreeTerms}
               </p>
+            )}
+
+            {/* Captcha - always show when enabled (Supabase requires it) */}
+            {settings.captcha.enabled && settings.captcha.forms.register && (
+              <Captcha
+                onVerify={captcha.handleVerify}
+                onExpire={captcha.handleExpire}
+                failedAttempts={failedAttempts}
+                thresholdAttempts={settings.captcha.threshold_attempts}
+                forceShow={true}  // Always show because Supabase requires captcha
+                className="mb-2"
+              />
             )}
 
             {/* Submit Button */}

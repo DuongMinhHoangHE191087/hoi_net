@@ -91,9 +91,22 @@ export default function AdminUsers() {
 
     try {
       console.log('[AdminUsers] Fetching from /api/admin/users... (retry:', retryCount, ')')
-      // Add cache-busting query param to prevent caching
+      // Add cache-busting query param and fetch options to prevent caching
       const timestamp = Date.now()
-      const response = await authFetch.get(`/api/admin/users?_t=${timestamp}`)
+      
+      // Get auth token first
+      const supabase = (await import('@/lib/supabase')).supabase
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      const response = await fetch(`/api/admin/users?_t=${timestamp}`, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store',
+          'Pragma': 'no-cache',
+          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
+        },
+        cache: 'no-store',
+      })
       console.log('[AdminUsers] Response status:', response.status)
 
       if (!response.ok) {
@@ -172,14 +185,26 @@ export default function AdminUsers() {
         throw new Error(data.error || 'Failed to update role')
       }
 
+      // Verify the update was successful
+      if (data.user && data.user.role !== newRole) {
+        console.error('[AdminUsers] Role mismatch! Expected:', newRole, 'Got:', data.user.role)
+        throw new Error(`Role không được cập nhật đúng. Vui lòng kiểm tra database constraint.`)
+      }
+
       toast.success(`Đã cập nhật vai trò thành ${getRoleLabel(newRole)}`)
       setShowRoleModal(false)
       setSelectedUser(null)
       
-      // Force refresh with delay to ensure DB is updated
-      console.log('[AdminUsers] Refreshing users list...')
-      await fetchUsers()
-      console.log('[AdminUsers] Users refreshed')
+      // Immediately update local state for responsive UI
+      setUsers(prev => prev.map(u => 
+        u.id === userId ? { ...u, role: newRole } : u
+      ))
+      
+      // Also fetch fresh data after a short delay
+      setTimeout(() => {
+        console.log('[AdminUsers] Refreshing users list...')
+        fetchUsers()
+      }, 500)
     } catch (err: any) {
       console.error('[AdminUsers] Update role error:', err)
       toast.error(err.message || 'Lỗi khi cập nhật vai trò')

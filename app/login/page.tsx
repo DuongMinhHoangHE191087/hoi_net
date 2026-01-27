@@ -13,7 +13,8 @@ import {
 } from '@/lib/auth/validation'
 import { sanitizeInput } from '@/lib/security'
 import toast, { Toaster } from 'react-hot-toast'
-import { HCaptcha } from '@/components/auth/HCaptcha'
+import Captcha, { useCaptcha } from '@/components/auth/Captcha'
+import { useAuthSettings, useFailedAttempts } from '@/hooks/useAuthSettings'
 
 // ============================================
 // Types for API Response
@@ -73,6 +74,11 @@ function LoginContent() {
     password: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // Auth settings & captcha from admin
+  const { settings } = useAuthSettings()
+  const { attempts: failedAttempts, increment: incrementAttempts, reset: resetAttempts } = useFailedAttempts('login')
+  const captcha = useCaptcha()
   
   // Lockout & Captcha state
   const [requiresCaptcha, setRequiresCaptcha] = useState(false)
@@ -196,9 +202,22 @@ function LoginContent() {
         return
       }
 
-      // Check if captcha required but not provided
-      if (requiresCaptcha && !captchaToken) {
-        toast.error('Vui lòng hoàn thành xác minh CAPTCHA', { icon: '🔒' })
+      // Check if captcha required - Supabase ALWAYS requires captcha when enabled
+      const needsCaptcha = settings.captcha.enabled && settings.captcha.forms.login
+      
+      console.log('[Login] Captcha check:', {
+        settingsEnabled: settings.captcha.enabled,
+        formEnabled: settings.captcha.forms.login,
+        needsCaptcha,
+        hasCaptchaToken: !!captchaToken,
+        isVerified: captcha.isVerified,
+      })
+      
+      if (needsCaptcha && !captchaToken) {
+        toast.error('Vui lòng xác minh captcha (hộp checkbox bên dưới)', {
+          icon: '🔒',
+          duration: 5000,
+        })
         setLoading(false)
         return
       }
@@ -248,6 +267,10 @@ function LoginContent() {
         if (data.remainingAttempts !== undefined) {
           setRemainingAttempts(data.remainingAttempts)
         }
+        
+        // Increment local failed attempts for captcha threshold
+        incrementAttempts()
+        captcha.reset()
 
         // Get error message (always string, never [object Object])
         const errorMessage = data.error?.message || getErrorMessage(data.error) || 'Đăng nhập thất bại'
@@ -651,30 +674,23 @@ function LoginContent() {
                 )}
               </AnimatePresence>
 
-              {/* hCaptcha (shown after failed attempts) */}
-              <AnimatePresence>
-                {requiresCaptcha && !isLocked && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                  >
-                    <HCaptcha
-                      onVerify={(token) => setCaptchaToken(token)}
-                      onExpire={() => setCaptchaToken(null)}
-                      onError={() => setCaptchaToken(null)}
-                      theme="light"
-                      className="flex justify-center"
-                    />
-                    {captchaToken && (
-                      <p className="text-xs text-green-600 text-center mt-2 flex items-center justify-center gap-1">
-                        <Shield className="w-3 h-3" />
-                        Xác minh thành công
-                      </p>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* hCaptcha - always show when enabled (Supabase requires it) */}
+              {settings.captcha.enabled && settings.captcha.forms.login && (
+                <Captcha
+                  onVerify={(token) => {
+                    setCaptchaToken(token)
+                    captcha.handleVerify(token)
+                  }}
+                  onExpire={() => {
+                    setCaptchaToken(null)
+                    captcha.handleExpire()
+                  }}
+                  failedAttempts={failedAttempts}
+                  thresholdAttempts={settings.captcha.threshold_attempts}
+                  forceShow={true}  // Always show because Supabase requires captcha
+                  className="mb-2"
+                />
+              )}
 
               {/* Remember & Forgot */}
               <div className="flex items-center justify-between text-sm">

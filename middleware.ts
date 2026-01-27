@@ -42,18 +42,24 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   // Strict Transport Security (HSTS) - Force HTTPS
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-  // Content Security Policy
+  // Content Security Policy - Updated for hCaptcha
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://challenges.cloudflare.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    // hCaptcha requires script-src for js.hcaptcha.com and newassets.hcaptcha.com
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://challenges.cloudflare.com https://js.hcaptcha.com https://newassets.hcaptcha.com https://*.hcaptcha.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://newassets.hcaptcha.com",
     "img-src 'self' data: blob: https: http:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://res.cloudinary.com https://accounts.google.com",
-    "frame-src 'self' https://accounts.google.com https://challenges.cloudflare.com",
+    // hCaptcha requires connect-src for hcaptcha.com and sentry
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://res.cloudinary.com https://accounts.google.com https://hcaptcha.com https://*.hcaptcha.com",
+    // hCaptcha iframe
+    "frame-src 'self' https://accounts.google.com https://challenges.cloudflare.com https://newassets.hcaptcha.com https://*.hcaptcha.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
+    // Worker for hCaptcha
+    "worker-src 'self' blob: https://*.hcaptcha.com",
+    "child-src 'self' blob: https://*.hcaptcha.com",
   ].join('; '),
 }
 

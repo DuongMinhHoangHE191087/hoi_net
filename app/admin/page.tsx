@@ -60,6 +60,7 @@ const ADMIN_TAB_LOADERS = {
   'footerLinks': () => import('@/components/admin/AdminFooterLinks'),
   'navLinks': () => import('@/components/admin/AdminNavigationLinks'),
   'uiSettings': () => import('@/components/admin/AdminUISettings'),
+  'security': () => import('@/components/admin/AdminSecuritySettings'),
   'settings': () => import('@/components/admin/AdminSettings'),
 } as const
 
@@ -233,6 +234,7 @@ export default function AdminPage() {
     ...(isAdmin ? [{ id: 'footerLinks' as Tab, label: 'Link Footer', icon: Link2 }] : []),
     ...(isAdmin ? [{ id: 'navLinks' as Tab, label: 'Menu Nav', icon: Menu }] : []),
     ...(isAdmin ? [{ id: 'uiSettings' as Tab, label: 'Giao Diện', icon: Palette }] : []),
+    ...(isAdmin ? [{ id: 'security' as Tab, label: 'Bảo Mật', icon: Shield }] : []),
     ...(isAdmin ? [{ id: 'settings' as Tab, label: 'Cài Đặt', icon: SettingsIcon }] : []),
   ]
 

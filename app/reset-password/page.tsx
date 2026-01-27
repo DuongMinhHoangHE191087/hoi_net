@@ -234,19 +234,28 @@ function ResetPasswordContent() {
       
       try {
         const supabase = createClient()
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         
-        // Also check URL hash for recovery token (Supabase sometimes puts it there)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        // Check URL hash for recovery token (Supabase PKCE flow puts tokens here)
+        const hash = window.location.hash.substring(1)
+        const hashParams = new URLSearchParams(hash)
         const type = hashParams.get('type')
         const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
         const errorParam = hashParams.get('error')
         const errorDescription = hashParams.get('error_description')
         
-        // Handle URL error
+        console.log('[Reset Password] URL check:', {
+          hasHash: !!hash,
+          type,
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          errorParam,
+        })
+        
+        // Handle URL error first
         if (errorParam) {
-          if (errorDescription?.includes('expired')) {
-            setError('Link khôi phục đã hết hạn. Vui lòng yêu cầu link mới.')
+          if (errorDescription?.includes('expired') || errorDescription?.includes('invalid')) {
+            setError('Link khôi phục đã hết hạn hoặc không hợp lệ. Vui lòng yêu cầu link mới.')
           } else {
             setError(decodeURIComponent(errorDescription || errorParam))
           }
@@ -254,14 +263,48 @@ function ResetPasswordContent() {
           return
         }
         
-        // Check for valid session or recovery token
-        if (session || (type === 'recovery' && accessToken)) {
-          setIsValidSession(true)
+        // If we have tokens in hash, set the session first
+        if (type === 'recovery' && accessToken && refreshToken) {
+          console.log('[Reset Password] Setting session from hash tokens...')
+          const { data: sessionData, error: setSessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
           
-          // Auto-focus password input
-          setTimeout(() => {
-            passwordRef.current?.focus()
-          }, 500)
+          if (setSessionError) {
+            console.error('[Reset Password] Failed to set session:', setSessionError)
+            if (setSessionError.message.includes('expired') || setSessionError.message.includes('invalid')) {
+              setError('Link khôi phục đã hết hạn. Vui lòng yêu cầu link mới.')
+            } else {
+              setError('Link khôi phục không hợp lệ. Vui lòng yêu cầu link mới.')
+            }
+            setCheckingSession(false)
+            return
+          }
+          
+          if (sessionData.session) {
+            console.log('[Reset Password] Session set successfully')
+            // Clear the hash from URL for security
+            window.history.replaceState(null, '', window.location.pathname)
+            setIsValidSession(true)
+            setTimeout(() => passwordRef.current?.focus(), 500)
+            setCheckingSession(false)
+            return
+          }
+        }
+        
+        // Check existing session (maybe already set by auth callback)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        console.log('[Reset Password] Existing session check:', {
+          hasSession: !!session,
+          sessionError: sessionError?.message,
+          userEmail: session?.user?.email,
+        })
+        
+        if (session) {
+          setIsValidSession(true)
+          setTimeout(() => passwordRef.current?.focus(), 500)
         } else {
           setError('Link khôi phục không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu link mới.')
         }

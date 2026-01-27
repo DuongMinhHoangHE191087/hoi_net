@@ -217,9 +217,13 @@ export async function POST(request: NextRequest) {
     
     const supabase = await createSignInClient()
     
+    // Pass captcha token to Supabase if available (required when Supabase captcha is enabled)
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: email.toLowerCase().trim(),
       password,
+      options: captchaToken ? {
+        captchaToken,
+      } : undefined,
     })
     
     // ============================================

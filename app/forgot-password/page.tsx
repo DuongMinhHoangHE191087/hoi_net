@@ -9,6 +9,8 @@ import { validateEmailComprehensive } from '@/lib/auth/validation'
 import { sanitizeInput } from '@/lib/security'
 import toast, { Toaster } from 'react-hot-toast'
 import { authLogger } from '@/lib/auth-logger'
+import Captcha, { useCaptcha } from '@/components/auth/Captcha'
+import { useAuthSettings, useFailedAttempts } from '@/hooks/useAuthSettings'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -17,6 +19,11 @@ export default function ForgotPasswordPage() {
   const [emailError, setEmailError] = useState<string | null>(null)
   const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null)
   const [cooldown, setCooldown] = useState(0)
+
+  // Captcha and rate limit
+  const { settings } = useAuthSettings()
+  const { attempts: failedAttempts, increment: incrementAttempts, reset: resetAttempts } = useFailedAttempts('forgot_password')
+  const captcha = useCaptcha()
 
   // Real-time email validation
   const handleEmailChange = useCallback((value: string) => {
@@ -75,42 +82,83 @@ export default function ForgotPasswordPage() {
       return
     }
 
+    // Check if captcha is required - Supabase ALWAYS requires captcha when enabled
+    const needsCaptcha = settings.captcha.enabled && settings.captcha.forms.forgot_password
+    
+    console.log('[Forgot Password] Captcha check:', {
+      enabled: settings.captcha.enabled,
+      formEnabled: settings.captcha.forms.forgot_password,
+      needsCaptcha,
+      isVerified: captcha.isVerified,
+      hasToken: !!captcha.token,
+    })
+    
+    if (needsCaptcha && !captcha.isVerified) {
+      toast.error('Vui lòng xác minh captcha (hộp checkbox bên dưới)', {
+        icon: '🔒',
+        duration: 5000,
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
-      // Send reset email via Supabase
+      // Send reset email via Supabase with captcha token
+      // Note: redirectTo should point to reset-password page directly for PKCE flow
+      // Supabase will append access_token and refresh_token as hash fragments
       const supabase = createClient()
       const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
-        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+        redirectTo: `${window.location.origin}/reset-password`,
+        captchaToken: captcha.token || undefined,
       })
 
       if (error) {
         console.error('[Forgot Password] Error:', error)
         authLogger.passwordResetRequest(sanitizedEmail, { error: error.message })
         
+        // Increment failed attempts
+        incrementAttempts()
+        captcha.reset()
+        
         // Handle specific errors
-        if (error.message.includes('rate limit')) {
-          toast.error('Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi một lúc rồi thử lại.')
+        if (error.message.includes('rate limit') || error.message.includes('Rate limit')) {
+          toast.error('Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi 1 giờ rồi thử lại.')
           startCooldown()
-        } else if (error.message.includes('not found')) {
+        } else if (error.message.includes('captcha')) {
+          console.error('[Forgot Password] Captcha error:', error.message)
+          toast.error(`Lỗi Captcha: ${error.message}`, {
+            icon: '🔒',
+            duration: 6000,
+          })
+        } else if (error.message.includes('not found') || error.message.includes('User not found')) {
           // Don't reveal if email exists or not for security
           // Still show success message
+          resetAttempts()
           setEmailSent(true)
           startCooldown()
+        } else if (error.message.includes('Email rate limit exceeded')) {
+          toast.error('Hệ thống đã gửi quá nhiều email. Vui lòng đợi một lúc rồi thử lại.')
+          startCooldown()
+        } else if (error.message.includes('SMTP') || error.message.includes('email')) {
+          toast.error('Lỗi gửi email. Vui lòng kiểm tra lại địa chỉ email hoặc thử lại sau.')
         } else {
-          toast.error('Không thể gửi email. Vui lòng thử lại sau.')
+          toast.error(`Không thể gửi email: ${error.message}`)
         }
         setLoading(false)
         return
       }
 
-      // Success
+      // Success - reset failed attempts
+      resetAttempts()
       authLogger.passwordResetRequest(sanitizedEmail, { success: true })
       setEmailSent(true)
       startCooldown()
       toast.success('Email khôi phục mật khẩu đã được gửi!')
     } catch (error: any) {
       console.error('[Forgot Password] Error:', error)
+      incrementAttempts()
+      captcha.reset()
       toast.error('Đã xảy ra lỗi. Vui lòng thử lại.')
     } finally {
       setLoading(false)
@@ -306,6 +354,18 @@ export default function ForgotPasswordPage() {
                 </motion.div>
               )}
             </div>
+
+            {/* Captcha - always show when enabled (Supabase requires it) */}
+            {settings.captcha.enabled && settings.captcha.forms.forgot_password && (
+              <Captcha
+                onVerify={captcha.handleVerify}
+                onExpire={captcha.handleExpire}
+                failedAttempts={failedAttempts}
+                thresholdAttempts={settings.captcha.threshold_attempts}
+                forceShow={true}  // Always show because Supabase requires captcha
+                className="mb-4"
+              />
+            )}
 
             <motion.button
               type="submit"
