@@ -1,6 +1,6 @@
-import UniversalLoading from '@/components/UniversalLoading'
+import { AdminLoadingPage } from '@/components/LoadingPages'
 
 export default function Loading() {
-  return <UniversalLoading fullScreen message="Đang tải Admin Panel..." variant="default" />
+  return <AdminLoadingPage />
 }
 

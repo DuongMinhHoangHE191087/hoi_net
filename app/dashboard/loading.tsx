@@ -1,6 +1,6 @@
-import UniversalLoading from '@/components/UniversalLoading'
+import { DashboardLoadingPage } from '@/components/LoadingPages'
 
 export default function Loading() {
-  return <UniversalLoading fullScreen message="Đang tải dashboard..." variant="default" />
+  return <DashboardLoadingPage />
 }
 

@@ -1,6 +1,6 @@
-import UniversalLoading from '@/components/UniversalLoading'
+import { BlogLoadingPage } from '@/components/LoadingPages'
 
 export default function Loading() {
-  return <UniversalLoading fullScreen message="Đang tải blog..." variant="default" />
+  return <BlogLoadingPage />
 }
 

@@ -1,6 +1,6 @@
-import UniversalLoading from '@/components/UniversalLoading'
+import { LoadingPage } from '@/components/LoadingPages'
 
 export default function Loading() {
-  return <UniversalLoading fullScreen message="Đang tải cài đặt..." variant="default" />
+  return <LoadingPage message="Đang tải cài đặt..." />
 }
 

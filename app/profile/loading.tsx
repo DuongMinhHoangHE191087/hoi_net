@@ -1,6 +1,6 @@
-import UniversalLoading from '@/components/UniversalLoading'
+import { ProfileLoadingPage } from '@/components/LoadingPages'
 
 export default function Loading() {
-  return <UniversalLoading fullScreen message="Đang tải hồ sơ..." variant="default" />
+  return <ProfileLoadingPage />
 }
 
