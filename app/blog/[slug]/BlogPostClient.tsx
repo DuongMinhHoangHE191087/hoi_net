@@ -116,23 +116,7 @@ export default function BlogPostClient({ post }: BlogPostClientProps) {
           {/* Post Content */}
           <div className="fade-in glassmorphism-strong p-8 md:p-12">
             <div
-              className="prose prose-lg max-w-none
-                prose-headings:gradient-text-alt
-                prose-headings:font-bold
-                prose-p:text-gray-700
-                prose-p:leading-relaxed
-                prose-a:text-primary
-                prose-a:no-underline
-                hover:prose-a:underline
-                prose-strong:text-text
-                prose-code:bg-gray-100
-                prose-code:px-2
-                prose-code:py-1
-                prose-code:rounded
-                prose-pre:bg-gray-900
-                prose-pre:text-gray-100
-                prose-img:rounded-xl
-                prose-img:shadow-lg"
+              className="prose prose-lg max-w-none prose-headings:gradient-text-alt prose-headings:font-bold prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-text prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-img:rounded-xl prose-img:shadow-lg"
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
           </div>

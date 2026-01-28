@@ -10,11 +10,11 @@ export const dynamic = 'force-dynamic'
 // GET: Get single blog post by ID (admin only - includes unpublished)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return requirePermissionAuth(request, 'blog.edit', async () => {
     try {
-      const { id } = params
+      const { id } = await params
       
       const { data, error } = await supabaseAdmin
         .from('blog_posts')
@@ -40,11 +40,11 @@ export async function GET(
 // PATCH: Update blog post with optimistic locking (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return requirePermissionAuth(request, 'blog.edit', async (user) => {
     try {
-      const { id } = params
+      const { id } = await params
       const body = await request.json()
       const { version, ...updates } = body
 
@@ -110,11 +110,11 @@ export async function PATCH(
 // DELETE: Delete blog post (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return requirePermissionAuth(request, 'blog.delete', async () => {
     try {
-      const { id } = params
+      const { id } = await params
 
       await dbServer.deleteBlogPost(id)
 

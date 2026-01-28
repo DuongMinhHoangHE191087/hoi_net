@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/auth-server'
 import { dbServer } from '@/lib/supabase/db-server'
-import { invalidateHomepageCache, CACHE_CONFIG } from '@/lib/redis'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,9 +45,6 @@ export async function POST(request: NextRequest) {
       social_links: social_links || {},
       display_order: order_index || 0
     })
-
-    // Invalidate team members cache
-    await invalidateHomepageCache([CACHE_CONFIG.TEAM_MEMBERS.key])
 
     return NextResponse.json({
       success: true,

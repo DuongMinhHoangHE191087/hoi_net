@@ -1,10 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable ESLint during build to avoid circular dependency issues
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   // Increase body size limit for file uploads (50MB)
   experimental: {
     serverActions: {

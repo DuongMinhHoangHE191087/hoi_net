@@ -1,15 +1,19 @@
 /**
- * Homepage cache utilities
- * Wraps Supabase queries with Redis caching
- * Only caches data that changes rarely (admin-only updates)
+ * Homepage Cache Utilities
+ * 
+ * NGUYÊN TẮC:
+ * 1. Luôn trả về dữ liệu (từ cache hoặc database)
+ * 2. Cache chỉ là optimization, KHÔNG phải requirement
+ * 3. Khi Redis lỗi → fallback database → app vẫn chạy
+ * 4. Hỗ trợ concurrent requests (nhiều user cùng lúc)
  */
 
 import {
-  getTeamMembers as getTeamFromDB,
-  getValueSections as getValuesFromDB,
-  getTestimonials as getTestimoniesFromDB,
-  getAllSiteSettings as getSettingsFromDB,
-  getServices as getFeaturesFromDB,
+  getTeamMembers as dbGetTeamMembers,
+  getValueSections as dbGetValueSections,
+  getTestimonials as dbGetTestimonials,
+  getAllSiteSettings as dbGetSiteSettings,
+  getServices as dbGetFeatures,
 } from '@/lib/supabase/server-utils'
 import {
   getCachedData,
@@ -19,118 +23,103 @@ import {
 
 /**
  * Get team members with Redis caching
- * Cache TTL: 24 hours (only admins can update this)
+ * Fallback: Database query (always works)
  */
-export async function getTeamMembersWithCache() {
-  // Try Redis first
-  const cached = await getCachedData(CACHE_CONFIG.TEAM_MEMBERS.key)
+export async function getTeamMembersWithCache(): Promise<any[]> {
+  // Try cache first
+  const cached = await getCachedData<any[]>(CACHE_CONFIG.TEAM_MEMBERS.key)
   if (cached) {
-    console.log('[Cache] Team members from Redis')
     return cached
   }
 
   // Fallback to database
-  console.log('[Cache] Team members from database')
-  const data = await getTeamFromDB()
+  const data = await dbGetTeamMembers()
 
-  // Store in Redis for next time
-  await setCachedData(
-    CACHE_CONFIG.TEAM_MEMBERS.key,
-    data,
-    CACHE_CONFIG.TEAM_MEMBERS.ttl
-  )
+  // Cache for next time (async, non-blocking)
+  setCachedData(CACHE_CONFIG.TEAM_MEMBERS.key, data, CACHE_CONFIG.TEAM_MEMBERS.ttl)
 
   return data
 }
 
 /**
  * Get value sections with Redis caching
- * Cache TTL: 24 hours
  */
-export async function getValueSectionsWithCache() {
-  const cached = await getCachedData(CACHE_CONFIG.VALUE_SECTIONS.key)
+export async function getValueSectionsWithCache(): Promise<any[]> {
+  const cached = await getCachedData<any[]>(CACHE_CONFIG.VALUE_SECTIONS.key)
   if (cached) {
-    console.log('[Cache] Value sections from Redis')
     return cached
   }
 
-  console.log('[Cache] Value sections from database')
-  const data = await getValuesFromDB()
-
-  await setCachedData(
-    CACHE_CONFIG.VALUE_SECTIONS.key,
-    data,
-    CACHE_CONFIG.VALUE_SECTIONS.ttl
-  )
+  const data = await dbGetValueSections()
+  setCachedData(CACHE_CONFIG.VALUE_SECTIONS.key, data, CACHE_CONFIG.VALUE_SECTIONS.ttl)
 
   return data
 }
 
 /**
  * Get features/services with Redis caching
- * Cache TTL: 24 hours
  */
-export async function getFeaturesWithCache() {
-  const cached = await getCachedData(CACHE_CONFIG.FEATURES.key)
+export async function getFeaturesWithCache(): Promise<any[]> {
+  const cached = await getCachedData<any[]>(CACHE_CONFIG.FEATURES.key)
   if (cached) {
-    console.log('[Cache] Features from Redis')
     return cached
   }
 
-  console.log('[Cache] Features from database')
-  const data = await getFeaturesFromDB()
-
-  await setCachedData(
-    CACHE_CONFIG.FEATURES.key,
-    data,
-    CACHE_CONFIG.FEATURES.ttl
-  )
+  const data = await dbGetFeatures()
+  setCachedData(CACHE_CONFIG.FEATURES.key, data, CACHE_CONFIG.FEATURES.ttl)
 
   return data
 }
 
 /**
  * Get testimonials with Redis caching
- * Cache TTL: 6 hours (more frequently displayed, potential updates)
+ * Shorter TTL because new testimonials can be added
  */
-export async function getTestimonialsWithCache(limit = 6) {
-  const cached = await getCachedData(CACHE_CONFIG.TESTIMONIALS.key)
+export async function getTestimonialsWithCache(limit = 6): Promise<any[]> {
+  const cached = await getCachedData<any[]>(CACHE_CONFIG.TESTIMONIALS.key)
   if (cached) {
-    console.log('[Cache] Testimonials from Redis')
     return cached
   }
 
-  console.log('[Cache] Testimonials from database')
-  const data = await getTestimoniesFromDB(limit, false)
-
-  await setCachedData(
-    CACHE_CONFIG.TESTIMONIALS.key,
-    data,
-    CACHE_CONFIG.TESTIMONIALS.ttl
-  )
+  const data = await dbGetTestimonials(limit, false)
+  setCachedData(CACHE_CONFIG.TESTIMONIALS.key, data, CACHE_CONFIG.TESTIMONIALS.ttl)
 
   return data
 }
 
 /**
  * Get site settings with Redis caching
- * Cache TTL: 24 hours (admin-only updates)
  */
-export async function getSiteSettingsWithCache() {
-  const cached = await getCachedData(CACHE_CONFIG.SITE_SETTINGS.key)
+export async function getSiteSettingsWithCache(): Promise<Record<string, string>> {
+  const cached = await getCachedData<Record<string, string>>(CACHE_CONFIG.SITE_SETTINGS.key)
   if (cached) {
-    console.log('[Cache] Site settings from Redis')
     return cached
   }
 
-  console.log('[Cache] Site settings from database')
-  const data = await getSettingsFromDB()
-
-  await setCachedData(
-    CACHE_CONFIG.SITE_SETTINGS.key,
-    data,
-    CACHE_CONFIG.SITE_SETTINGS.ttl
-  )
+  const data = await dbGetSiteSettings()
+  setCachedData(CACHE_CONFIG.SITE_SETTINGS.key, data, CACHE_CONFIG.SITE_SETTINGS.ttl)
 
   return data
+}
+
+/**
+ * Get all homepage data with caching (parallel fetch)
+ * Returns: { team, valueSections, features, testimonials, siteSettings }
+ */
+export async function getHomepageDataWithCache() {
+  const [team, valueSections, features, testimonials, siteSettings] = await Promise.all([
+    getTeamMembersWithCache(),
+    getValueSectionsWithCache(),
+    getFeaturesWithCache(),
+    getTestimonialsWithCache(6),
+    getSiteSettingsWithCache(),
+  ])
+
+  return {
+    team,
+    valueSections,
+    features,
+    testimonials,
+    siteSettings,
+  }
 }

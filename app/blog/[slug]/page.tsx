@@ -9,9 +9,9 @@ import BlogPostClient from './BlogPostClient'
 import { Metadata } from 'next'
 
 interface BlogPostPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 // ✅ Generate static paths at build time for all blog posts
@@ -30,8 +30,9 @@ export async function generateStaticParams() {
 // ✅ Generate metadata for SEO
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   try {
+    const { slug } = await params
     const [post, brandName] = await Promise.all([
-      dbServer.getBlogPost(params.slug),
+      dbServer.getBlogPost(slug),
       getBrandName()
     ])
 
@@ -64,7 +65,8 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   // ✅ Fetch post data on server - Perfect for SEO!
   try {
-    const post = await dbServer.getBlogPost(params.slug)
+    const { slug } = await params
+    const post = await dbServer.getBlogPost(slug)
     return <BlogPostClient post={post} />
   } catch (error) {
     console.error('Error loading blog post:', error)

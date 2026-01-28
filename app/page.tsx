@@ -1,17 +1,8 @@
 // ✅ Server Component - fetches data server-side with Redis caching
-import { 
-  getTeamMembersWithCache,
-  getValueSectionsWithCache,
-  getTestimonialsWithCache,
-  getSiteSettingsWithCache,
-  getFeaturesWithCache,
-} from '@/lib/homepage-cache'
+import { getHomepageDataWithCache } from '@/lib/homepage-cache'
 import { getBrandName } from '@/lib/site-metadata'
 import LandingPageClient from './LandingPageClient'
 import { Metadata } from 'next'
-
-// Force dynamic rendering - required because we use cookies() for Supabase auth
-export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const brandName = await getBrandName()
@@ -22,18 +13,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
-  // ✅ Fetch data on server with Redis cache - NO loading spinner needed
-  // Data is included in initial HTML, cached for 24 hours
+  // ✅ Fetch data with Redis caching - faster load, no spinner
+  // Fallback to database if Redis unavailable
   try {
-    const [team, valueSections, features, testimonials, siteSettings] = await Promise.all([
-      getTeamMembersWithCache(),
-      getValueSectionsWithCache(),
-      getFeaturesWithCache(),
-      getTestimonialsWithCache(6),
-      getSiteSettingsWithCache(),
-    ])
+    const { team, valueSections, features, testimonials, siteSettings } = 
+      await getHomepageDataWithCache()
 
-    // Pass data to Client Component
     return <LandingPageClient
       team={team}
       valueSections={valueSections}
@@ -42,8 +27,8 @@ export default async function LandingPage() {
       siteSettings={siteSettings}
     />
   } catch (error) {
-    console.error('Error loading data:', error)
-    // Fallback to empty data if database tables don't exist
+    console.error('Error loading homepage data:', error)
+    // Fallback to empty data
     return <LandingPageClient
       team={[]}
       valueSections={[]}
