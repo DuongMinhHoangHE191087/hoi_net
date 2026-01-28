@@ -1,4 +1,6 @@
+import UniversalLoading from '@/components/UniversalLoading'
+
 export default function Loading() {
-  return null // Loading is handled by UnifiedLoading
+  return <UniversalLoading fullScreen message="Đang tải trang đăng nhập..." variant="default" />
 }
 
