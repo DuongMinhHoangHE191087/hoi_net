@@ -115,7 +115,7 @@ function ConfirmEmailContent() {
             </p>
             <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
               <li>Mở hộp thư email của bạn</li>
-              <li>Tìm email từ <strong>Photo Restoration</strong></li>
+              <li>Tìm email từ <strong>Hồi Nét</strong></li>
               <li>Nếu không thấy, kiểm tra thư mục <strong>Spam</strong> hoặc <strong>Junk</strong></li>
               <li>Click vào nút <strong>"Xác nhận Email"</strong> trong email</li>
               <li>Quay lại đăng nhập</li>
