@@ -120,17 +120,22 @@ export function LoadingProvider({ children, brandName, logoUrl }: LoadingProvide
 
   // 🚀 Stop loading when route changes complete
   useEffect(() => {
-    // Route has changed, stop loading immediately
+    // Route has changed, wait for content to render before hiding loading
     if (pathname !== prevPathname) {
       setPrevPathname(pathname)
-      // Force stop loading immediately when pathname changes
-      setIsLoading(false)
-      setProgressState(0)
-      // Clear timeout
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current)
-        loadingTimeoutRef.current = null
-      }
+      
+      // ✅ Đợi một chút để content render xong, tránh màn hình trắng
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          setIsLoading(false)
+          setProgressState(0)
+          // Clear timeout
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current)
+            loadingTimeoutRef.current = null
+          }
+        }, 100) // Delay nhỏ 100ms để content render
+      })
     }
   }, [pathname, prevPathname])
   

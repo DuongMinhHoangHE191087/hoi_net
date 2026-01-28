@@ -117,56 +117,56 @@ export default function UniversalLoading({
 
       {/* Loading Content */}
       <div className="relative z-10 flex flex-col items-center justify-center w-full">
-        {/* Glass card */}
-        <div className="glassmorphism-strong p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center backdrop-blur-xl">
+        {/* Glass card - ✅ Tăng size lên để dễ nhìn hơn */}
+        <div className="glassmorphism-strong p-10 rounded-3xl shadow-2xl max-w-lg w-full mx-4 text-center backdrop-blur-xl">
           {/* Logo - Dynamic from database */}
-          <div className="mb-6 relative">
+          <div className="mb-8 relative">
             <div className="relative inline-block">
               {logoUrl ? (
                 <img 
                   src={logoUrl} 
                   alt={brandName}
-                  className="w-16 h-16 object-contain mx-auto mb-2 animate-scale-pulse"
+                  className="w-20 h-20 object-contain mx-auto mb-3 animate-scale-pulse"
                 />
               ) : (
-                <div className="text-5xl font-bold gradient-text mb-2 animate-scale-pulse">
+                <div className="text-6xl font-bold gradient-text mb-3 animate-scale-pulse">
                   📸
                 </div>
               )}
-              <h2 className="text-2xl font-bold gradient-text-alt">
+              <h2 className="text-3xl font-bold gradient-text-alt">
                 {brandName}
               </h2>
             </div>
           </div>
 
-          {/* Spinner with glow */}
-          <div className="relative mb-6 flex items-center justify-center">
+          {/* Spinner with glow - ✅ Tăng size */}
+          <div className="relative mb-8 flex items-center justify-center">
             {/* Outer glow */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-20 h-20 bg-gradient-primary rounded-full opacity-20 animate-ping" />
+              <div className="w-24 h-24 bg-gradient-primary rounded-full opacity-20 animate-ping" />
             </div>
 
             {/* Middle glow */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 bg-gradient-primary rounded-full opacity-30 blur-md animate-pulse" />
+              <div className="w-20 h-20 bg-gradient-primary rounded-full opacity-30 blur-md animate-pulse" />
             </div>
 
-            {/* Spinner */}
-            <Loader2 className="w-16 h-16 text-primary animate-spin relative z-10" />
+            {/* Spinner - ✅ Tăng size */}
+            <Loader2 className="w-20 h-20 text-primary animate-spin relative z-10" />
           </div>
 
-          {/* Message */}
-          <h3 className="text-xl font-bold text-gray-800 mb-2">
+          {/* Message - ✅ Font size lớn hơn */}
+          <h3 className="text-2xl font-bold text-gray-800 mb-3">
             {message}
           </h3>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-base">
             Vui lòng chờ trong giây lát
           </p>
 
-          {/* Progress bar */}
+          {/* Progress bar - ✅ Cao hơn */}
           {showProgress && (
-            <div className="mt-6 w-full">
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div className="mt-8 w-full">
+              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                 <div
                   className="h-full bg-gradient-primary transition-all duration-500 ease-out rounded-full relative overflow-hidden"
                   style={{ width: `${progress}%` }}
@@ -175,12 +175,12 @@ export default function UniversalLoading({
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">{Math.round(progress)}%</p>
+              <p className="text-sm text-gray-500 mt-3 font-medium">{Math.round(progress)}%</p>
             </div>
           )}
 
           {/* Security badge */}
-          <p className="text-xs text-gray-500 mt-6 opacity-60 flex items-center justify-center gap-1">
+          <p className="text-sm text-gray-500 mt-8 opacity-60 flex items-center justify-center gap-2">
             <span className="text-green-600">🔒</span>
             Kết nối được bảo vệ
           </p>

@@ -500,14 +500,18 @@ export default function RequestDetailModal({
 
         {/* Footer Actions */}
         <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
-          <button
-            onClick={() => onDelete(request.id)}
-            disabled={isDeleting}
-            className="btn-glass-secondary text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            <X className="w-4 h-4 mr-2" />
-            {isDeleting ? 'Đang Xóa...' : 'Xóa Yêu Cầu'}
-          </button>
+          {/* ✅ Chỉ hiện nút xóa nếu status = pending */}
+          {request.status === 'pending' && (
+            <button
+              onClick={() => onDelete(request.id)}
+              disabled={isDeleting}
+              className="btn-glass-secondary text-red-600 hover:bg-red-50 disabled:opacity-50"
+              title="Chỉ có thể xóa yêu cầu đang chờ xử lý"
+            >
+              <X className="w-4 h-4 mr-2" />
+              {isDeleting ? 'Đang Xóa...' : 'Xóa Yêu Cầu'}
+            </button>
+          )}
 
           <button
             onClick={onClose}

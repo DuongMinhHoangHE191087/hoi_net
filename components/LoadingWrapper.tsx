@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from 'react'
 import { LoadingProvider } from '@/contexts/LoadingContext'
 import { useSiteSettings, DEFAULT_SITE_SETTINGS, HOINET_LOGO_URL } from '@/hooks/useSiteSettings'
-import InitialLoading from '@/components/InitialLoading'
+import UniversalLoading from '@/components/UniversalLoading'
 import { ViewTransitionsStyles, TransitionProgressBar } from '@/hooks/usePageTransitions'
 
 /**
@@ -13,7 +13,7 @@ import { ViewTransitionsStyles, TransitionProgressBar } from '@/hooks/usePageTra
  * 
  * ✅ OPTIMIZED: 
  * - CLS prevention with fixed height loading space
- * - Initial loading on page reload/first visit
+ * - Initial loading on page reload/first visit using UniversalLoading
  * - Smooth transitions between pages
  * - Progress bar for navigation feedback
  */
@@ -27,19 +27,51 @@ export default function LoadingWrapper({ children }: { children: ReactNode }) {
 
   // Hide initial loading after settings loaded and content ready
   useEffect(() => {
-    // If settings loaded or timeout, hide initial loading
-    const timer = setTimeout(() => {
-      setShowInitialLoading(false)
-    }, isSettingsLoading ? 2000 : 500)
-
-    if (!isSettingsLoading) {
-      // Cho content render xong
-      requestAnimationFrame(() => {
-        setTimeout(() => setShowInitialLoading(false), 300)
-      })
+    let isMounted = true
+    
+    const hideLoading = () => {
+      if (!isMounted) return
+      
+      // Đợi DOM ready và minimum 1 giây
+      const minDuration = 1000
+      const startTime = Date.now()
+      
+      const checkReady = () => {
+        const elapsed = Date.now() - startTime
+        const remaining = Math.max(0, minDuration - elapsed)
+        
+        if (document.readyState === 'complete' && elapsed >= minDuration) {
+          setTimeout(() => {
+            if (isMounted) {
+              setShowInitialLoading(false)
+            }
+          }, 150) // Fade out time
+        } else {
+          setTimeout(checkReady, remaining || 100)
+        }
+      }
+      
+      if (document.readyState === 'complete') {
+        setTimeout(() => {
+          if (isMounted) checkReady()
+        }, minDuration)
+      } else {
+        window.addEventListener('load', checkReady, { once: true })
+        // Fallback timeout
+        setTimeout(checkReady, minDuration + 1000)
+      }
     }
 
-    return () => clearTimeout(timer)
+    if (!isSettingsLoading) {
+      requestAnimationFrame(hideLoading)
+    } else {
+      // If settings still loading, wait a bit longer
+      setTimeout(hideLoading, 500)
+    }
+
+    return () => {
+      isMounted = false
+    }
   }, [isSettingsLoading])
 
   return (
@@ -50,13 +82,18 @@ export default function LoadingWrapper({ children }: { children: ReactNode }) {
       {/* 📊 Progress Bar cho navigation */}
       <TransitionProgressBar />
       
-      {/* 🚀 Initial Loading - hiển thị khi page reload */}
+      {/* 🚀 Initial Loading - dùng UniversalLoading khi page reload */}
       {showInitialLoading && (
-        <InitialLoading 
-          brandName={brandName} 
-          logoUrl={logoUrl}
-          minDuration={400}
-        />
+        <div className="fixed inset-0 z-[10000]">
+          <UniversalLoading
+            message="Đang tải..."
+            showProgress={false}
+            fullScreen
+            brandName={brandName}
+            logoUrl={logoUrl}
+            variant="default"
+          />
+        </div>
       )}
       
       <style>{`

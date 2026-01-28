@@ -147,12 +147,30 @@ export default function RequestsPage() {
 
   // Handlers
   const handleDelete = (id: string) => {
+    // ✅ Bảo vệ: Chỉ cho phép xóa request ở trạng thái pending
+    const request = requests.find(r => r.id === id)
+    if (!request) return
+    
+    if (request.status !== 'pending') {
+      toast.error('Không thể xóa yêu cầu đã được xử lý hoặc đang xử lý!')
+      return
+    }
+    
     setDeleteConfirm({ isOpen: true, requestId: id })
   }
 
   const confirmDelete = async () => {
     const id = deleteConfirm.requestId
     if (!id || !user) return
+    
+    // Double check trạng thái
+    const request = requests.find(r => r.id === id)
+    if (request && request.status !== 'pending') {
+      toast.error('Không thể xóa yêu cầu này!')
+      setDeleteConfirm({ isOpen: false, requestId: null })
+      return
+    }
+    
     setDeleteConfirm({ isOpen: false, requestId: null })
 
     // ✅ Optimistic update - UI updates immediately
@@ -366,16 +384,20 @@ export default function RequestsPage() {
                       <Eye className="w-4 h-4 mr-1" />
                       Xem
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(request.id)
-                      }}
-                      className="btn-glass-secondary text-sm text-red-600 hover:bg-red-50"
-                      disabled={deleteRequestMutation.isPending}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {/* ✅ Chỉ hiện nút xóa nếu status = pending */}
+                    {request.status === 'pending' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(request.id)
+                        }}
+                        className="btn-glass-secondary text-sm text-red-600 hover:bg-red-50"
+                        disabled={deleteRequestMutation.isPending}
+                        title="Chỉ có thể xóa yêu cầu đang chờ xử lý"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               )
