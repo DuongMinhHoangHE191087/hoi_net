@@ -117,6 +117,34 @@ export const CACHE_CONFIG = {
     key: 'hp:testimonials',
     ttl: 3600 * 2, // 2 hours (shorter TTL)
   },
+  // ✅ NEW: Blog data caching
+  BLOG_POSTS: {
+    key: 'blog:posts',
+    ttl: 60 * 10, // 10 minutes - blog thay đổi thường xuyên hơn
+  },
+  BLOG_CATEGORIES: {
+    key: 'blog:categories',
+    ttl: 3600 * 6, // 6 hours - ít thay đổi
+  },
+  BLOG_FEATURED: {
+    key: 'blog:featured',
+    ttl: 60 * 30, // 30 minutes
+  },
+  // ✅ NEW: About page data
+  ABOUT_PAGE: {
+    key: 'page:about',
+    ttl: 3600 * 6, // 6 hours
+  },
+  // ✅ NEW: Navigation menu
+  NAV_MENU: {
+    key: 'nav:menu',
+    ttl: 3600 * 12, // 12 hours - rất ít thay đổi
+  },
+  // ✅ NEW: Pricing data
+  PRICING: {
+    key: 'pricing:plans',
+    ttl: 3600 * 6, // 6 hours
+  },
 } as const
 
 /**

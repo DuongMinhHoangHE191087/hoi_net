@@ -11,6 +11,11 @@ const nextConfig = {
     ],
   },
 
+  // ✅ Turbopack configuration for Next.js 16+
+  // Empty config to acknowledge Turbopack is being used
+  // and silence the webpack config warning
+  turbopack: {},
+
   images: {
     // Use remotePatterns instead of deprecated domains
     remotePatterns: [
@@ -43,7 +48,8 @@ const nextConfig = {
   // Enable standalone output for Docker deployment
   output: 'standalone',
 
-  // Webpack configuration for onnxruntime-web
+  // ✅ Keep webpack config for production builds (fallback)
+  // Turbopack is used for dev, Webpack for production build
   webpack: (config, { isServer, webpack }) => {
     // Handle onnxruntime-web module resolution issues
     if (!isServer) {

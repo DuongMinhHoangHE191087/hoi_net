@@ -1,5 +1,5 @@
 /**
- * Homepage Cache Utilities
+ * Homepage & Static Data Cache Utilities
  * 
  * NGUYÊN TẮC:
  * 1. Luôn trả về dữ liệu (từ cache hoặc database)
@@ -122,4 +122,63 @@ export async function getHomepageDataWithCache() {
     testimonials,
     siteSettings,
   }
+}
+
+// ============================================
+// ✅ NEW: Additional Cache Functions
+// ============================================
+
+/**
+ * Generic cache wrapper for any data fetcher
+ * Use this for custom data that needs caching
+ */
+export async function withCache<T>(
+  cacheKey: string,
+  ttl: number,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  // Try cache first
+  const cached = await getCachedData<T>(cacheKey)
+  if (cached !== null) {
+    return cached
+  }
+
+  // Fallback to fetcher
+  const data = await fetcher()
+  
+  // Cache for next time (non-blocking)
+  setCachedData(cacheKey, data, ttl)
+
+  return data
+}
+
+/**
+ * Get navigation menu items with caching
+ * Very stable data - 12 hour TTL
+ */
+export async function getNavMenuWithCache(): Promise<any[]> {
+  return withCache(
+    CACHE_CONFIG.NAV_MENU.key,
+    CACHE_CONFIG.NAV_MENU.ttl,
+    async () => {
+      // Default nav items - có thể query từ database nếu cần
+      return [
+        { href: '/', label: 'Trang chủ' },
+        { href: '/features', label: 'Dịch vụ' },
+        { href: '/pricing', label: 'Bảng giá' },
+        { href: '/about', label: 'Về chúng tôi' },
+        { href: '/blog', label: 'Blog' },
+        { href: '/contact', label: 'Liên hệ' },
+      ]
+    }
+  )
+}
+
+/**
+ * Batch invalidate caches after admin updates
+ */
+export async function invalidateCaches(types: Array<keyof typeof CACHE_CONFIG>): Promise<void> {
+  const { invalidateCache } = await import('@/lib/redis')
+  const keys = types.map(type => CACHE_CONFIG[type].key)
+  await invalidateCache(keys)
 }

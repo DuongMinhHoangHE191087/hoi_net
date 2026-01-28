@@ -170,9 +170,12 @@ export function LoadingProvider({ children, brandName, logoUrl }: LoadingProvide
         message,
       }}
     >
-      {/* Loading overlay - doesn't block content */}
+      {/* Loading overlay - blocks interaction for smooth UX */}
       {isLoading && (
-        <div className="fixed inset-0 z-[9999] pointer-events-none">
+        <div 
+          className="fixed inset-0 z-[9999] transition-opacity duration-200"
+          style={{ opacity: isLoading ? 1 : 0 }}
+        >
           <UniversalLoading
             message={message}
             showProgress
