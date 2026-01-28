@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { requirePermissionAuth } from '@/lib/auth-server'
 import { dbServer } from '@/lib/supabase/db-server'
+import { invalidateHomepageCache, CACHE_CONFIG } from '@/lib/redis'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,9 @@ export async function PATCH(
       const body = await request.json()
 
       const updatedFeedback = await dbServer.updateFeedback(id, body)
+
+      // Invalidate testimonials cache
+      await invalidateHomepageCache([CACHE_CONFIG.TESTIMONIALS.key])
 
       // Revalidate homepage if testimonials changed
       revalidatePath('/')
@@ -42,6 +46,9 @@ export async function DELETE(
       const { id } = params
 
       await dbServer.deleteFeedback(id)
+
+      // Invalidate testimonials cache
+      await invalidateHomepageCache([CACHE_CONFIG.TESTIMONIALS.key])
 
       // Revalidate homepage
       revalidatePath('/')

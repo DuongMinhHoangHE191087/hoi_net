@@ -1,11 +1,11 @@
-// ✅ Server Component - fetches data server-side
+// ✅ Server Component - fetches data server-side with Redis caching
 import { 
-  getTeamMembers, 
-  getValueSections, 
-  getTestimonials, 
-  getAllSiteSettings,
-  getServices as getActiveFeatures
-} from '@/lib/supabase/server-utils'
+  getTeamMembersWithCache,
+  getValueSectionsWithCache,
+  getTestimonialsWithCache,
+  getSiteSettingsWithCache,
+  getFeaturesWithCache,
+} from '@/lib/homepage-cache'
 import { getBrandName } from '@/lib/site-metadata'
 import LandingPageClient from './LandingPageClient'
 import { Metadata } from 'next'
@@ -22,15 +22,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
-  // ✅ Fetch data on server - NO loading spinner needed
-  // Data is included in initial HTML
+  // ✅ Fetch data on server with Redis cache - NO loading spinner needed
+  // Data is included in initial HTML, cached for 24 hours
   try {
     const [team, valueSections, features, testimonials, siteSettings] = await Promise.all([
-      getTeamMembers(),
-      getValueSections(),
-      getActiveFeatures(),
-      getTestimonials(6), // Get up to 6 testimonials that are marked for homepage display
-      getAllSiteSettings() // Get all site settings including CTA content
+      getTeamMembersWithCache(),
+      getValueSectionsWithCache(),
+      getFeaturesWithCache(),
+      getTestimonialsWithCache(6),
+      getSiteSettingsWithCache(),
     ])
 
     // Pass data to Client Component

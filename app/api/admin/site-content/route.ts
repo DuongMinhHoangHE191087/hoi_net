@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { verifyAuth } from '@/lib/auth-server'
 import { dbServer } from '@/lib/supabase/db-server'
+import { invalidateHomepageCache, CACHE_CONFIG } from '@/lib/redis'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
     }
 
     await dbServer.updateMultipleSiteSettings(settings)
+
+    // Invalidate Redis cache for site settings
+    await invalidateHomepageCache([CACHE_CONFIG.SITE_SETTINGS.key])
 
     // Revalidate all pages that use site settings
     revalidatePath('/')
