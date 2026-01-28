@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { motion } from 'framer-motion'
 
 interface NavButtonProps {
   href: string
@@ -76,7 +75,7 @@ export default function NavButton({
 
   return (
     <Link href={href} prefetch={prefetch} onClick={handleClick}>
-      <motion.button
+      <button
         className={`
           ${baseClass}
           ${sizes[size]}
@@ -86,7 +85,6 @@ export default function NavButton({
           ${className}
         `}
         disabled={isLoading}
-        whileTap={{ scale: 0.95 }}
       >
         {isLoading ? (
           <span className="flex items-center gap-2">
@@ -100,7 +98,7 @@ export default function NavButton({
             {icon && iconPosition === 'right' && icon}
           </span>
         )}
-      </motion.button>
+      </button>
     </Link>
   )
 }

@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { motion } from 'framer-motion'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
@@ -21,7 +20,8 @@ export default function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const baseStyles = "rounded-lg font-medium transition-all duration-75 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center select-none touch-manipulation"
+  // Base styles with CSS-only animations (no framer-motion)
+  const baseStyles = "rounded-lg font-medium transition-all duration-75 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center select-none touch-manipulation active:scale-[0.97]"
 
   const sizes = {
     sm: "px-3 py-1.5 text-sm",
@@ -30,19 +30,17 @@ export default function Button({
   }
 
   const variants = {
-    primary: "bg-primary text-white hover:bg-primary/90 active:bg-primary/70 active:scale-[0.98]",
-    secondary: "border border-gray-300 hover:bg-gray-50 text-gray-700 active:bg-gray-200 active:scale-[0.98]",
-    ghost: "text-gray-600 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 active:scale-[0.98]",
-    danger: "bg-red-500 text-white hover:bg-red-600 active:bg-red-700 active:scale-[0.98]"
+    primary: "bg-primary text-white hover:bg-primary/90 active:bg-primary/70",
+    secondary: "border border-gray-300 hover:bg-gray-50 text-gray-700 active:bg-gray-200",
+    ghost: "text-gray-600 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200",
+    danger: "bg-red-500 text-white hover:bg-red-600 active:bg-red-700"
   }
 
   return (
-    <motion.button
+    <button
       className={`${baseStyles} ${sizes[size]} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
       disabled={disabled || loading}
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 500, damping: 30, mass: 0.5 }}
-      {...(props as any)}
+      {...props}
     >
       {loading ? (
         <span className="flex items-center justify-center gap-2">
@@ -55,7 +53,7 @@ export default function Button({
       ) : (
         children
       )}
-    </motion.button>
+    </button>
   )
 }
 

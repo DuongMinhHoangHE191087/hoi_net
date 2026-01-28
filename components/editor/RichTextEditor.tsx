@@ -11,7 +11,6 @@ import {
   Minus
 } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
-import { motion } from 'framer-motion'
 
 interface RichTextEditorProps {
   content: string
@@ -259,23 +258,21 @@ function ToolbarButton({
   children
 }: ToolbarButtonProps) {
   return (
-    <motion.button
+    <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}
-      whileHover={{ scale: disabled ? 1 : 1.1 }}
-      whileTap={{ scale: disabled ? 1 : 0.9 }}
-      className={`p-2 rounded-lg transition-colors ${
+      className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 active:scale-90 ${
         isActive
           ? 'bg-primary text-white'
           : disabled
-          ? 'text-gray-300 cursor-not-allowed'
+          ? 'text-gray-300 cursor-not-allowed hover:scale-100 active:scale-100'
           : 'text-gray-600 hover:bg-gray-200'
       }`}
     >
       {children}
-    </motion.button>
+    </button>
   )
 }
 

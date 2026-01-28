@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Shield, ChevronLeft, Database, Eye, Lock, Bell, Trash2, Globe } from 'lucide-react'
 
@@ -81,11 +80,7 @@ export default function PrivacyPage() {
             Quay lại trang chủ
           </Link>
           
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-4"
-          >
+          <div className="flex items-center gap-4 animate-fade-in-up">
             <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
               <Shield className="w-8 h-8 text-emerald-600" />
             </div>
@@ -93,7 +88,7 @@ export default function PrivacyPage() {
               <h1 className="text-3xl font-bold">Chính Sách Bảo Mật</h1>
               <p className="text-muted-foreground">Cập nhật lần cuối: Tháng 1, 2026</p>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -101,28 +96,20 @@ export default function PrivacyPage() {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           {/* Intro */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-card border rounded-2xl p-6 mb-8"
-          >
+          <div className="bg-card border rounded-2xl p-6 mb-8 animate-fade-in-up">
             <p className="text-lg text-muted-foreground">
               Tại <strong className="text-foreground">Hồi Nét</strong>, chúng tôi cam kết bảo vệ quyền riêng tư của bạn.
               Chính sách này giải thích cách chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn
               khi sử dụng dịch vụ khôi phục ảnh của chúng tôi.
             </p>
-          </motion.div>
+          </div>
 
           {/* Sections */}
-          <div className="space-y-6">
-            {sections.map((section, index) => (
-              <motion.div
+          <div className="space-y-6 animate-stagger">
+            {sections.map((section) => (
+              <div
                 key={section.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * (index + 2) }}
-                className="bg-card border rounded-2xl p-6 hover:shadow-lg transition-shadow"
+                className="bg-card border rounded-2xl p-6 hover:shadow-lg transition-shadow animate-fade-in-up"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -140,17 +127,12 @@ export default function PrivacyPage() {
                     </ul>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
           {/* Retention Policy */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
-            className="mt-8 bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6"
-          >
+          <div className="mt-8 bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 animate-fade-in-up">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <Database className="w-5 h-5 text-amber-600" />
               Thời Gian Lưu Trữ
@@ -161,15 +143,10 @@ export default function PrivacyPage() {
               <li>• Thông tin tài khoản: Lưu trữ cho đến khi bạn yêu cầu xóa</li>
               <li>• Nhật ký truy cập: Xóa sau 12 tháng</li>
             </ul>
-          </motion.div>
+          </div>
 
           {/* Contact */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            className="mt-8 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 text-center"
-          >
+          <div className="mt-8 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 text-center animate-fade-in-up">
             <h3 className="text-lg font-semibold mb-2">Liên Hệ Về Quyền Riêng Tư</h3>
             <p className="text-muted-foreground mb-4">
               Nếu bạn có câu hỏi hoặc muốn thực hiện quyền của mình, vui lòng liên hệ.
@@ -180,7 +157,7 @@ export default function PrivacyPage() {
             >
               duongminhhoanginwork@gmail.com
             </a>
-          </motion.div>
+          </div>
 
           {/* Related Links */}
           <div className="mt-8 flex justify-center gap-4">

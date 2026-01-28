@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
-import { motion } from 'framer-motion'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Check } from 'lucide-react'
 
 interface ActionButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'glass' | 'glass-primary'
@@ -111,25 +110,9 @@ export default function ActionButton({
     <Loader2 className="w-5 h-5 animate-spin" />
   )
 
+  // CSS-only success check animation
   const SuccessCheck = () => (
-    <motion.svg
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      className="w-5 h-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <motion.path
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 0.3 }}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M5 13l4 4L19 7"
-      />
-    </motion.svg>
+    <Check className="w-5 h-5 animate-scale-in" />
   )
 
   const renderContent = () => {
@@ -161,7 +144,7 @@ export default function ActionButton({
   }
 
   return (
-    <motion.button
+    <button
       className={`
         ${baseStyles} 
         ${sizes[size]} 
@@ -171,12 +154,10 @@ export default function ActionButton({
       `}
       disabled={disabled || isLoading}
       onClick={handleClick}
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 30, mass: 0.5 }}
-      {...(props as any)}
+      {...props}
     >
       {renderContent()}
-    </motion.button>
+    </button>
   )
 }
 
@@ -254,7 +235,7 @@ export function LinkButton({
   }
 
   return (
-    <motion.a
+    <a
       href={href}
       className={`
         ${baseStyles} 
@@ -265,8 +246,6 @@ export function LinkButton({
         ${className}
       `}
       onClick={handleClick}
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 30, mass: 0.5 }}
     >
       {isNavigating ? (
         <>
@@ -280,7 +259,7 @@ export function LinkButton({
           {icon && iconPosition === 'right' && icon}
         </>
       )}
-    </motion.a>
+    </a>
   )
 }
 

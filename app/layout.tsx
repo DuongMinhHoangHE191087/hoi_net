@@ -81,6 +81,21 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
+        {/* Preload critical fonts for faster LCP */}
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        
+        {/* DNS prefetch for external resources */}
+        <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+        
         {/* Prevent FOUC: Apply background immediately */}
         <style dangerouslySetInnerHTML={{ __html: `
           html, body {

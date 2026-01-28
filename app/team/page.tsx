@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { Twitter, Linkedin, Github, Mail } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -48,16 +47,12 @@ export default function TeamPage() {
 
       <section className="pt-32 pb-20 px-4">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <div className="text-center mb-16 animate-fade-in-up">
             <h1 className="text-5xl font-bold text-text mb-6">Đội Ngũ Của Chúng Tôi</h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Gặp gỡ những con người tài năng đang xây dựng công nghệ khôi phục ảnh AI tiên tiến
             </p>
-          </motion.div>
+          </div>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -77,26 +72,9 @@ export default function TeamPage() {
               </div>
             </Card>
           ) : (
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                visible: {
-                  transition: {
-                    staggerChildren: 0.1
-                  }
-                }
-              }}
-            >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-stagger">
               {team.map((member) => (
-                <motion.div
-                  key={member.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: { opacity: 1, y: 0 }
-                  }}
-                >
+                <div key={member.id} className="animate-fade-in-up">
                   <Card hover className="text-center">
                     <div className="w-32 h-32 rounded-full mx-auto mb-4 overflow-hidden">
                       <SafeAvatar
@@ -139,9 +117,9 @@ export default function TeamPage() {
                       </div>
                     )}
                   </Card>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           )}
         </div>
       </section>

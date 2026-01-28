@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { FileText, ChevronLeft, Shield, Users, AlertTriangle, Scale } from 'lucide-react'
 
@@ -71,11 +70,7 @@ export default function TermsPage() {
             Quay lại trang chủ
           </Link>
           
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-4"
-          >
+          <div className="flex items-center gap-4 animate-fade-in-up">
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
               <FileText className="w-8 h-8 text-primary" />
             </div>
@@ -83,7 +78,7 @@ export default function TermsPage() {
               <h1 className="text-3xl font-bold">Điều Khoản Sử Dụng</h1>
               <p className="text-muted-foreground">Cập nhật lần cuối: Tháng 1, 2026</p>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -91,28 +86,20 @@ export default function TermsPage() {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           {/* Intro */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-card border rounded-2xl p-6 mb-8"
-          >
+          <div className="bg-card border rounded-2xl p-6 mb-8 animate-fade-in-up">
             <p className="text-lg text-muted-foreground">
               Chào mừng bạn đến với <strong className="text-foreground">Hồi Nét</strong>. 
               Vui lòng đọc kỹ các điều khoản sử dụng dưới đây trước khi sử dụng dịch vụ của chúng tôi.
               Bằng việc sử dụng dịch vụ, bạn đồng ý với các điều khoản này.
             </p>
-          </motion.div>
+          </div>
 
           {/* Sections */}
-          <div className="space-y-6">
-            {sections.map((section, index) => (
-              <motion.div
+          <div className="space-y-6 animate-stagger">
+            {sections.map((section) => (
+              <div
                 key={section.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * (index + 2) }}
-                className="bg-card border rounded-2xl p-6 hover:shadow-lg transition-shadow"
+                className="bg-card border rounded-2xl p-6 hover:shadow-lg transition-shadow animate-fade-in-up"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -130,17 +117,12 @@ export default function TermsPage() {
                     </ul>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
           {/* Contact */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="mt-12 bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center"
-          >
+          <div className="mt-12 bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center animate-fade-in-up">
             <h3 className="text-lg font-semibold mb-2">Có câu hỏi?</h3>
             <p className="text-muted-foreground mb-4">
               Liên hệ với chúng tôi nếu bạn cần giải đáp về điều khoản sử dụng.
@@ -151,7 +133,7 @@ export default function TermsPage() {
             >
               duongminhhoanginwork@gmail.com
             </a>
-          </motion.div>
+          </div>
 
           {/* Related Links */}
           <div className="mt-8 flex justify-center gap-4">

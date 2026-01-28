@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { ImageIcon } from 'lucide-react'
 
 interface OptimizedImageProps {
@@ -52,18 +51,13 @@ export default function OptimizedImage({
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      {/* Loading Skeleton */}
+      {/* Loading Skeleton - CSS only */}
       {isLoading && showLoader && (
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-shimmer"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 0.7 }}
-          transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
-        >
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-shimmer">
           <div className="flex items-center justify-center h-full">
-            <ImageIcon className="w-8 h-8 text-gray-400" />
+            <ImageIcon className="w-8 h-8 text-gray-400 animate-pulse" />
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Error Fallback */}

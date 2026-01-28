@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { motion } from 'framer-motion'
 import { Sparkles, ImagePlus, Users, Zap, Star, Target, Eye, Heart, ArrowRight, Rocket, Globe, Shield, Award, TrendingUp, Camera, Palette, Smile, Clock, Cpu, Database, FileImage, Film, Filter, Fingerprint, Flame, Grid, Hash, HelpCircle, Home, Inbox, Lightbulb, Link as LinkIcon, Mail, Map, MessageCircle, Music, Package, Phone, PieChart, RefreshCw, Search, Send, Settings, Share2, ShoppingCart, Sliders, Sun, Tag, Truck, Video, Wand2, Wifi, Wind, Wrench, Code, Lock, CheckCircle, Layers, Loader2 } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -12,6 +11,7 @@ import { demoStats } from '@/components/sections/GlobalStats'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import BrandLogo from '@/components/ui/BrandLogo'
+import { LazySection } from '@/components/ui/LazySection'
 
 // Dynamic imports cho heavy components (below-the-fold)
 const TeamCarousel3D = dynamic(() => import('@/components/sections/TeamCarousel3D'), {
@@ -35,6 +35,26 @@ const FeaturesCarousel = dynamic(() => import('@/components/sections/FeaturesCar
   loading: () => (
     <div className="h-96 animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
       <p className="text-gray-500">Đang tải tính năng...</p>
+    </div>
+  ),
+  ssr: false,
+})
+
+// Lazy load TestimonialsSection (below-the-fold, has heavy animations)
+const TestimonialsSection = dynamic(() => import('@/components/sections/TestimonialsSection'), {
+  loading: () => (
+    <div className="h-96 animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
+      <p className="text-gray-500">Đang tải đánh giá...</p>
+    </div>
+  ),
+  ssr: false,
+})
+
+// Lazy load ValuesSection (below-the-fold, has heavy animations)
+const ValuesSection = dynamic(() => import('@/components/sections/ValuesSection'), {
+  loading: () => (
+    <div className="h-96 animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
+      <p className="text-gray-500">Đang tải giá trị...</p>
     </div>
   ),
   ssr: false,
@@ -239,24 +259,6 @@ export default function LandingPageClient({ team, valueSections, features, testi
   // Use database value sections or defaults
   const displayValueSections = valueSections.length > 0 ? valueSections : defaultValueSections
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-    }
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { type: "spring", stiffness: 100, damping: 15 }
-    }
-  }
-
   // CTA Button with loading state
   const router = useRouter()
   const [loadingButton, setLoadingButton] = useState<string | null>(null)
@@ -391,77 +393,14 @@ export default function LandingPageClient({ team, valueSections, features, testi
         </div>
       </section>
 
-      {/* Mission, Vision, Values Section - Enhanced */}
-      <section className="py-20 px-4 relative">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-alt">{getSetting('about_section_title', 'Về Chúng Tôi')}</span>
-            </h2>
-            <p className="text-gray-600 text-lg">
-              {getSetting('about_section_subtitle', 'Sứ mệnh và tầm nhìn của chúng tôi')}
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {displayValueSections.map((item, index) => {
-              const Icon = getIconComponent(item.icon)
-              return (
-                <motion.div
-                  key={item.id}
-                  variants={itemVariants}
-                  className="glassmorphism-strong p-10 relative overflow-hidden group cursor-pointer"
-                  whileHover={{ y: -12, scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <motion.div
-                    className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0`}
-                    whileHover={{ opacity: 0.1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-
-                  <div className="relative mb-6">
-                    <motion.div
-                      className={`w-20 h-20 mx-auto bg-gradient-to-br ${item.gradient} rounded-2xl flex items-center justify-center shadow-glow`}
-                      whileHover={{ scale: 1.15, rotate: 8 }}
-                      transition={{ type: "spring", stiffness: 400 }}
-                    >
-                      <Icon className="w-10 h-10 text-white" />
-                    </motion.div>
-                  </div>
-
-                  <h3 className="text-2xl font-bold text-text mb-4 text-center relative z-10">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-700 text-center leading-relaxed relative z-10">
-                    {item.description}
-                  </p>
-
-                  <motion.div
-                    className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${item.gradient}`}
-                    initial={{ scaleX: 0 }}
-                    whileHover={{ scaleX: 1 }}
-                    transition={{ duration: 0.3 }}
-                    style={{ originX: 0 }}
-                  />
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
-      </section>
+      {/* Mission, Vision, Values Section - Lazy Loaded */}
+      <LazySection minHeight="500px" rootMargin="300px">
+        <ValuesSection
+          values={displayValueSections}
+          title={getSetting('about_section_title', 'Về Chúng Tôi')}
+          subtitle={getSetting('about_section_subtitle', 'Sứ mệnh và tầm nhìn của chúng tôi')}
+        />
+      </LazySection>
 
       {/* Features Section - Carousel */}
       <FeaturesCarousel 
@@ -486,143 +425,40 @@ export default function LandingPageClient({ team, valueSections, features, testi
       />
 
       {/* Team Section - Using shared TeamCarousel3D component */}
-      <section className="py-20 px-4 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-alt">{getSetting('team_section_title', 'Đội Ngũ Của Chúng Tôi')}</span>
-            </h2>
-            <p className="text-gray-600 text-lg">
-              {getSetting('team_section_subtitle', 'Những người đồng hành cùng bạn')}
-            </p>
-          </motion.div>
+      <LazySection minHeight="500px" rootMargin="300px">
+        <section className="py-20 px-4 relative overflow-hidden">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-8 animate-fade-in-up">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                <span className="gradient-text-alt">{getSetting('team_section_title', 'Đội Ngũ Của Chúng Tôi')}</span>
+              </h2>
+              <p className="text-gray-600 text-lg">
+                {getSetting('team_section_subtitle', 'Những người đồng hành cùng bạn')}
+              </p>
+            </div>
 
-          <TeamCarousel3D
-            team={team}
-            variant="compact"
-            showBackground={false}
-            autoPlay={true}
-            interval={4000}
-          />
-        </div>
-      </section>
+            <TeamCarousel3D
+              team={team}
+              variant="compact"
+              showBackground={false}
+              autoPlay={true}
+              interval={4000}
+            />
+          </div>
+        </section>
+      </LazySection>
 
-      {/* Testimonials Section - Enhanced */}
-      <section id="testimonials" className="py-20 px-4 relative">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-alt">{getSetting('testimonials_section_title', 'Khách Hàng Nói Gì')}</span>
-            </h2>
-            <p className="text-gray-600 text-lg">
-              {getSetting('testimonials_section_subtitle', 'Phản hồi từ những người đã sử dụng dịch vụ')}
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="glassmorphism-strong p-8 relative overflow-hidden group cursor-pointer"
-                whileHover={{ y: -12, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0"
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-
-                <motion.div
-                  className="text-6xl mb-4 text-center relative z-10"
-                  whileHover={{ scale: 1.2, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 400 }}
-                >
-                  {testimonial.avatar}
-                </motion.div>
-
-                <div className="flex gap-1 mb-4 justify-center relative z-10">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.1 * i, type: "spring", stiffness: 400 }}
-                    >
-                      <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    </motion.div>
-                  ))}
-                </div>
-
-                <p className="text-gray-700 mb-6 text-center italic leading-relaxed relative z-10">
-                  "{testimonial.content}"
-                </p>
-
-                <div className="text-center relative z-10">
-                  <p className="font-bold text-text text-lg">{testimonial.name}</p>
-                  <p className="text-sm text-gray-600">{testimonial.role}</p>
-                </div>
-
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-primary opacity-10 rounded-bl-full" />
-                <motion.div
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary"
-                  initial={{ scaleX: 0 }}
-                  whileHover={{ scaleX: 1 }}
-                  transition={{ duration: 0.3 }}
-                  style={{ originX: 0 }}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* View All Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="text-center mt-10"
-          >
-            <button
-              onClick={() => handleCTAClick('testimonial-cta', '/contact')}
-              disabled={loadingButton === 'testimonial-cta'}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-primary/20 text-primary font-semibold rounded-full hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-lg hover:shadow-xl group disabled:opacity-70"
-            >
-              {loadingButton === 'testimonial-cta' ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Đang chuyển...</span>
-                </>
-              ) : (
-                <>
-                  <span>Gửi phản hồi của bạn</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </motion.div>
-        </div>
-      </section>
+      {/* Testimonials Section - Lazy Loaded */}
+      <LazySection minHeight="600px" rootMargin="300px">
+        <TestimonialsSection
+          testimonials={testimonials}
+          title={getSetting('testimonials_section_title', 'Khách Hàng Nói Gì')}
+          subtitle={getSetting('testimonials_section_subtitle', 'Phản hồi từ những người đã sử dụng dịch vụ')}
+          ctaText="Gửi phản hồi của bạn"
+          onCTAClick={() => handleCTAClick('testimonial-cta', '/contact')}
+          isLoading={loadingButton === 'testimonial-cta'}
+        />
+      </LazySection>
 
       {/* Final CTA Section */}
       <section className="py-20 px-4 relative">
