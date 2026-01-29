@@ -53,6 +53,8 @@ interface UniversalLoadingProps {
   // Dynamic branding from database
   brandName?: string
   logoUrl?: string
+  // ✅ NEW: Minimum loading duration in milliseconds
+  minDurationMs?: number
 }
 
 // Default Hồi Nét logo
@@ -66,6 +68,7 @@ export default function UniversalLoading({
   variant = 'default',
   brandName = 'Hồi Nét',
   logoUrl = HOINET_LOGO_URL,
+  minDurationMs = 1500, // ✅ NEW: Default 1.5s minimum loading
 }: UniversalLoadingProps) {
   // ✅ Fix hydration mismatch - only render particles on client
   const [isMounted, setIsMounted] = useState(false)

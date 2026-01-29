@@ -12,6 +12,9 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import BrandLogo from '@/components/ui/BrandLogo'
 import { LazySection } from '@/components/ui/LazySection'
+import { useMinimumLoadingTime } from '@/lib/hooks/useMinimumLoadingTime'
+import { LOADING_CONFIG } from '@/lib/loading-config'
+import UniversalLoading from '@/components/UniversalLoading'
 
 // Dynamic imports cho heavy components (below-the-fold)
 const TeamCarousel3D = dynamic(() => import('@/components/sections/TeamCarousel3D'), {
@@ -70,6 +73,8 @@ interface LandingPageClientProps {
 
 export default function LandingPageClient({ team, valueSections, features, testimonials: dbTestimonials, siteSettings }: LandingPageClientProps) {
   const [isMounted, setIsMounted] = useState(false)
+  // ✅ Enforce minimum 1.5s loading time for smooth UX
+  const shouldShowLoading = useMinimumLoadingTime(true, LOADING_CONFIG.MINIMUM_PAGE_LOAD_MS)
 
   // Helper function to get setting with fallback
   const getSetting = (key: string, fallback: string = '') => siteSettings[key] || fallback
@@ -269,6 +274,18 @@ export default function LandingPageClient({ team, valueSections, features, testi
     setTimeout(() => {
       router.push(href)
     }, 100)
+  }
+
+  // ✅ Show loading screen for minimum 1.5s
+  if (shouldShowLoading) {
+    return (
+      <UniversalLoading
+        fullScreen
+        message={LOADING_CONFIG.getMessage('PAGE_LOAD')}
+        variant="default"
+        minDurationMs={LOADING_CONFIG.MINIMUM_PAGE_LOAD_MS}
+      />
+    )
   }
 
   return (
