@@ -12,10 +12,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/auth-server'
 import { checkQuota, logUsage, getQuotaInfo, QuotaInfo } from '@/lib/quota'
-import { processImageWithGemini, analyzeImage, gemini } from '@/lib/gemini'
+import { processImageWithGemini, gemini } from '@/lib/gemini'
 import { AIProcessingSchema } from '@/lib/validation'
 import { logger } from '@/lib/logger'
 import { getCachedResult, cacheResult } from '@/lib/cache'
+import { uploadRestoredImage } from '@/lib/ai-image-upload'
 
 export const dynamic = 'force-dynamic'
 
@@ -116,15 +117,38 @@ export async function POST(request: NextRequest) {
         { model: modelToUse as any }
       )
       
+      let restoredUrl = result.restoredImageUrl
+
+      // 4b. Upload to Cloudinary if native image was generated
+      if (result.success && result.restoredImageBase64 && result.restoredImageMimeType && !restoredUrl) {
+        try {
+          const uploadResult = await uploadRestoredImage(
+            result.restoredImageBase64,
+            result.restoredImageMimeType,
+            actionType
+          )
+          restoredUrl = uploadResult.url
+          result.restoredImageUrl = uploadResult.url // Save URL to result for caching
+        } catch (uploadError: any) {
+          logger.error('Failed to upload restored image', { error: uploadError })
+          result.success = false
+          result.error = 'Lỗi lưu ảnh sau khi xử lý'
+        }
+      }
+      
       // 4c. Save to Cache (if successful)
       if (result.success) {
         await cacheResult(cacheKey, result)
       }
+
+      // Avoid sending massive base64 back to client
+      const clientResult = { ...result }
+      delete clientResult.restoredImageBase64
       
       return {
         original: imageUrl,
-        processed: imageUrl,
-        ...result,
+        processed: restoredUrl || imageUrl,
+        ...clientResult,
         cached: false
       }
     }))

@@ -118,18 +118,15 @@ export type { RateLimitType } from './rate-limit'
 // AI & Processing
 // ============================================
 export {
-  analyzeImage,
   processImageWithGemini,
   processImagesInBatch,
   validateGeminiKey,
-  getAvailableModels,
   gemini
 } from './gemini'
 export type {
   ProcessingOptions,
   ProcessedResult,
-  ImageAnalysis,
-  DetectedObject
+  ImageAnalysis
 } from './gemini'
 
 // ============================================

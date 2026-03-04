@@ -9,7 +9,9 @@ export const AIProcessingSchema = z.object({
   type: z.enum(['restore', 'enhance', 'colorize', 'upscale', 'harmonize']).default('restore'),
   options: z.object({
     temperature: z.number().min(0).max(1).optional(),
-    model: z.enum(['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.0-flash']).optional()
+    model: z.enum(['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.0-flash']).optional(),
+    quality: z.enum(['standard', 'hd']).optional(),
+    outputFormat: z.enum(['analysis_only', 'image_and_analysis']).optional()
   }).optional()
 });
 

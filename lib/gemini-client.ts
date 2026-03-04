@@ -1,12 +1,12 @@
 /**
  * Gemini AI Client-side Processing (BYOK)
- * Updated to use Gemini 3 Flash Preview - Latest Model (January 2026)
+ * Updated to use Gemini 2.5 Flash and Native Image Generation
  * 
  * Runs entirely in browser - API key NEVER sent to server
  * Stored in localStorage
  */
 
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 
 // ============================================
 // Types
@@ -19,6 +19,8 @@ export interface ClientProcessingResult {
   error?: string
   processingTime?: number
   model?: string
+  restoredImageBase64?: string
+  restoredImageMimeType?: string
 }
 
 export interface ClientImageAnalysis {
@@ -31,10 +33,10 @@ export interface ClientImageAnalysis {
 }
 
 // ============================================
-// Constants - Using Gemini 3 Flash Preview
+// Constants - Using Gemini 2.5 Flash
 // ============================================
 
-const DEFAULT_MODEL = 'gemini-3-flash-preview'
+const DEFAULT_MODEL = 'gemini-2.5-flash'
 const STORAGE_KEY = 'gemini_user_api_key'
 const STORAGE_VALIDATED_KEY = 'gemini_key_validated'
 const STORAGE_MODEL_KEY = 'gemini_preferred_model'
@@ -43,174 +45,131 @@ const STORAGE_MODEL_KEY = 'gemini_preferred_model'
 // LocalStorage Management
 // ============================================
 
-/**
- * Save API key to localStorage (client-side only)
- */
+// Save API key to localStorage (client-side only)
 export function saveApiKey(key: string): void {
-  if (typeof window === 'undefined') return
-  
-  try {
+  if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, key)
-    localStorage.setItem(STORAGE_VALIDATED_KEY, 'true')
-  } catch (error) {
-    console.error('Failed to save API key:', error)
+    // Mark as unvalidated when saving new key
+    localStorage.removeItem(STORAGE_VALIDATED_KEY)
   }
 }
 
-/**
- * Get API key from localStorage
- */
+// Get API key from localStorage
 export function getApiKey(): string | null {
-  if (typeof window === 'undefined') return null
-  
-  try {
-    return localStorage.getItem(STORAGE_KEY)
-  } catch {
-    return null
+  if (typeof window !== 'undefined') {
+    const key = localStorage.getItem(STORAGE_KEY)
+    return key && key.trim() !== '' ? key : null
   }
+  return null
 }
 
-/**
- * Remove API key from localStorage
- */
+// Remove API key from localStorage
 export function removeApiKey(): void {
-  if (typeof window === 'undefined') return
-  
-  try {
+  if (typeof window !== 'undefined') {
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem(STORAGE_VALIDATED_KEY)
-  } catch (error) {
-    console.error('Failed to remove API key:', error)
   }
 }
 
-/**
- * Check if API key exists and was validated
- */
+// Check if API key exists and was validated
 export function hasValidApiKey(): boolean {
-  if (typeof window === 'undefined') return false
-  
-  try {
-    const key = localStorage.getItem(STORAGE_KEY)
-    const validated = localStorage.getItem(STORAGE_VALIDATED_KEY)
-    return !!key && validated === 'true'
-  } catch {
-    return false
+  if (typeof window !== 'undefined') {
+    const hasKey = !!localStorage.getItem(STORAGE_KEY)
+    const isValidated = localStorage.getItem(STORAGE_VALIDATED_KEY) === 'true'
+    return hasKey && isValidated
   }
+  return false
 }
 
-/**
- * Save/Get preferred model
- */
+// Save/Get preferred model
 export function savePreferredModel(model: string): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_MODEL_KEY, model)
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_MODEL_KEY, model)
+  }
 }
 
 export function getPreferredModel(): string {
-  if (typeof window === 'undefined') return DEFAULT_MODEL
-  return localStorage.getItem(STORAGE_MODEL_KEY) || DEFAULT_MODEL
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(STORAGE_MODEL_KEY) || DEFAULT_MODEL
+  }
+  return DEFAULT_MODEL
 }
 
 // ============================================
 // Image Utilities
 // ============================================
 
-/**
- * Convert File to base64
- */
-export function fileToBase64(file: File): Promise<string> {
+// Convert File to base64
+export async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      const base64 = result.split(',')[1]
-      resolve(base64)
-    }
-    reader.onerror = reject
     reader.readAsDataURL(file)
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Failed to convert file to base64'))
+      }
+    }
+    reader.onerror = error => reject(error)
   })
 }
 
-/**
- * Convert image URL to base64 (client-side)
- */
+// Convert image URL to base64 (client-side)
 export async function urlToBase64Client(imageUrl: string): Promise<{
   data: string
   mimeType: string
 }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
+  try {
+    const response = await fetch(imageUrl)
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`)
     
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
-      
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        reject(new Error('Failed to get canvas context'))
-        return
+    const blob = await response.blob()
+    const mimeType = blob.type || 'image/jpeg'
+    
+    const base64Str = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          // Remove Data URL prefix
+          const base64 = reader.result.split(',')[1]
+          resolve(base64)
+        } else {
+          reject(new Error('Failed to read visual data'))
+        }
       }
-      
-      ctx.drawImage(img, 0, 0)
-      
-      // Use high quality JPEG
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95)
-      const base64 = dataUrl.split(',')[1]
-      
-      resolve({
-        data: base64,
-        mimeType: 'image/jpeg'
-      })
-    }
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
     
-    img.onerror = () => reject(new Error('Failed to load image'))
-    img.src = imageUrl
-  })
+    return { data: base64Str, mimeType }
+  } catch (error) {
+    console.error('Lỗi chuyển ảnh sang base64:', error)
+    throw new Error('Không thể tải ảnh. Ảnh có thể bị chặn CORS.')
+  }
 }
 
 // ============================================
-// Processing Functions - Gemini 3 Flash
+// Processing Functions - Gemini 2.5 Flash
 // ============================================
 
 const SAFETY_SETTINGS = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
 ]
 
-const RESTORATION_PROMPT = `Bạn là chuyên gia khôi phục ảnh AI sử dụng Gemini 3 Flash - model AI tiên tiến nhất.
-
-Phân tích ảnh này và cung cấp:
-
-## 1. ĐÁNH GIÁ TỔNG QUAN
-- Mô tả ngắn về nội dung ảnh
-- Chất lượng hiện tại (thấp/trung bình/cao)
-- Ước tính niên đại của ảnh
-
-## 2. VẤN ĐỀ PHÁT HIỆN
-Liệt kê CHI TIẾT tất cả các vấn đề:
-- Vết trầy, xước
-- Bạc màu, ố vàng  
-- Rách, gấp
-- Nhiễu, hạt
-- Vết ố, bẩn
-- Mất chi tiết
-
-## 3. ĐỀ XUẤT KHÔI PHỤC
-Hướng dẫn từng bước với độ ưu tiên:
-1. [Bước ưu tiên cao nhất]
-2. [Bước tiếp theo]
-...
-
-## 4. DỰ BÁO KẾT QUẢ
-- Mức độ khôi phục khả thi
-- Những phần khó phục hồi
-
-Hãy chi tiết, cụ thể và chuyên nghiệp.`
+const RESTORATION_PROMPT = `
+You are an expert photo restoration AI using Gemini 2.5 Flash.
+You must perform TWO tasks simultaneously:
+TASK 1: GENERATE AN IMAGE
+Create a restored/enhanced version.
+TASK 2: PROVIDE A JSON ANALYSIS
+Provide a JSON response analyzing the image. 
+Format exactly like this string (no markdown ticks):
+{"description":"...","quality":"low","issues":[],"suggestions":[],"hasNoise":false,"hasDamage":false,"isBlackAndWhite":false}
+`
 
 const ANALYSIS_JSON_PROMPT = `Phân tích ảnh này. Trả về JSON duy nhất:
 {
@@ -218,48 +177,12 @@ const ANALYSIS_JSON_PROMPT = `Phân tích ảnh này. Trả về JSON duy nhất
   "quality": "low/medium/high",
   "issues": ["danh sách vấn đề"],
   "suggestions": ["danh sách đề xuất"],
-  "isBlackAndWhite": true/false,
-  "estimatedAge": "ước tính niên đại nếu là ảnh cũ"
+  "isBlackAndWhite": false,
+  "estimatedAge": "khoảng thời gian"
 }`
 
-const ACTION_PROMPTS: Record<string, string> = {
-  restore: RESTORATION_PROMPT,
-  
-  enhance: `Bạn là chuyên gia nâng cao chất lượng ảnh (Gemini 3 Flash).
-
-Phân tích và đề xuất:
-1. Đánh giá độ nét, nhiễu, độ phân giải
-2. Vấn đề ánh sáng và phơi sáng
-3. Cân bằng trắng và màu sắc
-4. Workflow nâng cao chi tiết
-
-Cụ thể và actionable.`,
-  
-  colorize: `Bạn là chuyên gia tô màu ảnh đen trắng (Gemini 3 Flash).
-
-Phân tích và đề xuất:
-1. Xác định niên đại và bối cảnh
-2. Bảng màu chi tiết cho từng phần (mã hex)
-   - Màu da: #xxx
-   - Quần áo: #xxx  
-   - Nền: #xxx
-3. Lưu ý độ chính xác lịch sử
-4. Kỹ thuật tô màu tự nhiên
-
-Chi tiết và chính xác lịch sử.`,
-  
-  upscale: `Bạn là chuyên gia phóng to ảnh (Gemini 3 Flash).
-
-Phân tích:
-1. Đánh giá độ phân giải hiện tại
-2. Chi tiết cần bảo toàn
-3. Đề xuất tỷ lệ phóng to (2x, 4x, 8x)
-4. Vấn đề tiềm ẩn khi phóng to
-5. Workflow xử lý sau phóng to`
-}
-
 /**
- * Validate API key with Gemini 3 Flash (client-side)
+ * Validate API key with Gemini 2.5 Flash (client-side)
  */
 export async function validateApiKeyClient(apiKey: string): Promise<{
   valid: boolean
@@ -267,12 +190,17 @@ export async function validateApiKeyClient(apiKey: string): Promise<{
   model?: string
 }> {
   try {
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: DEFAULT_MODEL })
+    const genAI = new GoogleGenAI({ apiKey })
     
     // Quick validation request
-    const result = await model.generateContent('Trả lời: "OK"')
-    const response = result.response.text()
+    const response = await genAI.models.generateContent({
+      model: DEFAULT_MODEL,
+      contents: 'Trả lời: "OK"'
+    })
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_VALIDATED_KEY, 'true')
+    }
     
     return { 
       valid: true,
@@ -285,13 +213,6 @@ export async function validateApiKeyClient(apiKey: string): Promise<{
       errorMessage = 'API key không hợp lệ. Vui lòng kiểm tra lại.'
     } else if (error.message?.includes('QUOTA')) {
       errorMessage = 'API key đã hết quota. Vui lòng đợi hoặc tạo key mới.'
-    } else if (error.message?.includes('PERMISSION')) {
-      errorMessage = 'API key không có quyền truy cập.'
-    } else if (error.message?.includes('fetch')) {
-      errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra mạng.'
-    } else if (error.message?.includes('404')) {
-      // Model not available, try fallback
-      errorMessage = 'Model không khả dụng. Thử model khác.'
     }
     
     return { valid: false, error: errorMessage }
@@ -299,7 +220,7 @@ export async function validateApiKeyClient(apiKey: string): Promise<{
 }
 
 /**
- * Process image with user's API key using Gemini 3 Flash (BYOK)
+ * Process image with user's API key using Gemini 2.5 Flash (BYOK)
  * Runs entirely in browser - key never sent to server
  */
 export async function processWithUserKey(
@@ -321,67 +242,101 @@ export async function processWithUserKey(
       }
     }
     
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ 
-      model: modelToUse,
-      safetySettings: SAFETY_SETTINGS,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 8192,
-      }
-    })
+    const genAI = new GoogleGenAI({ apiKey })
     
-    console.log(`[BYOK ${modelToUse}] Processing image...`)
+    console.log(`[BYOK ${modelToUse}] Processing image native...`)
     
     // Convert image to base64
     const imageData = await urlToBase64Client(imageUrl)
     
-    // Get prompt
-    const prompt = customPrompt || ACTION_PROMPTS[actionType] || RESTORATION_PROMPT
+    // Base prompts specific for native output 
+    const promptText = `${RESTORATION_PROMPT}
+
+Action requested: ${actionType}
+${customPrompt ? `Custom instructions: ${customPrompt}` : ''}`
+
+    // We run the requests in parallel for max performance
+    const promises: Promise<any>[] = []
     
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType: imageData.mimeType,
-          data: imageData.data
+    // 1. Text Analysis Request (Gemini 2.5 Flash)
+    promises.push(
+      genAI.models.generateContent({
+        model: modelToUse,
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: promptText },
+              { inlineData: { data: imageData.data, mimeType: imageData.mimeType } }
+            ]
+          }
+        ],
+        config: {
+          responseModalities: ['TEXT'],
+          safetySettings: SAFETY_SETTINGS as any,
+          temperature: 0.4,
         }
-      }
-    ])
+      })
+    )
+
+    // 2. Image Generation Request (Imagen 3)
+    const imagenPrompt = `An expert high-quality perfectly restored and enhanced version of this image. Focus: ${actionType}. ${customPrompt ? customPrompt : ""}`;
+    promises.push(
+      genAI.models.generateContent({
+        model: 'imagen-3.0-generate-002',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: imagenPrompt },
+              { inlineData: { data: imageData.data, mimeType: imageData.mimeType } }
+            ]
+          }
+        ],
+        config: {
+          responseModalities: ['IMAGE'],
+        }
+      }).catch((err) => {
+        console.warn(`[BYOK] Imagen 3 Generation failed (fallback to text-only analysis): ${err.message}`);
+        return null; // Return null to gracefully degrade rather than crashing the text analysis
+      })
+    )
     
-    const description = result.response.text()
+    const responses = await Promise.all(promises)
+    const textResponse = responses[0]
+    const imageResponse = responses[1]
+    
+    const textOutput = textResponse.text || ''
     const processingTime = Date.now() - startTime
     
     console.log(`[BYOK ${modelToUse}] Complete in ${processingTime}ms`)
     
-    // Try to get quick analysis
     let analysis: ClientImageAnalysis | undefined
     try {
-      const analysisResult = await model.generateContent([
-        ANALYSIS_JSON_PROMPT,
-        {
-          inlineData: {
-            mimeType: imageData.mimeType,
-            data: imageData.data
-          }
-        }
-      ])
-      
-      const analysisText = analysisResult.response.text()
-      const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        analysis = JSON.parse(jsonMatch[0])
-      }
-    } catch {
-      // Analysis is optional
-    }
+      const match = textOutput.match(/\{[\s\S]*\}/)
+      if (match) analysis = JSON.parse(match[0])
+    } catch(e) {}
     
+    let restoredImageBase64: string | undefined
+    let restoredImageMimeType: string | undefined
+    
+    if (imageResponse && imageResponse.candidates && imageResponse.candidates.length > 0) {
+      const parts = imageResponse.candidates[0].content?.parts || []
+      const imagePart = parts.find((p: any) => p.inlineData && p.inlineData.data)
+      if (imagePart && imagePart.inlineData) {
+        restoredImageBase64 = imagePart.inlineData.data
+        restoredImageMimeType = imagePart.inlineData.mimeType
+      }
+    }
+
     return {
       success: true,
-      description,
+      description: textOutput,
       analysis,
       processingTime,
-      model: modelToUse
+      model: modelToUse,
+      restoredImageBase64,
+      restoredImageMimeType
     }
   } catch (error: any) {
     console.error('[BYOK] Processing error:', error)
@@ -390,19 +345,9 @@ export async function processWithUserKey(
     
     if (error.message?.includes('API_KEY_INVALID')) {
       errorMessage = 'API key không hợp lệ. Vui lòng kiểm tra lại.'
-      removeApiKey() // Remove invalid key
+      removeApiKey()
     } else if (error.message?.includes('QUOTA')) {
-      errorMessage = 'API key đã hết quota. Vui lòng đợi 1 phút hoặc tạo key mới.'
-    } else if (error.message?.includes('SAFETY')) {
-      errorMessage = 'Ảnh bị chặn bởi bộ lọc an toàn. Vui lòng thử ảnh khác.'
-    } else if (error.message?.includes('Failed to load image')) {
-      errorMessage = 'Không thể tải ảnh. Vui lòng kiểm tra URL hoặc thử lại.'
-    } else if (error.message?.includes('404') || error.message?.includes('not found')) {
-      errorMessage = 'Model không khả dụng. Đang thử model khác...'
-      // Try fallback to 2.5 flash
-      if (modelToUse === DEFAULT_MODEL) {
-        return processWithUserKey(imageUrl, actionType, customPrompt, 'gemini-2.5-flash')
-      }
+      errorMessage = 'API key đã hết quota.'
     }
     
     return {
@@ -429,7 +374,6 @@ export async function processMultipleWithUserKey(
     const result = await processWithUserKey(imageUrls[i], actionType)
     results.push(result)
     
-    // Add delay between requests to avoid rate limiting
     if (i < imageUrls.length - 1) {
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
@@ -443,8 +387,7 @@ export async function processMultipleWithUserKey(
  */
 export function getAvailableModelsClient(): { id: string; name: string }[] {
   return [
-    { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash (Mới nhất)' },
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Ổn định)' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Mới nhất)' },
     { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Legacy)' }
   ]
 }
@@ -459,12 +402,14 @@ export const geminiClient = {
   getKey: getApiKey,
   removeKey: removeApiKey,
   hasKey: hasValidApiKey,
-  validateKey: validateApiKeyClient,
   
-  // Model preferences
+  // Settings
   saveModel: savePreferredModel,
   getModel: getPreferredModel,
-  getModels: getAvailableModelsClient,
+  getAvailableModels: getAvailableModelsClient,
+  
+  // Validation
+  validateKey: validateApiKeyClient,
   
   // Processing
   process: processWithUserKey,
@@ -479,4 +424,3 @@ export const geminiClient = {
 }
 
 export default geminiClient
-

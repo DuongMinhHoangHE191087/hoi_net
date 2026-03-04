@@ -11,6 +11,7 @@
     "generate:secrets": "node scripts/generate-secrets.js"
   },
   "dependencies": {
+    "@google/genai": "^1.43.0",
     "@google/generative-ai": "^0.24.1",
     "@hcaptcha/react-hcaptcha": "^2.0.2",
     "@hookform/resolvers": "^3.9.0",

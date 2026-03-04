@@ -13,6 +13,7 @@ import { requirePermissionAuth } from '@/lib/auth-server'
 import { processImageWithGemini } from '@/lib/gemini'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { logger } from '@/lib/logger'
+import { uploadRestoredImage } from '@/lib/ai-image-upload'
 
 export const dynamic = 'force-dynamic'
 
@@ -126,11 +127,26 @@ export async function POST(
             { model: 'gemini-2.5-flash' }
           )
 
+          let finalUrl = imageUrl
+          
+          if (result.success && result.restoredImageBase64 && result.restoredImageMimeType) {
+            try {
+              const uploadResult = await uploadRestoredImage(
+                result.restoredImageBase64,
+                result.restoredImageMimeType,
+                action
+              )
+              finalUrl = uploadResult.url
+            } catch (upErr) {
+              log.error('Failed to upload processed admin image', { error: upErr })
+            }
+          }
+
           return {
             index,
             original: imageUrl,
             success: result.success,
-            processed_url: imageUrl, // Original URL (Gemini only provides analysis, not processed image)
+            processed_url: finalUrl,
             analysis: result.analysis?.description,
             suggestions: result.analysis?.suggestions?.join(', '),
             error: result.error

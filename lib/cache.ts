@@ -13,6 +13,7 @@ interface CacheKey {
   prompt?: string
   model: string
   actionType: string
+  outputFormat?: string
 }
 
 /**

@@ -92,8 +92,16 @@ export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname
   const clientIP = getClientIP(req)
 
+  // ============================================
+  // Request Tracing - Unique ID per request
+  // ============================================
+  const requestId = req.headers.get('x-request-id') || crypto.randomUUID()
+
   // Update session and get user from @supabase/ssr
   const { user, response: res, supabase } = await updateSession(req)
+
+  // Attach request ID to response for end-to-end tracing
+  res.headers.set('X-Request-ID', requestId)
 
   const userId = user?.id || null
 
@@ -111,14 +119,12 @@ export async function middleware(req: NextRequest) {
   const isProfileRoute = pathname.startsWith('/profile')
 
   console.log('[Middleware]', {
+    requestId,
     pathname,
     hasUser: !!user,
     userEmail: user?.email,
     isAdmin,
     role,
-    isLoginRoute,
-    isAdminRoute,
-    isDashboardRoute
   })
 
   // ============================================

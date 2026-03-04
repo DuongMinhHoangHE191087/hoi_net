@@ -7,6 +7,7 @@ export interface LogEntry {
   message: string
   path?: string
   user_id?: string
+  request_id?: string
   metadata?: Record<string, any>
   error?: any
   timestamp?: string
@@ -39,6 +40,7 @@ async function flushLogBuffer(): Promise<void> {
           message: log.message,
           path: log.path || null,
           user_id: log.user_id || null,
+          request_id: log.request_id || (log.metadata?.requestId) || null,
           metadata: log.metadata || {},
           error: log.error ? (typeof log.error === 'string' ? log.error : JSON.stringify(log.error)) : null,
           created_at: log.timestamp || new Date().toISOString()
