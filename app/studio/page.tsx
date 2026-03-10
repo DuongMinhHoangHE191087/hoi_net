@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
-import { Upload, Image as ImageIcon, Layout, Scissors } from 'lucide-react'
+import { Upload, Image as ImageIcon, Layout, Scissors, Undo2, Redo2, Download } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import Button from '@/components/ui/Button'
+import StudioErrorBoundary from '@/components/studio/StudioErrorBoundary'
 import { blobToUrl } from '@/lib/background-removal'
 import Link from 'next/link'
 
@@ -25,11 +26,11 @@ interface CanvasImage {
   zIndex: number
 }
 
-// Mock Backgrounds
-const MOCK_BACKGROUNDS = [
-  'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800&q=80',
-  'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=80',
-  'https://images.unsplash.com/photo-1481277542470-605612bd2d61?w=800&q=80',
+// Sample backgrounds (fallback placeholders)
+const SAMPLE_BACKGROUNDS = [
+  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="%23e0e7ff" width="800" height="600"/><text fill="%236366f1" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Xanh</text></svg>'),
+  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="%23fce7f3" width="800" height="600"/><text fill="%23ec4899" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Hồng</text></svg>'),
+  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="%23d1fae5" width="800" height="600"/><text fill="%2310b981" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Xanh Lá</text></svg>'),
 ]
 
 export default function StudioPage() {
@@ -37,8 +38,45 @@ export default function StudioPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [uploadedAssets, setUploadedAssets] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState<'uploads' | 'backgrounds'>('uploads')
+  const [showExport, setShowExport] = useState(false)
+  const [exportFormat, setExportFormat] = useState<'png' | 'jpeg' | 'webp'>('png')
+  const [exportQuality, setExportQuality] = useState(90)
+  
+  // Undo/Redo
+  const [history, setHistory] = useState<CanvasImage[][]>([[]])
+  const [historyIndex, setHistoryIndex] = useState(0)
   
   const uploadInputRef = useRef<HTMLInputElement>(null)
+
+  const pushHistory = useCallback((newImages: CanvasImage[]) => {
+    setHistory(prev => {
+      const trimmed = prev.slice(0, historyIndex + 1)
+      return [...trimmed, [...newImages]]
+    })
+    setHistoryIndex(prev => prev + 1)
+  }, [historyIndex])
+
+  const undo = () => {
+    if (historyIndex <= 0) return
+    const newIndex = historyIndex - 1
+    setHistoryIndex(newIndex)
+    setImages([...history[newIndex]])
+  }
+
+  const redo = () => {
+    if (historyIndex >= history.length - 1) return
+    const newIndex = historyIndex + 1
+    setHistoryIndex(newIndex)
+    setImages([...history[newIndex]])
+  }
+
+  const setImagesWithHistory = (updater: React.SetStateAction<CanvasImage[]>) => {
+    setImages(prev => {
+      const newImages = typeof updater === 'function' ? updater(prev) : updater
+      pushHistory(newImages)
+      return newImages
+    })
+  }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -65,13 +103,13 @@ export default function StudioPage() {
         src,
         x,
         y,
-        scaleX: 0.5, // Default scale
+        scaleX: 0.5,
         scaleY: 0.5,
         rotation: 0,
         zIndex: images.length
       }
 
-      setImages(prev => [...prev, newImage])
+      setImagesWithHistory(prev => [...prev, newImage])
       setSelectedId(newImage.id)
     }
   }
@@ -81,10 +119,23 @@ export default function StudioPage() {
       <Navbar />
       
       <main className="flex-1 flex overflow-hidden mt-16">
-        {/* Left Sidebar (Assets) */}
+        {/* Left Sidebar */}
         <aside className="w-80 bg-white border-r border-gray-200 flex flex-col z-10 shadow-sm">
           <div className="p-4 border-b border-gray-200">
-            <h2 className="font-bold text-lg mb-4">Studio</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg">Studio</h2>
+              <div className="flex gap-1">
+                <button onClick={undo} disabled={historyIndex <= 0} className="p-1.5 rounded-md hover:bg-gray-100 disabled:opacity-30 transition-colors" title="Hoàn tác">
+                  <Undo2 className="w-4 h-4" />
+                </button>
+                <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-1.5 rounded-md hover:bg-gray-100 disabled:opacity-30 transition-colors" title="Làm lại">
+                  <Redo2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => setShowExport(true)} className="p-1.5 rounded-md hover:bg-blue-50 text-blue-600 transition-colors" title="Xuất ảnh">
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
             <div className="flex bg-gray-100 p-1 rounded-lg">
               <button
                 onClick={() => setActiveTab('uploads')}
@@ -160,12 +211,11 @@ export default function StudioPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3">
-                {MOCK_BACKGROUNDS.map((url, idx) => (
+                {SAMPLE_BACKGROUNDS.map((url, idx) => (
                   <div 
                     key={idx}
                     className="aspect-video bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 ring-blue-500 relative group"
                     onClick={() => {
-                        // Add background logic (send to back)
                         const newImage: CanvasImage = {
                             id: `bg-${Date.now()}`,
                             src: url,
@@ -174,10 +224,9 @@ export default function StudioPage() {
                             scaleX: 1,
                             scaleY: 1,
                             rotation: 0,
-                            zIndex: -1 // Always at bottom
+                            zIndex: -1
                         }
-                        // Remove existing BG if mostly fullscreen? Or just add.
-                        setImages(prev => [newImage, ...prev])
+                        setImagesWithHistory(prev => [newImage, ...prev])
                     }}
                   >
                     <img src={url} alt="background" className="w-full h-full object-cover" />
@@ -193,21 +242,78 @@ export default function StudioPage() {
 
         {/* Main Canvas Area */}
         <div className="flex-1 relative bg-gray-200 p-8 overflow-hidden flex flex-col">
-          <div className="flex-1 shadow-2xl rounded-xl overflow-hidden bg-white">
-             <CanvasWorkspace
-                images={images}
-                setImages={setImages}
-                selectedId={selectedId}
-                setSelectedId={setSelectedId}
-                onDrop={handleDrop}
-             />
-          </div>
+          <StudioErrorBoundary>
+            <div className="flex-1 shadow-2xl rounded-xl overflow-hidden bg-white">
+               <CanvasWorkspace
+                 images={images}
+                 setImages={setImagesWithHistory}
+                 selectedId={selectedId}
+                 setSelectedId={setSelectedId}
+                 onDrop={handleDrop}
+               />
+            </div>
+          </StudioErrorBoundary>
           <div className="mt-2 text-center text-xs text-gray-500">
-            Kéo thả ảnh từ thư viện bên trái vào khung hình
+            Kéo thả ảnh từ thư viện bên trái vào khung hình | Ctrl+Z hoàn tác | Ctrl+Y làm lại
           </div>
         </div>
+
+        {/* Export Dialog */}
+        {showExport && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowExport(false)}>
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold mb-4">Xuất Ảnh</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Định dạng</label>
+                  <div className="flex gap-2">
+                    {(['png', 'jpeg', 'webp'] as const).map(fmt => (
+                      <button
+                        key={fmt}
+                        onClick={() => setExportFormat(fmt)}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                          exportFormat === fmt ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {fmt.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {exportFormat !== 'png' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Chất lượng: {exportQuality}%</label>
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      value={exportQuality}
+                      onChange={e => setExportQuality(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    const stage = document.querySelector('canvas')
+                    if (stage) {
+                      const link = document.createElement('a')
+                      link.download = `studio-export.${exportFormat}`
+                      link.href = stage.toDataURL(`image/${exportFormat}`, exportQuality / 100)
+                      link.click()
+                    }
+                    setShowExport(false)
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity"
+                >
+                  <Download className="w-4 h-4 inline mr-2" />
+                  Tải Xuống
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
 }
-

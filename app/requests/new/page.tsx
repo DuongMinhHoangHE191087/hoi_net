@@ -14,6 +14,8 @@ import { checkProfileComplete } from '@/lib/profile-check'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { FullScreenLoading } from '@/components/UniversalLoading'
+import PromptSelector, { buildPromptFromChips } from '@/components/ui/PromptSelector'
+import { showAIProcessingToast, showAISuccessToast, showAIPartialToast, showAIErrorToast } from '@/components/ui/AIToastNotification'
 
 const REQUEST_TYPES = [
   {
@@ -51,6 +53,10 @@ export default function NewRequestPage() {
     useAI: true,
     sendToAdmin: true
   })
+
+  // AI Prompt Chips state
+  const [selectedChips, setSelectedChips] = useState<string[]>([])
+  const [customNote, setCustomNote] = useState('')
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
@@ -306,28 +312,35 @@ export default function NewRequestPage() {
           const selectedType = REQUEST_TYPES.find(t => t.value === formData.type)
           const aiAction = selectedType?.aiAction || 'restore'
 
+          // Build prompt from selected chips
+          const combinedPrompt = buildPromptFromChips(selectedChips, customNote)
+
           const aiResponse = await fetch(`/api/admin/requests/${insertedRequest.id}/process-ai`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
               action: aiAction,
-              prompt: `Professional ${aiAction} for this image`
+              prompt: combinedPrompt
             })
           })
 
           const aiData = await aiResponse.json()
 
           if (aiResponse.ok) {
-            toast.success(
-              `AI đã xử lý ${aiData.summary.successful}/${aiData.summary.total} ảnh thành công!`,
-              { id: aiProcessingToast }
-            )
+            toast.dismiss(aiProcessingToast)
+            if (aiData.summary.failed === 0) {
+              showAISuccessToast(insertedRequest.id, aiData.summary.total, imageUrls)
+            } else {
+              showAIPartialToast(insertedRequest.id, aiData.summary.successful, aiData.summary.failed)
+            }
           } else {
             // ✅ FIX: Handle errors properly
-            toast.error(
-              `AI không xử lý được: ${aiData.message || 'Lỗi không xác định'}. Admin sẽ xử lý thủ công.`,
-              { id: aiProcessingToast, duration: 5000 }
+            toast.dismiss(aiProcessingToast)
+            showAIErrorToast(
+              insertedRequest.id,
+              aiData.message || 'Lỗi không xác định. Admin sẽ xử lý thủ công.',
+              aiData.error_summary?.category
             )
             
             // Update request status back to pending for admin review
@@ -341,9 +354,10 @@ export default function NewRequestPage() {
           }
         } catch (aiError: any) {
           console.error('AI processing error:', aiError)
-          toast.error(
-            'AI không xử lý được. Admin sẽ xử lý thủ công cho bạn.',
-            { id: aiProcessingToast, duration: 5000 }
+          toast.dismiss(aiProcessingToast)
+          showAIErrorToast(
+            insertedRequest.id,
+            'AI không xử lý được. Admin sẽ xử lý thủ công cho bạn.'
           )
           
           // Update request status for manual processing
@@ -591,38 +605,43 @@ export default function NewRequestPage() {
               )}
             </div>
 
-            {/* AI & Admin Options */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200 space-y-4">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                Tùy Chọn Xử Lý
-              </h3>
+            {/* AI Prompt Selection Chips */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200 space-y-5">
+              <PromptSelector
+                selectedChips={selectedChips}
+                onChipsChange={setSelectedChips}
+                customNote={customNote}
+                onCustomNoteChange={setCustomNote}
+              />
 
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.useAI}
-                  onChange={(e) => setFormData({ ...formData, useAI: e.target.checked })}
-                  className="w-5 h-5 text-primary rounded"
-                />
-                <div>
-                  <p className="font-medium text-gray-800">Xử lý tự động với AI</p>
-                  <p className="text-sm text-gray-600">AI sẽ tự động phân tích và đề xuất cải thiện</p>
-                </div>
-              </label>
+              {/* AI & Admin Options */}
+              <div className="pt-4 border-t border-purple-200/50 space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.useAI}
+                    onChange={(e) => setFormData({ ...formData, useAI: e.target.checked })}
+                    className="w-5 h-5 text-primary rounded"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-800">Xử lý tự động với AI</p>
+                    <p className="text-sm text-gray-600">AI sẽ tự động phân tích và đề xuất cải thiện</p>
+                  </div>
+                </label>
 
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.sendToAdmin}
-                  onChange={(e) => setFormData({ ...formData, sendToAdmin: e.target.checked })}
-                  className="w-5 h-5 text-primary rounded"
-                />
-                <div>
-                  <p className="font-medium text-gray-800">Gửi cho Admin xem xét</p>
-                  <p className="text-sm text-gray-600">Admin sẽ kiểm tra và gửi kết quả cuối cùng</p>
-                </div>
-              </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.sendToAdmin}
+                    onChange={(e) => setFormData({ ...formData, sendToAdmin: e.target.checked })}
+                    className="w-5 h-5 text-primary rounded"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-800">Gửi cho Admin xem xét</p>
+                    <p className="text-sm text-gray-600">Admin sẽ kiểm tra và gửi kết quả cuối cùng</p>
+                  </div>
+                </label>
+              </div>
             </div>
 
             {/* Submit Button */}

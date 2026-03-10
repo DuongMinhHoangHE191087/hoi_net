@@ -63,6 +63,15 @@ const ValuesSection = dynamic(() => import('@/components/sections/ValuesSection'
   ssr: false,
 })
 
+const SocialProofSection = dynamic(() => import('@/components/sections/SocialProofSection'), {
+  loading: () => (
+    <div className="h-64 animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
+      <p className="text-gray-500">Đang tải...</p>
+    </div>
+  ),
+  ssr: false,
+})
+
 interface LandingPageClientProps {
   team: TeamMember[]
   valueSections: ValueSection[]
@@ -440,6 +449,11 @@ export default function LandingPageClient({ team, valueSections, features, testi
         ctaLink="/about"
         showGlobe={true}
       />
+
+      {/* Social Proof Section — Trust Badges, Stats, Before/After */}
+      <LazySection minHeight="400px" rootMargin="300px">
+        <SocialProofSection />
+      </LazySection>
 
       {/* Team Section - Using shared TeamCarousel3D component */}
       <LazySection minHeight="500px" rootMargin="300px">

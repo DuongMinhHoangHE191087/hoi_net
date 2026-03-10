@@ -108,12 +108,13 @@ export async function generateMetadata(): Promise<Metadata> {
     // === ICONS ===
     icons: {
       icon: [
-        { url: faviconUrl },
-        { url: faviconUrl, sizes: '32x32', type: 'image/png' },
-        { url: faviconUrl, sizes: '16x16', type: 'image/png' },
+        { url: faviconUrl || '/favicon.png' },
+        { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+        { url: '/favicon.png', sizes: '16x16', type: 'image/png' },
+        { url: '/favicon.png', sizes: '192x192', type: 'image/png' },
       ],
-      apple: [{ url: faviconUrl, sizes: '180x180' }],
-      shortcut: faviconUrl,
+      apple: [{ url: '/favicon.png', sizes: '180x180' }],
+      shortcut: '/favicon.png',
     },
 
     // === OPEN GRAPH (Facebook, LinkedIn) ===
