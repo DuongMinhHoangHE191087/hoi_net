@@ -71,12 +71,12 @@ export default function AboutPageClient({ aboutSections, team }: AboutPageClient
         <div className="max-w-7xl mx-auto">
           <div className="fade-in-up text-center mb-16">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <span className="gradient-text-alt">Về Chúng Tôi</span>
+              <span className="gradient-text-alt">Chuyên Gia Phục Chế Ảnh</span>
             </h1>
             <p className="text-lg sm:text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               Khám phá câu chuyện, sứ mệnh và tầm nhìn của chúng tôi trong việc<br className="hidden sm:block" />
               <strong className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">
-                bảo tồn ký ức và kết nối các thế hệ
+                phục chế kỷ niệm và bảo tồn di sản gia đình Việt
               </strong>
             </p>
           </div>

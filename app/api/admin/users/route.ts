@@ -24,17 +24,48 @@ export async function GET(request: NextRequest) {
       console.log('[Admin Users API] Starting request...')
 
       // Supabase Admin API pagination is 1-based.
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-        page,
-        perPage: limit,
-      })
+      let users: any[] = []
+      let totalRecords = 0
+      
+      if (roleFilter && roleFilter !== 'all') {
+        // Fetch ALL profiles with that role first to get the total count and filter correctly
+        const { data: roleProfiles, error: rpError } = await supabaseAdmin
+          .from('user_profiles')
+          .select('id')
+          .eq('role', roleFilter)
+          
+        if (rpError) {
+          console.error('[Admin Users] role profiles error:', rpError)
+          return NextResponse.json({ error: rpError.message }, { status: 500 })
+        }
+        
+        const matchingIds = roleProfiles.map(p => p.id)
+        totalRecords = matchingIds.length
+        
+        // Paginate the IDs
+        const idsPage = matchingIds.slice((page - 1) * limit, page * limit)
+        
+        // Fetch auth details for these specific users (max 'limit' parallel requests)
+        const authUsersPromises = idsPage.map(id => supabaseAdmin.auth.admin.getUserById(id))
+        const authResults = await Promise.all(authUsersPromises)
+        users = authResults.map(res => res.data?.user).filter(Boolean)
+      } else {
+        // Standard pagination
+        const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+          page,
+          perPage: limit,
+        })
 
-      if (error) {
-        console.error('[Admin Users] listUsers error:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        if (error) {
+          console.error('[Admin Users] listUsers error:', error)
+          return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+        
+        users = data?.users || []
+        // Note: listUsers does not provide total count
+        totalRecords = users.length === limit ? limit * page + 1 : (page - 1) * limit + users.length 
       }
 
-      const users = data?.users || []
       const userIds = users.map(u => u.id)
       console.log('[Admin Users API] Found', users.length, 'auth users')
 
@@ -74,17 +105,12 @@ export async function GET(request: NextRequest) {
         }
       })
 
-      if (roleFilter && roleFilter !== 'all') {
-        enrichedData = enrichedData.filter(u => u.role === roleFilter)
-      }
-
-      // Total count isn't provided by listUsers reliably; return best-effort.
       return NextResponse.json({
         users: enrichedData,
         pagination: {
           page,
           limit,
-          total: enrichedData.length,
+          total: totalRecords,
         },
       }, { headers: noCacheHeaders })
     } catch (error: any) {

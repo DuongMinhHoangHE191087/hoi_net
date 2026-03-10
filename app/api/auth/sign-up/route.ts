@@ -186,34 +186,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // ============================================
-    // Check if email already exists
-    // ============================================
-    
     const adminClient = getSupabaseAdmin()
-    
-    try {
-      const { data: usersData } = await adminClient.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
-      })
-      
-      const existingUser = usersData?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase())
-      
-      if (existingUser) {
-        console.log('[sign-up] Email already exists:', {
-          emailHash: emailHash.slice(0, 8) + '...',
-        })
-        
-        return NextResponse.json({
-          success: false,
-          error: createAuthError('USER_ALREADY_REGISTERED'),
-          exists: true,
-        })
-      }
-    } catch (checkError: any) {
-      console.warn('[sign-up] Error checking existing user:', checkError)
-    }
     
     // ============================================
     // Create new user

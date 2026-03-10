@@ -158,16 +158,16 @@ export default function LandingPageClient({ team, valueSections, features, testi
     {
       icon: Sparkles,
       iconUrl: null,
-      title: 'Khôi Phục Ảnh Bằng AI',
-      description: 'Sử dụng công nghệ AI tiên tiến để khôi phục ảnh cũ, phai màu, hư hỏng.',
+      title: 'Phục Chế Ảnh Cũ Hư Hỏng',
+      description: 'Sử dụng công nghệ AI tiên tiến để phục chế ảnh cũ, rách nát, phai màu và khôi phục nguyên vẹn kỷ niệm gia đình.',
       gradient: 'from-pink-500 to-rose-500',
       iconType: 'lucide' as const
     },
     {
       icon: ImagePlus,
       iconUrl: null,
-      title: 'Ghép Ảnh Gia Đình',
-      description: 'Ghép ảnh của bạn vào các bức ảnh gia đình một cách tự nhiên.',
+      title: 'Ghép Ảnh & Phục Dựng Ảnh Thờ',
+      description: 'Ghép ảnh chân dung vào không gian gia đình hoặc phục dựng lại các bức ảnh thờ trang nghiêm, tự nhiên.',
       gradient: 'from-yellow-500 to-orange-500',
       iconType: 'lucide' as const
     },
@@ -182,8 +182,8 @@ export default function LandingPageClient({ team, valueSections, features, testi
     {
       icon: Zap,
       iconUrl: null,
-      title: 'Xử Lý Nhanh Chóng',
-      description: 'Nhận kết quả trong vài phút, không cần chờ đợi lâu.',
+      title: 'Làm Nét & Rõ Ảnh Mờ',
+      description: 'Công nghệ khử nhiễu và tăng độ phân giải cực vượt trội, biến ảnh mờ nhòe thành sắc nét trong tích tắc.',
       gradient: 'from-blue-500 to-cyan-500',
       iconType: 'lucide' as const
     }
@@ -358,13 +358,13 @@ export default function LandingPageClient({ team, valueSections, features, testi
           </div>
 
           <h1 className="fade-in text-5xl md:text-7xl font-bold mb-6">
-            <span className="gradient-text-alt">{getSetting('hero_title', 'Khôi Phục Ảnh Cũ')}</span>
+            <span className="gradient-text-alt">{getSetting('hero_title', 'Phục Chế & Khôi Phục Ảnh Cũ')}</span>
             <br />
-            <span className="text-text">Bằng Công Nghệ AI</span>
+            <span className="text-text">Chuyên Nghiệp Bằng AI</span>
           </h1>
 
           <p className="fade-in-delay-1 text-xl md:text-2xl text-gray-700 mb-10 max-w-3xl mx-auto leading-relaxed">
-            {getSetting('hero_subtitle', 'Biến những bức ảnh cũ, phai màu thành những kỷ niệm sống động. Ghép ảnh gia đình một cách tự nhiên và chuyên nghiệp.')}
+            {getSetting('hero_subtitle', 'Khôi phục ảnh cũ hư hỏng, tô màu ảnh trắng đen và làm nét ảnh mờ AI giúp lưu giữ kỷ niệm gia đình sống động, chuyên nghiệp.')}
           </p>
 
           <div className="fade-in-delay-3 flex flex-col sm:flex-row gap-4 justify-center">

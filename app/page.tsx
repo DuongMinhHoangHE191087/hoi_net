@@ -7,8 +7,8 @@ import { Metadata } from 'next'
 export async function generateMetadata(): Promise<Metadata> {
   const brandName = await getBrandName()
   return {
-    title: `${brandName} - Khôi Phục Ảnh Cũ Bằng AI`,
-    description: 'Biến những bức ảnh cũ, phai màu thành những kỷ niệm sống động. Ghép ảnh gia đình một cách tự nhiên và chuyên nghiệp.',
+    title: `${brandName} - Phục Chế & Khôi Phục Ảnh Cũ Chuyên Nghiệp`,
+    description: 'Biến những bức ảnh cũ hư hỏng thành kỷ niệm sống động. Chuyên phục chế ảnh, làm nét ảnh mờ và ghép ảnh gia đình tự nhiên bằng công nghệ AI hàng đầu.',
   }
 }
 

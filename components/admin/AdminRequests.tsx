@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Pagination from '@/components/ui/Pagination'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import AIConfirmDialog from '@/components/ui/AIConfirmDialog'
 import DeliveryModal from './DeliveryModal'
 import RequestDetailModal from './RequestDetailModal'
 import { SafeAvatar } from '@/components/ui/SafeImage'
@@ -250,17 +251,25 @@ export default function AdminRequests() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'AI processing failed')
+        const errorMsg = data.classified_error?.adminMessage || data.message || 'AI processing failed'
+        throw new Error(errorMsg)
       }
 
       toast.dismiss(loadingToast)
 
       if (data.success) {
-        toast.success(`✅ AI đã xử lý thành công ${data.summary.successful}/${data.summary.total} ảnh!`)
-      } else {
-        toast.success(`⚠️ AI đã xử lý ${data.summary.successful}/${data.summary.total} ảnh. Cần hoàn tất thủ công.`, {
-          duration: 5000
+        toast.success(`✅ AI đã xử lý thành công ${data.summary.successful}/${data.summary.total} ảnh! (${data.summary.processing_time})`)
+      } else if (data.summary.successful > 0) {
+        toast.success(`⚠️ ${data.summary.successful}/${data.summary.total} ảnh thành công. ${data.summary.failed} lỗi.`, {
+          duration: 7000,
+          icon: '⚠️'
         })
+      } else {
+        const mainError = data.error_summary?.main_error
+        toast.error(
+          `❌ AI thất bại${mainError ? `: ${mainError.adminMessage}` : '. Vui lòng thử lại.'}`,
+          { duration: 7000 }
+        )
       }
 
       // Refresh list
@@ -300,15 +309,19 @@ export default function AdminRequests() {
 
   return (
     <>
-      <ConfirmDialog
+      <AIConfirmDialog
         isOpen={aiConfirm.isOpen}
         onClose={() => setAiConfirm({ isOpen: false, request: null })}
         onConfirm={confirmAIProcess}
         title="Xử lý với AI"
-        message={`Bạn có muốn sử dụng AI để xử lý yêu cầu này?\n\nLoại: ${aiConfirm.request ? getTypeLabel(aiConfirm.request.type) : ''}\nSố ảnh: ${aiConfirm.request?.original_images?.length || 0}`}
-        variant="info"
-        confirmText="Xử lý"
+        description={`Xử lý ${aiConfirm.request?.original_images?.length || 0} ảnh bằng AI (${aiConfirm.request?.type === 'restore' ? 'Khôi phục' : 'Nâng cao'})`}
+        confirmText="Xử Lý Ngay"
         cancelText="Huỷ"
+        variant="default"
+        showPreview={true}
+        previewImages={aiConfirm.request?.original_images?.slice(0, 4) || []}
+        promptName={aiConfirm.request?.type === 'restore' ? 'Khôi phục ảnh' : 'Nâng cao chất lượng'}
+        promptDescription={`AI sẽ ${aiConfirm.request?.type === 'restore' ? 'khôi phục, sửa hư hỏng, cải thiện chi tiết' : 'nâng cao độ nét, cân bằng ánh sáng'} cho ảnh`}
       />
       
       <div>

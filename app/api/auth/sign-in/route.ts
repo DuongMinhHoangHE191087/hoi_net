@@ -267,27 +267,10 @@ export async function POST(request: NextRequest) {
       // Check if user exists (for better error message)
       let errorResponse: ExtendedAuthError = normalizeAuthError(signInError)
       
-      // If credentials invalid, try to determine if user exists
+      // Standard security practice: always return INVALID_CREDENTIALS for both cases
+      // to prevent user enumeration attacks.
       if (signInError.message.includes('Invalid login credentials')) {
-        try {
-          const { data: usersData } = await adminClient.auth.admin.listUsers({
-            page: 1,
-            perPage: 1000,
-          })
-          
-          const userExists = usersData?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase())
-          
-          if (!userExists) {
-            // User doesn't exist
-            errorResponse = createAuthError('USER_NOT_FOUND')
-          } else {
-            // User exists but wrong password
-            errorResponse = createAuthError('INVALID_CREDENTIALS')
-          }
-        } catch {
-          // Fallback to generic error
-          errorResponse = createAuthError('INVALID_CREDENTIALS')
-        }
+        errorResponse = createAuthError('INVALID_CREDENTIALS')
       }
       
       return NextResponse.json({

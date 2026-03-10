@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button'
 import { SafeAvatar } from '@/components/ui/SafeImage'
 import { authFetch } from '@/lib/auth-fetch'
 import toast from 'react-hot-toast'
+import AIProcessingPanel from './AIProcessingPanel'
 
 interface UserRequest {
   id: string
@@ -42,37 +43,7 @@ interface Props {
 }
 
 export default function RequestDetailModal({ isOpen, onClose, request, onUpdate }: Props) {
-  const [processing, setProcessing] = useState(false)
-  const [aiAction, setAiAction] = useState<'restore' | 'enhance' | 'colorize'>('restore')
   const [showHistory, setShowHistory] = useState(false)
-
-  const handleAIProcess = async () => {
-    setProcessing(true)
-
-    try {
-      const response = await authFetch.post(
-        `/api/admin/requests/${request.id}/process-ai`,
-        {
-          action: aiAction,
-          prompt: `Professional ${aiAction} for this image`
-        }
-      )
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'AI processing failed')
-      }
-
-      const data = await response.json()
-
-      toast.success(`AI processed ${data.summary.successful}/${data.summary.total} images`)
-      onUpdate()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to process with AI')
-    } finally {
-      setProcessing(false)
-    }
-  }
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {
@@ -264,50 +235,10 @@ export default function RequestDetailModal({ isOpen, onClose, request, onUpdate 
               </div>
             </div>
 
-            {/* AI Processing Section */}
+            {/* AI Processing Studio */}
             {request.status !== 'completed' && request.status !== 'rejected' && (
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-600" />
-                  AI Processing
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    {(['restore', 'enhance', 'colorize'] as const).map((action) => (
-                      <button
-                        key={action}
-                        onClick={() => setAiAction(action)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          aiAction === action
-                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                            : 'bg-white text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {action === 'restore' && 'Khôi phục'}
-                        {action === 'enhance' && 'Nâng cao'}
-                        {action === 'colorize' && 'Tô màu'}
-                      </button>
-                    ))}
-                  </div>
-                  <Button
-                    variant="primary"
-                    onClick={handleAIProcess}
-                    disabled={processing}
-                    className="w-full"
-                  >
-                    {processing ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Đang xử lý với AI...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Xử lý với AI
-                      </>
-                    )}
-                  </Button>
-                </div>
+                <AIProcessingPanel request={request} onUpdate={onUpdate} />
               </div>
             )}
 

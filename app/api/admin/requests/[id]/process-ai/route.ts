@@ -2,10 +2,11 @@
  * API Endpoint: AI Processing for Admin Requests
  *
  * Enhanced with:
- * - Proper error handling and status transitions
- * - Detailed progress tracking
- * - User notifications at each stage
- * - Graceful failure handling
+ * - Structured AI error classification with detailed error payloads
+ * - Per-image processing timeline with timestamps
+ * - Detailed progress tracking & processing logs
+ * - User notifications with AI-specific error details
+ * - Graceful failure handling with retry suggestions
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -14,6 +15,12 @@ import { processImageWithGemini } from '@/lib/gemini'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { logger } from '@/lib/logger'
 import { uploadRestoredImage } from '@/lib/ai-image-upload'
+import {
+  AIErrorClassifier,
+  type AIProcessingLog,
+  type AIImageResult,
+  type ClassifiedAIError
+} from '@/lib/ai-error-classifier'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +39,15 @@ const STATUS = {
   REJECTED: 'rejected'
 } as const
 
+// Action labels in Vietnamese
+const ACTION_LABELS: Record<string, string> = {
+  restore: 'Khôi phục',
+  enhance: 'Nâng cao chất lượng',
+  colorize: 'Tô màu',
+  upscale: 'Phóng to',
+  harmonize: 'Cân bằng màu sắc'
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -43,7 +59,7 @@ export async function POST(
       const { id: requestId } = await params
 
     // ============================================
-    // Step 2: Parse Request Body
+    // Step 1: Parse & Validate Request Body
     // ============================================
     const body: ProcessAIBody = await request.json()
     const { action, prompt } = body
@@ -56,7 +72,7 @@ export async function POST(
     }
 
     // ============================================
-    // Step 3: Get Request from Database
+    // Step 2: Get Request from Database
     // ============================================
     const { data: userRequest, error: fetchError } = await supabaseAdmin
       .from('user_requests')
@@ -89,14 +105,14 @@ export async function POST(
     })
 
     // ============================================
-    // Step 4: Update Status to Processing
+    // Step 3: Update Status to Processing
     // ============================================
     await supabaseAdmin
       .from('user_requests')
       .update({
         status: STATUS.PROCESSING,
         admin_id: user.id,
-        admin_notes: `🔄 AI đang xử lý (${action})...\nBắt đầu: ${new Date().toLocaleString('vi-VN')}`,
+        admin_notes: `🔄 AI đang xử lý (${ACTION_LABELS[action] || action})...\nBắt đầu: ${new Date().toLocaleString('vi-VN')}`,
         updated_at: new Date().toISOString()
       })
       .eq('id', requestId)
@@ -108,17 +124,19 @@ export async function POST(
         userRequest.user_id,
         requestId,
         'processing',
-        'Yêu cầu của bạn đang được AI xử lý...'
+        `🤖 Yêu cầu của bạn đang được AI xử lý (${ACTION_LABELS[action] || action})...`
       )
     } catch (e) {
       log.warn('Failed to send processing notification', { error: e })
     }
 
     // ============================================
-    // Step 5: Process Each Image with AI
+    // Step 4: Process Each Image with AI + Error Classification
     // ============================================
-    const processedResults = await Promise.all(
+    const imageResults: AIImageResult[] = await Promise.all(
       userRequest.original_images.map(async (imageUrl: string, index: number) => {
+        const imageStartTime = Date.now()
+
         try {
           const result = await processImageWithGemini(
             imageUrl,
@@ -128,7 +146,7 @@ export async function POST(
           )
 
           let finalUrl = imageUrl
-          
+
           if (result.success && result.restoredImageBase64 && result.restoredImageMimeType) {
             try {
               const uploadResult = await uploadRestoredImage(
@@ -139,37 +157,84 @@ export async function POST(
               finalUrl = uploadResult.url
             } catch (upErr) {
               log.error('Failed to upload processed admin image', { error: upErr })
+              // Classify upload error
+              const classifiedError = AIErrorClassifier.classify(upErr)
+              return {
+                index,
+                originalUrl: imageUrl,
+                success: false,
+                error: classifiedError,
+                processingTimeMs: Date.now() - imageStartTime
+              } as AIImageResult
             }
+          }
+
+          if (!result.success) {
+            // Classify the Gemini processing error
+            const classifiedError = AIErrorClassifier.classify(result.error || 'Unknown processing error')
+            return {
+              index,
+              originalUrl: imageUrl,
+              success: false,
+              error: classifiedError,
+              processingTimeMs: Date.now() - imageStartTime
+            } as AIImageResult
           }
 
           return {
             index,
-            original: imageUrl,
-            success: result.success,
-            processed_url: finalUrl,
-            analysis: result.analysis?.description,
-            suggestions: result.analysis?.suggestions?.join(', '),
-            error: result.error
-          }
+            originalUrl: imageUrl,
+            processedUrl: finalUrl,
+            success: true,
+            analysis: {
+              description: result.analysis?.description,
+              quality: result.analysis?.quality,
+              issues: result.analysis?.issues,
+              suggestions: result.analysis?.suggestions,
+            },
+            processingTimeMs: Date.now() - imageStartTime
+          } as AIImageResult
+
         } catch (err: any) {
           log.error('Error processing single image with AI', { error: err, metadata: { imageUrl, index } })
+          const classifiedError = AIErrorClassifier.classify(err)
           return {
             index,
-            original: imageUrl,
+            originalUrl: imageUrl,
             success: false,
-            error: err.message
-          }
+            error: classifiedError,
+            processingTimeMs: Date.now() - imageStartTime
+          } as AIImageResult
         }
       })
     )
 
-    const successCount = processedResults.filter(r => r.success).length
-    const failCount = processedResults.filter(r => !r.success).length
+    const successCount = imageResults.filter(r => r.success).length
+    const failCount = imageResults.filter(r => !r.success).length
     const totalImages = userRequest.original_images.length
-    const processingTime = ((Date.now() - startTime) / 1000).toFixed(1)
+    const processingTimeMs = Date.now() - startTime
 
     // ============================================
-    // Step 6: Determine Final Status
+    // Step 5: Build Processing Log
+    // ============================================
+    const overallStatus: AIProcessingLog['overallStatus'] =
+      successCount === totalImages ? 'success' :
+      successCount > 0 ? 'partial' : 'failed'
+
+    const processingLog: AIProcessingLog = {
+      requestId,
+      action,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+      totalImages,
+      results: imageResults,
+      overallStatus,
+      processingTimeMs,
+      adminEmail: user.email
+    }
+
+    // ============================================
+    // Step 6: Determine Final Status & Build Notes
     // ============================================
     let finalStatus: string
     let statusEmoji: string
@@ -189,36 +254,21 @@ export async function POST(
       statusText = 'Thất bại - cần xử lý thủ công'
     }
 
-    // ============================================
-    // Step 7: Build Detailed Admin Notes
-    // ============================================
-    const adminNotes = `
-${statusEmoji} AI Processing Results (${action})
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 Tổng kết:
-• Tổng số ảnh: ${totalImages}
-• Thành công: ${successCount} ✅
-• Thất bại: ${failCount} ❌
-• Thời gian xử lý: ${processingTime}s
-• Trạng thái: ${statusText}
-
-📝 Chi tiết từng ảnh:
-${processedResults.map((r, i) => `
-━━ Ảnh ${i + 1} ${r.success ? '✅' : '❌'} ━━
-${r.success 
-  ? `• Phân tích: ${r.analysis || 'N/A'}
-• Gợi ý: ${r.suggestions || 'Không có'}`
-  : `• Lỗi: ${r.error}`}
-`).join('')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⏰ Xử lý lúc: ${new Date().toLocaleString('vi-VN')}
-👤 Admin: ${user.email}
-    `.trim()
+    // Build detailed admin notes with error classification
+    const adminNotes = buildAdminNotes({
+      statusEmoji,
+      action,
+      totalImages,
+      successCount,
+      failCount,
+      processingTimeMs,
+      statusText,
+      imageResults,
+      adminEmail: user.email || ''
+    })
 
     // ============================================
-    // Step 8: Update Request in Database
+    // Step 7: Update Request in Database
     // ============================================
     const updates: Record<string, any> = {
       admin_notes: adminNotes,
@@ -227,11 +277,9 @@ ${r.success
       updated_at: new Date().toISOString()
     }
 
-    // If all successful, mark as completed with results
     if (successCount === totalImages) {
       updates.completed_at = new Date().toISOString()
-      // Store processed image URLs (or originals if no processed URL available)
-      updates.restored_images = processedResults.map(r => r.processed_url || r.original)
+      updates.restored_images = imageResults.map(r => r.processedUrl || r.originalUrl)
     }
 
     await supabaseAdmin
@@ -244,71 +292,141 @@ ${r.success
         request_id: requestId,
         success_count: successCount,
         fail_count: failCount,
-        processing_time: processingTime,
-        final_status: finalStatus
+        processing_time_ms: processingTimeMs,
+        final_status: finalStatus,
+        overall_status: overallStatus,
+        error_categories: imageResults
+          .filter(r => !r.success && r.error)
+          .map(r => r.error!.category)
       }
     })
 
     // ============================================
-    // Step 9: Send Final Notification to User
+    // Step 8: Send Detailed Notification to User
     // ============================================
     try {
       const { NotificationService } = await import('@/lib/notifications')
-      
-      if (successCount === totalImages) {
-        await NotificationService.notifyRequestUpdate(
-          userRequest.user_id,
-          requestId,
-          'completed',
-          `🎉 Yêu cầu đã hoàn thành! AI đã xử lý thành công ${successCount} ảnh của bạn.`
-        )
-      } else if (successCount > 0) {
-        await NotificationService.notifyRequestUpdate(
-          userRequest.user_id,
-          requestId,
-          'processing',
-          `⚠️ AI đã xử lý ${successCount}/${totalImages} ảnh. Admin sẽ hoàn tất phần còn lại.`
-        )
-      } else {
-        await NotificationService.notifyRequestUpdate(
-          userRequest.user_id,
-          requestId,
-          'processing',
-          '⚠️ AI không thể xử lý ảnh. Admin sẽ xử lý thủ công cho bạn sớm nhất.'
-        )
-      }
+      const notif = AIErrorClassifier.buildNotificationMessage(processingLog)
+
+      await NotificationService.notifyRequestUpdate(
+        userRequest.user_id,
+        requestId,
+        overallStatus === 'success' ? 'completed' :
+        overallStatus === 'partial' ? 'processing' : 'failed',
+        notif.message
+      )
     } catch (notifError) {
       log.warn('Failed to send final notification', { error: notifError })
     }
 
     // ============================================
-    // Step 10: Return Response
+    // Step 9: Return Structured Response
     // ============================================
     return NextResponse.json({
       success: successCount === totalImages,
       request_id: requestId,
       status: finalStatus,
-      results: processedResults,
+      processing_log: processingLog,
+      results: imageResults,
       summary: {
         total: totalImages,
         successful: successCount,
         failed: failCount,
-        processing_time: `${processingTime}s`
+        processing_time: `${(processingTimeMs / 1000).toFixed(1)}s`,
+        overall_status: overallStatus
       },
       admin_notes: adminNotes,
-      message: successCount === totalImages 
-        ? 'AI đã xử lý thành công tất cả ảnh!'
-        : successCount > 0 
-          ? `AI đã xử lý ${successCount}/${totalImages} ảnh. Cần hoàn tất thủ công.`
+      // Error summary for quick admin reference
+      error_summary: failCount > 0 ? {
+        categories: [...new Set(
+          imageResults
+            .filter(r => !r.success && r.error)
+            .map(r => r.error!.category)
+        )],
+        retryable: imageResults.some(r => !r.success && r.error?.retryable),
+        main_error: imageResults.find(r => !r.success && r.error)?.error
+      } : null,
+      message: successCount === totalImages
+        ? `AI đã xử lý thành công tất cả ${totalImages} ảnh!`
+        : successCount > 0
+          ? `AI đã xử lý ${successCount}/${totalImages} ảnh. ${failCount} ảnh gặp lỗi.`
           : 'AI không thể xử lý. Vui lòng xử lý thủ công.'
     })
 
   } catch (error: any) {
     log.error('API Error in AI processing', { error })
+    const classifiedError = AIErrorClassifier.classify(error)
     return NextResponse.json(
-      { error: 'Internal Server Error', message: error.message },
+      {
+        error: 'Internal Server Error',
+        message: error.message,
+        classified_error: classifiedError
+      },
       { status: 500 }
     )
   }
   }) // Close requirePermissionAuth callback
+}
+
+// ============================================
+// Helper: Build Detailed Admin Notes
+// ============================================
+function buildAdminNotes(params: {
+  statusEmoji: string
+  action: string
+  totalImages: number
+  successCount: number
+  failCount: number
+  processingTimeMs: number
+  statusText: string
+  imageResults: AIImageResult[]
+  adminEmail: string
+}): string {
+  const {
+    statusEmoji, action, totalImages, successCount, failCount,
+    processingTimeMs, statusText, imageResults, adminEmail
+  } = params
+
+  const actionLabel = ACTION_LABELS[action] || action
+  const timeStr = (processingTimeMs / 1000).toFixed(1)
+
+  let notes = `${statusEmoji} AI Processing: ${actionLabel}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 Tổng kết:
+• Tổng số ảnh: ${totalImages}
+• Thành công: ${successCount} ✅
+• Thất bại: ${failCount} ❌
+• Thời gian: ${timeStr}s
+• Trạng thái: ${statusText}
+
+📝 Chi tiết từng ảnh:`
+
+  for (const result of imageResults) {
+    if (result.success) {
+      notes += `
+━━ Ảnh ${result.index + 1} ✅ ━━
+• Phân tích: ${result.analysis?.description || 'N/A'}
+• Chất lượng: ${result.analysis?.quality || 'N/A'}
+• Gợi ý đã áp dụng: ${result.analysis?.suggestions?.join(', ') || 'Không có'}
+• Thời gian: ${result.processingTimeMs ? (result.processingTimeMs / 1000).toFixed(1) + 's' : 'N/A'}`
+    } else {
+      const err = result.error
+      notes += `
+━━ Ảnh ${result.index + 1} ❌ ━━
+• Loại lỗi: ${err ? AIErrorClassifier.getCategoryLabel(err.category) : 'Không xác định'}
+• Mức độ: ${err?.severity || 'N/A'}
+• Chi tiết: ${err?.adminMessage || 'Lỗi không xác định'}
+• Có thể thử lại: ${err?.retryable ? 'Có' : 'Không'}
+• Đề xuất: ${err?.suggestedActions?.join(' | ') || 'Xử lý thủ công'}`
+    }
+  }
+
+  notes += `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏰ Xử lý lúc: ${new Date().toLocaleString('vi-VN')}
+👤 Admin: ${adminEmail}`
+
+  return notes.trim()
 }

@@ -266,18 +266,35 @@ export default function RequestDetailModal({
           </div>
         )}
 
-        {/* Admin Notes */}
+        {/* AI Processing Status Card */}
         {request.admin_notes && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-text mb-2 flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Ghi Chú Từ Admin
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              Trạng Thái Xử Lý AI
             </h3>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <pre className="text-gray-700 whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                {request.admin_notes}
-              </pre>
+            <AIStatusCard adminNotes={request.admin_notes} status={request.status} />
+          </div>
+        )}
+
+        {/* Processing Timeline */}
+        {request.status === 'processing' && !request.admin_notes && (
+          <div className="mb-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-blue-800">Đang xử lý...</h3>
+                <p className="text-blue-700">AI hoặc admin đang xử lý yêu cầu của bạn</p>
+              </div>
             </div>
+            <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+            </div>
+            <p className="text-sm text-blue-600 mt-3">
+              Bạn sẽ nhận được thông báo khi hoàn thành. Thời gian xử lý thường từ 1-5 phút.
+            </p>
           </div>
         )}
 
@@ -548,3 +565,114 @@ export default function RequestDetailModal({
   )
 }
 
+// ============================================
+// AI Status Card - User-friendly display of AI processing results
+// ============================================
+function AIStatusCard({ adminNotes, status }: { adminNotes: string; status: string }) {
+  const hasSuccess = adminNotes.includes('✅')
+  const hasFailed = adminNotes.includes('❌')
+
+  // Extract summary numbers
+  const totalMatch = adminNotes.match(/Tổng số ảnh:\s*(\d+)/)
+  const successMatch = adminNotes.match(/Thành công:\s*(\d+)/)
+  const failMatch = adminNotes.match(/Thất bại:\s*(\d+)/)
+  const timeMatch = adminNotes.match(/Thời gian[^:]*:\s*([^\n]+)/)
+
+  const totalImages = totalMatch ? parseInt(totalMatch[1]) : 0
+  const successCount = successMatch ? parseInt(successMatch[1]) : 0
+  const failCount = failMatch ? parseInt(failMatch[1]) : 0
+  const processingTime = timeMatch ? timeMatch[1].trim() : ''
+
+  const overallStatus = failCount === 0 && successCount > 0 ? 'success' :
+    successCount > 0 && failCount > 0 ? 'partial' : 
+    failCount > 0 ? 'failed' : 'info'
+
+  const statusStyles = {
+    success: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', bar: 'bg-green-500' },
+    partial: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', bar: 'bg-yellow-500' },
+    failed: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', bar: 'bg-red-500' },
+    info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', bar: 'bg-blue-500' },
+  }
+
+  const styles = statusStyles[overallStatus]
+
+  const getUserMessage = () => {
+    if (overallStatus === 'success') {
+      return `AI đã xử lý thành công tất cả ${totalImages} ảnh của bạn! Bạn có thể tải về kết quả.`
+    }
+    if (overallStatus === 'partial') {
+      return `AI đã xử lý được ${successCount}/${totalImages} ảnh. Admin đang xem xét ${failCount} ảnh còn lại.`
+    }
+    if (overallStatus === 'failed') {
+      return 'AI gặp khó khăn khi xử lý ảnh. Admin sẽ xử lý thủ công cho bạn sớm nhất.'
+    }
+    return 'Yêu cầu đang được xem xét bởi admin.'
+  }
+
+  const getErrorSummary = (): string | null => {
+    if (adminNotes.includes('Hết quota')) return 'Hệ thống đang bận, admin sẽ thử lại sau.'
+    if (adminNotes.includes('Safety') || adminNotes.includes('an toàn')) return 'Một số ảnh cần được xử lý thủ công.'
+    if (adminNotes.includes('Mạng') || adminNotes.includes('network')) return 'Lỗi kết nối tạm thời, admin sẽ thử lại.'
+    if (adminNotes.includes('Timeout') || adminNotes.includes('thời gian')) return 'Xử lý mất thời gian, admin sẽ thử lại.'
+    if (failCount > 0) return 'Admin đã nhận thông tin và sẽ xử lý cho bạn.'
+    return null
+  }
+
+  return (
+    <div className={`p-5 rounded-xl border-2 ${styles.bg} ${styles.border}`}>
+      {/* Status Header */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+          overallStatus === 'success' ? 'bg-green-100' :
+          overallStatus === 'partial' ? 'bg-yellow-100' :
+          overallStatus === 'failed' ? 'bg-red-100' : 'bg-blue-100'
+        }`}>
+          {overallStatus === 'success' && <CheckCircle className="w-6 h-6 text-green-600" />}
+          {overallStatus === 'partial' && <Clock className="w-6 h-6 text-yellow-600" />}
+          {overallStatus === 'failed' && <Clock className="w-6 h-6 text-red-600" />}
+          {overallStatus === 'info' && <Sparkles className="w-6 h-6 text-blue-600" />}
+        </div>
+        <div>
+          <h4 className={`font-bold ${styles.text}`}>
+            {overallStatus === 'success' && 'Xử lý thành công!'}
+            {overallStatus === 'partial' && 'Đang xử lý tiếp...'}
+            {overallStatus === 'failed' && 'Admin đang xử lý'}
+            {overallStatus === 'info' && 'Cập nhật từ admin'}
+          </h4>
+          {processingTime && (
+            <p className="text-xs text-gray-500">Thời gian: {processingTime}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      {totalImages > 0 && (
+        <div className="mb-3">
+          <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${styles.bar}`}
+              style={{ width: `${totalImages > 0 ? (successCount / totalImages) * 100 : 0}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-1 text-xs text-gray-500">
+            <span>{successCount}/{totalImages} ảnh hoàn thành</span>
+            {failCount > 0 && <span>{failCount} chờ xử lý</span>}
+          </div>
+        </div>
+      )}
+
+      {/* User Message */}
+      <p className={`text-sm ${styles.text} mb-2`}>
+        {getUserMessage()}
+      </p>
+
+      {/* Error Summary (user-friendly) */}
+      {getErrorSummary() && (
+        <div className="flex items-start gap-2 p-3 bg-white/50 rounded-lg mt-2">
+          <Clock className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-gray-600">{getErrorSummary()}</p>
+        </div>
+      )}
+    </div>
+  )
+}

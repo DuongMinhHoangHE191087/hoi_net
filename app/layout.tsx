@@ -60,8 +60,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteName = settings.brand_name || 'Hồi Nét'
   const siteUrl = settings.site_url || 'https://hoinet.tech'
   
-  const title = settings.site_meta_title || settings.seo_title || 'Hồi Nét - Khôi phục ảnh cũ bằng AI'
-  const description = settings.site_meta_description || settings.seo_description || 'Khôi phục ảnh cũ, làm nét ảnh mờ và ghép ảnh gia đình bằng công nghệ AI tiên tiến. Dịch vụ chuyên nghiệp, nhanh chóng, chất lượng cao.'
+  const title = settings.site_meta_title || settings.seo_title || 'Hồi Nét - Dịch Vụ Phục Chế & Khôi Phục Ảnh Cũ Chuyên Nghiệp Bằng AI'
+  const description = settings.site_meta_description || settings.seo_description || 'Dịch vụ phục chế ảnh cũ, làm nét ảnh mờ và ghép ảnh gia đình bằng công nghệ AI tiên tiến. Khôi phục kỷ niệm, tô màu ảnh trắng đen chuyên nghiệp, chất lượng cao.'
   
   // Keywords (comma-separated in settings)
   const keywords = settings.seo_keywords?.split(',').map(k => k.trim()) || [
@@ -195,7 +195,7 @@ export default function RootLayout({
               alternateName: 'HoiNet',
               url: 'https://hoinet.tech',
               logo: 'https://res.cloudinary.com/domuc9uy5/image/upload/v1748449789/logos/logo_qyonhg.png',
-              description: 'Hồi Nét - Dịch vụ khôi phục ảnh cũ bằng công nghệ AI tiên tiến',
+              description: 'Hồi Nét - Chuyên gia phục chế và khôi phục ảnh cũ bằng công nghệ AI hàng đầu Việt Nam',
               foundingDate: '2024',
               founders: [
                 {
@@ -247,9 +247,9 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Service',
-              serviceType: 'Hồi Nét - Khôi phục ảnh',
-              name: 'Hồi Nét - Khôi phục ảnh cũ bằng AI',
-              description: 'Hồi Nét - Dịch vụ khôi phục, làm nét và tô màu ảnh cũ sử dụng công nghệ AI tiên tiến',
+              serviceType: 'Hồi Nét - Phục chế và khôi phục ảnh',
+              name: 'Hồi Nét - Phục chế & Khôi phục ảnh cũ chuyên nghiệp bằng AI',
+              description: 'Hồi Nét - Dịch vụ phục chế, khôi phục, làm nét và tô màu ảnh cũ hư hỏng nặng sử dụng công nghệ AI tiên tiến',
               provider: {
                 '@type': 'Organization',
                 name: 'Hồi Nét',
@@ -286,6 +286,43 @@ export default function RootLayout({
                   },
                 ],
               },
+            }),
+          }}
+        />
+        
+        {/* FAQ Schema for SEO Rich Snippets */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "Khôi phục ảnh cũ giá bao nhiêu?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Hồi Nét cung cấp dịch vụ khôi phục ảnh cơ bản hoàn toàn miễn phí. Đối với các yêu cầu phục chế chuyên sâu hoặc ghép ảnh phức tạp, chúng tôi có các gói dịch vụ linh hoạt phù hợp với nhu cầu của bạn."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Làm nét ảnh mờ bằng AI có hiệu quả không?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Công nghệ AI của Hồi Nét có khả năng tái tạo chi tiết, khử nhiễu và làm rõ nét các bức ảnh bị mờ nhòe do rung tay hoặc độ phân giải thấp một cách kinh ngạc."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Thời gian phục chế một bức ảnh là bao lâu?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Với sức mạnh của trí tuệ nhân tạo, phần lớn các bức ảnh sẽ được xử lý hoàn tất chỉ trong vòng vài phút."
+                  }
+                }
+              ]
             }),
           }}
         />

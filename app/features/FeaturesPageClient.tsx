@@ -96,10 +96,10 @@ export default function FeaturesPageClient({ features }: FeaturesPageClientProps
               ✨ Tính năng mạnh mẽ
             </motion.span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-              <span className="gradient-text-alt">Tất Cả Tính Năng</span>
+              <span className="gradient-text-alt">Bộ Công Cụ Phục Chế Chuyên Nghiệp</span>
             </h1>
             <p className="text-gray-600 text-lg md:text-xl max-w-3xl mx-auto">
-              Khám phá bộ công cụ toàn diện giúp bạn khôi phục, cải thiện và biến đổi ảnh của mình
+              Nâng cấp chất lượng ảnh, làm rõ nét ảnh mờ và phục hồi những bức ảnh cũ hư hỏng nặng với sức mạnh của trí tuệ nhân tạo.
             </p>
           </motion.div>
 
