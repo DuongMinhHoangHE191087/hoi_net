@@ -53,6 +53,50 @@ export interface ProcessedResult {
 
 const DEFAULT_MODEL = 'gemini-2.5-flash'
 
+// Max time to wait for a single Gemini/Imagen call before giving up.
+// Without this, a hung upstream request keeps the serverless invocation
+// alive until the platform's own (much longer, often minutes) timeout.
+const REQUEST_TIMEOUT_MS = 45_000
+
+/**
+ * Race a promise against a timeout so a hung Gemini/Imagen call fails fast
+ * instead of hanging until the platform's own function timeout.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`))
+    }, ms)
+
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value) },
+      (error) => { clearTimeout(timer); reject(error) }
+    )
+  })
+}
+
+/**
+ * Only transient failures (network hiccups, timeouts, rate limits, upstream
+ * 5xx) are worth retrying. A permanently invalid API key or a request the
+ * API rejects as malformed will fail identically on every retry - retrying
+ * those just burns the retry budget and makes the user wait longer for the
+ * same error.
+ */
+function isRetryableError(error: any): boolean {
+  const message: string = error?.message || ''
+  const status = error?.status
+
+  if (message.includes('API_KEY_INVALID') || message.includes('INVALID_ARGUMENT')) return false
+  if (message.includes('SAFETY') || message.includes('PERMISSION_DENIED')) return false
+  if (message.includes('timed out')) return true
+  if (message.includes('QUOTA') || status === 429) return true
+  if (typeof status === 'number' && status >= 500) return true
+  // Unknown/unclassified errors (e.g. network failures) - assume transient
+  if (status === undefined && !message.includes('INVALID')) return true
+
+  return false
+}
+
 const SAFETY_SETTINGS = [
   {
     category: 'HARM_CATEGORY_HARASSMENT',
@@ -203,45 +247,53 @@ export async function processImageWithGemini(
       
       // 1. Text Analysis Request (Gemini 2.5 Flash)
       promises.push(
-        ai.models.generateContent({
-          model: modelNameText,
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: promptText },
-                { inlineData: { data: imageData.data, mimeType: imageData.mimeType } }
-              ]
+        withTimeout(
+          ai.models.generateContent({
+            model: modelNameText,
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: promptText },
+                  { inlineData: { data: imageData.data, mimeType: imageData.mimeType } }
+                ]
+              }
+            ],
+            config: {
+              responseModalities: ['TEXT'],
+              temperature: options.temperature || 0.4,
+              safetySettings: SAFETY_SETTINGS as any,
             }
-          ],
-          config: {
-            responseModalities: ['TEXT'],
-            temperature: options.temperature || 0.4,
-            safetySettings: SAFETY_SETTINGS as any,
-          }
-        })
+          }),
+          REQUEST_TIMEOUT_MS,
+          'Gemini text analysis'
+        )
       )
-      
+
       // 2. Image Generation Request (Imagen 3)
       if (!isAnalysisOnly) {
          // Create a prompt specifically for imagen
          const imagenPrompt = `An expert high-quality perfectly restored and enhanced version of this image. Focus: ${actionType}. ${customPrompt ? customPrompt : ""}`;
          promises.push(
-           ai.models.generateContent({
-             model: modelNameImage,
-             contents: [
-               {
-                 role: 'user',
-                 parts: [
-                   { text: imagenPrompt },
-                   { inlineData: { data: imageData.data, mimeType: imageData.mimeType } }
-                 ]
+           withTimeout(
+             ai.models.generateContent({
+               model: modelNameImage,
+               contents: [
+                 {
+                   role: 'user',
+                   parts: [
+                     { text: imagenPrompt },
+                     { inlineData: { data: imageData.data, mimeType: imageData.mimeType } }
+                   ]
+                 }
+               ],
+               config: {
+                 responseModalities: ['IMAGE'],
                }
-             ],
-             config: {
-               responseModalities: ['IMAGE'],
-             }
-           }).catch((err) => {
+             }),
+             REQUEST_TIMEOUT_MS,
+             'Imagen 3 generation'
+           ).catch((err) => {
              console.warn(`[Gemini SDK] Imagen 3 Generation failed (fallback to text-only analysis): ${err.message}`);
              // Return null to gracefully degrade rather than crashing the text analysis
              return null;
@@ -287,8 +339,8 @@ export async function processImageWithGemini(
       
     } catch (error: any) {
       console.error(`[Gemini] Processing error (Attempt ${retryCount + 1}):`, error)
-      
-      if (retryCount < maxRetries) {
+
+      if (retryCount < maxRetries && isRetryableError(error)) {
         // Exponential backoff: 1s, 2s
         const delay = Math.pow(2, retryCount) * 1000
         console.log(`Retrying in ${delay}ms...`)
@@ -329,10 +381,14 @@ export async function validateGeminiKey(apiKey: string): Promise<{
   try {
     const ai = new GoogleGenAI({ apiKey })
     // Simple text-only request
-    const response = await ai.models.generateContent({
-      model: DEFAULT_MODEL,
-      contents: 'Respond with exactly: "API key validated successfully"'
-    })
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: DEFAULT_MODEL,
+        contents: 'Respond with exactly: "API key validated successfully"'
+      }),
+      REQUEST_TIMEOUT_MS,
+      'Gemini key validation'
+    )
     
     return {
       valid: !!response.text?.includes('validated') || !!response.text?.includes('API'),

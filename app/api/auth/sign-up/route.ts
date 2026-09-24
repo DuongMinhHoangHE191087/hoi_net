@@ -15,6 +15,7 @@ import { createServerClient } from '@supabase/ssr'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { hashEmail, hashIP, getClientIP } from '@/lib/auth/security-hash'
 import { createAuthError, normalizeAuthError } from '@/lib/auth/error-normalizer'
+import { checkRateLimitCustom } from '@/lib/rate-limit-redis'
 import { z } from 'zod'
 import { cookies } from 'next/headers'
 
@@ -44,29 +45,11 @@ const signUpSchema = z.object({
 })
 
 // ============================================
-// Rate Limiting
+// Rate Limiting - shared, Redis-backed (see lib/rate-limit.ts)
 // ============================================
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT = 5 // 5 signups per hour per IP
 const RATE_WINDOW = 60 * 60 * 1000 // 1 hour
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const record = rateLimitMap.get(ip)
-  
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW })
-    return true
-  }
-  
-  if (record.count >= RATE_LIMIT) {
-    return false
-  }
-  
-  record.count++
-  return true
-}
 
 // ============================================
 // hCaptcha Verification
@@ -140,7 +123,8 @@ export async function POST(request: NextRequest) {
     const clientIP = getClientIP(request.headers)
     
     // Rate limit check
-    if (!checkRateLimit(clientIP)) {
+    const rateLimit = await checkRateLimitCustom(`sign-up:${clientIP}`, RATE_LIMIT, RATE_WINDOW)
+    if (!rateLimit.allowed) {
       return NextResponse.json(
         { 
           success: false,

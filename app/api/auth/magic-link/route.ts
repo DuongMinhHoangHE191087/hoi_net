@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { hashEmail, hashIP, getClientIP } from '@/lib/auth/security-hash'
 import { createAuthError } from '@/lib/auth/error-normalizer'
+import { checkRateLimitCustom } from '@/lib/rate-limit-redis'
 import { z } from 'zod'
 
 // ============================================
@@ -38,46 +39,28 @@ const magicLinkSchema = z.object({
 })
 
 // ============================================
-// Rate Limiting (stricter for magic links)
+// Rate Limiting (stricter for magic links) - shared, Redis-backed
+// (see lib/rate-limit.ts)
 // ============================================
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_IP = 5 // 5 requests per 10 minutes per IP
 const RATE_LIMIT_EMAIL = 3 // 3 requests per 10 minutes per email
 const RATE_WINDOW = 10 * 60 * 1000 // 10 minutes
 
-function checkRateLimits(ip: string, emailHash: string): { allowed: boolean; reason?: string } {
-  const now = Date.now()
-  
-  // Check IP limit
-  const ipKey = `ip:${ip}`
-  const ipRecord = rateLimitMap.get(ipKey)
-  
-  if (ipRecord && now < ipRecord.resetAt && ipRecord.count >= RATE_LIMIT_IP) {
+async function checkRateLimits(ip: string, emailHash: string): Promise<{ allowed: boolean; reason?: string }> {
+  // Check IP limit first - short-circuit so a blocked IP doesn't also
+  // consume an attempt against the (possibly unrelated) email's quota
+  const ipResult = await checkRateLimitCustom(`magic-link:ip:${ip}`, RATE_LIMIT_IP, RATE_WINDOW)
+  if (!ipResult.allowed) {
     return { allowed: false, reason: 'Quá nhiều yêu cầu từ IP này. Vui lòng thử lại sau 10 phút.' }
   }
-  
+
   // Check email limit
-  const emailKey = `email:${emailHash}`
-  const emailRecord = rateLimitMap.get(emailKey)
-  
-  if (emailRecord && now < emailRecord.resetAt && emailRecord.count >= RATE_LIMIT_EMAIL) {
+  const emailResult = await checkRateLimitCustom(`magic-link:email:${emailHash}`, RATE_LIMIT_EMAIL, RATE_WINDOW)
+  if (!emailResult.allowed) {
     return { allowed: false, reason: 'Đã gửi quá nhiều link đến email này. Vui lòng kiểm tra hộp thư hoặc thử lại sau.' }
   }
-  
-  // Update counters
-  if (!ipRecord || now > ipRecord.resetAt) {
-    rateLimitMap.set(ipKey, { count: 1, resetAt: now + RATE_WINDOW })
-  } else {
-    ipRecord.count++
-  }
-  
-  if (!emailRecord || now > emailRecord.resetAt) {
-    rateLimitMap.set(emailKey, { count: 1, resetAt: now + RATE_WINDOW })
-  } else {
-    emailRecord.count++
-  }
-  
+
   return { allowed: true }
 }
 
@@ -111,7 +94,7 @@ export async function POST(request: NextRequest) {
     const emailHash = hashEmail(email)
     
     // Rate limit check
-    const rateCheck = checkRateLimits(clientIP, emailHash)
+    const rateCheck = await checkRateLimits(clientIP, emailHash)
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { 

@@ -468,7 +468,7 @@ import { checkRateLimit, getRateLimitType } from '@/lib/rate-limit'
 export async function POST_WITH_RATE_LIMIT(request: NextRequest) {
   // Check rate limit BEFORE auth (prevent auth spam)
   const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
-  const rateLimitResult = checkRateLimit(clientIP, 'api')
+  const rateLimitResult = await checkRateLimit(clientIP, 'api')
 
   if (!rateLimitResult.allowed) {
     return NextResponse.json(

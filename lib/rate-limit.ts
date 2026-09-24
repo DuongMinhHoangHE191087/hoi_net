@@ -1,6 +1,18 @@
 /**
- * Rate Limiter with Redis-compatible interface
- * Uses in-memory storage with optional Upstash Redis support
+ * Rate Limiter - path-based, in-memory.
+ *
+ * This is imported by middleware.ts, which Next.js runs on the Edge
+ * Runtime - Edge can't open raw TCP sockets, so a real Redis client
+ * (node:net/node:tls) can NOT be imported here, even transitively.
+ * That's why this stays in-memory only (per-instance, not shared across
+ * serverless instances - an accepted limitation for this coarse,
+ * path-based check).
+ *
+ * For rate limits on specific Node.js-runtime API routes where distributed
+ * correctness actually matters (auth abuse endpoints), use
+ * checkRateLimitCustom from lib/rate-limit-redis.ts instead - that one can
+ * safely depend on the Redis package because those routes run on the
+ * Node.js runtime, not Edge.
  */
 
 // ============================================
@@ -14,138 +26,44 @@ interface RateLimitResult {
   limit: number
 }
 
-interface RateLimitRecord {
-  count: number
-  resetTime: number
+// ============================================
+// In-memory fixed-window limiter
+// ============================================
+
+const memoryStore = new Map<string, { count: number; resetAt: number }>()
+
+// Cleanup expired entries every 5 minutes
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now()
+    const entries = Array.from(memoryStore.entries())
+    for (const [key, record] of entries) {
+      if (now > record.resetAt) {
+        memoryStore.delete(key)
+      }
+    }
+  }, 5 * 60 * 1000)
+}
+
+function checkMemory(key: string, maxAttempts: number, windowMs: number): Omit<RateLimitResult, 'limit'> {
+  const now = Date.now()
+  const record = memoryStore.get(key)
+
+  if (!record || now > record.resetAt) {
+    memoryStore.set(key, { count: 1, resetAt: now + windowMs })
+    return { allowed: true, remaining: maxAttempts - 1, resetIn: Math.ceil(windowMs / 1000) }
+  }
+
+  if (record.count >= maxAttempts) {
+    return { allowed: false, remaining: 0, resetIn: Math.ceil((record.resetAt - now) / 1000) }
+  }
+
+  record.count++
+  return { allowed: true, remaining: maxAttempts - record.count, resetIn: Math.ceil((record.resetAt - now) / 1000) }
 }
 
 // ============================================
-// In-Memory Rate Limiter
-// ============================================
-
-class InMemoryRateLimiter {
-  private storage = new Map<string, RateLimitRecord>()
-  private readonly windowMs: number = 60000 // 1 minute window
-
-  constructor() {
-    // Cleanup expired entries every 5 minutes
-    if (typeof setInterval !== 'undefined') {
-      setInterval(() => this.cleanup(), 5 * 60 * 1000)
-    }
-  }
-
-  check(key: string, limit: number): RateLimitResult {
-    const now = Date.now()
-    const record = this.storage.get(key)
-
-    // No record or expired - create new
-    if (!record || now > record.resetTime) {
-      this.storage.set(key, {
-        count: 1,
-        resetTime: now + this.windowMs
-      })
-      return {
-        allowed: true,
-        remaining: limit - 1,
-        resetIn: Math.ceil(this.windowMs / 1000),
-        limit
-      }
-    }
-
-    // Check if limit reached
-    if (record.count >= limit) {
-      return {
-        allowed: false,
-        remaining: 0,
-        resetIn: Math.ceil((record.resetTime - now) / 1000),
-        limit
-      }
-    }
-
-    // Increment counter
-    record.count++
-    return {
-      allowed: true,
-      remaining: limit - record.count,
-      resetIn: Math.ceil((record.resetTime - now) / 1000),
-      limit
-    }
-  }
-
-  private cleanup(): void {
-    const now = Date.now()
-    const entriesArray = Array.from(this.storage.entries())
-    for (const [key, record] of entriesArray) {
-      if (now > record.resetTime) {
-        this.storage.delete(key)
-      }
-    }
-  }
-
-  getStats(): { size: number } {
-    return { size: this.storage.size }
-  }
-}
-
-// ============================================
-// Sliding Window Rate Limiter (more accurate)
-// ============================================
-
-class SlidingWindowRateLimiter {
-  private storage = new Map<string, number[]>()
-  private readonly windowMs: number = 60000
-
-  check(key: string, limit: number): RateLimitResult {
-    const now = Date.now()
-    const windowStart = now - this.windowMs
-
-    // Get or create timestamps array
-    let timestamps = this.storage.get(key) || []
-
-    // Filter to only include requests within the window
-    timestamps = timestamps.filter(t => t > windowStart)
-
-    // Check if limit reached
-    if (timestamps.length >= limit) {
-      const oldestInWindow = Math.min(...timestamps)
-      const resetIn = Math.ceil((oldestInWindow + this.windowMs - now) / 1000)
-
-      return {
-        allowed: false,
-        remaining: 0,
-        resetIn: Math.max(1, resetIn),
-        limit
-      }
-    }
-
-    // Add current request
-    timestamps.push(now)
-    this.storage.set(key, timestamps)
-
-    return {
-      allowed: true,
-      remaining: limit - timestamps.length,
-      resetIn: 60,
-      limit
-    }
-  }
-
-  cleanup(): void {
-    const windowStart = Date.now() - this.windowMs
-    const entriesArray = Array.from(this.storage.entries())
-    for (const [key, timestamps] of entriesArray) {
-      const validTimestamps = timestamps.filter(t => t > windowStart)
-      if (validTimestamps.length === 0) {
-        this.storage.delete(key)
-      } else {
-        this.storage.set(key, validTimestamps)
-      }
-    }
-  }
-}
-
-// ============================================
-// Rate Limit Configuration
+// Rate Limit Configuration (path-based)
 // ============================================
 
 export const RATE_LIMITS = {
@@ -183,30 +101,17 @@ export const RATE_LIMITS = {
 
 export type RateLimitType = keyof typeof RATE_LIMITS
 
-// ============================================
-// Singleton Instance
-// ============================================
-
-const rateLimiter = new SlidingWindowRateLimiter()
-
-// Cleanup every 2 minutes
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => rateLimiter.cleanup(), 2 * 60 * 1000)
-}
-
-// ============================================
-// Exported Functions
-// ============================================
-
 /**
- * Check rate limit for a key
+ * Check rate limit for a key using one of the path-based RATE_LIMITS presets.
+ * In-memory only - see the module note above for why.
  */
-export function checkRateLimit(
+export async function checkRateLimit(
   key: string,
   type: RateLimitType = 'default'
-): RateLimitResult {
+): Promise<RateLimitResult> {
   const config = RATE_LIMITS[type]
-  return rateLimiter.check(key, config.limit)
+  const result = checkMemory(key, config.limit, config.windowMs)
+  return { ...result, limit: config.limit }
 }
 
 /**
@@ -250,7 +155,7 @@ export function generateRateLimitKey(
   identifier: string,
   type: RateLimitType
 ): string {
-  return `ratelimit:${type}:${identifier}`
+  return `${type}:${identifier}`
 }
 
 // ============================================
@@ -266,4 +171,3 @@ export const rateLimit = {
 }
 
 export default rateLimit
-

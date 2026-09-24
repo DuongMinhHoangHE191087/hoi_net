@@ -13,7 +13,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -95,7 +95,7 @@ export async function GET() {
 async function checkDatabase(): Promise<ServiceStatus> {
   const start = Date.now()
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('site_settings')
       .select('key')
       .limit(1)

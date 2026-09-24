@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { hashEmail, hashIP, hashEmailIP, getClientIP } from '@/lib/auth/security-hash'
+import { checkRateLimitCustom } from '@/lib/rate-limit-redis'
 import { createAuthError, createLockoutError } from '@/lib/auth/error-normalizer'
 import { z } from 'zod'
 
@@ -58,29 +59,11 @@ async function verifyHCaptcha(token: string, ip: string): Promise<boolean> {
 }
 
 // ============================================
-// Rate Limiting (simple in-memory for this endpoint)
+// Rate Limiting - shared, Redis-backed (see lib/rate-limit.ts)
 // ============================================
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT = 10 // 10 requests per minute per IP
 const RATE_WINDOW = 60 * 1000 // 1 minute
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const record = rateLimitMap.get(ip)
-  
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW })
-    return true
-  }
-  
-  if (record.count >= RATE_LIMIT) {
-    return false
-  }
-  
-  record.count++
-  return true
-}
 
 // ============================================
 // Main Handler
@@ -94,7 +77,8 @@ export async function POST(request: NextRequest) {
     const clientIP = getClientIP(request.headers)
     
     // Rate limit check
-    if (!checkRateLimit(clientIP)) {
+    const rateLimit = await checkRateLimitCustom(`check-account:${clientIP}`, RATE_LIMIT, RATE_WINDOW)
+    if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: createAuthError('RATE_LIMITED') },
         { status: 429 }

@@ -211,6 +211,46 @@ export async function invalidateAllHomepageCache(): Promise<void> {
 }
 
 /**
+ * Atomically increment a counter key and set its expiry on first increment.
+ * Used for distributed rate limiting (fixed-window) so counts are shared
+ * across serverless instances instead of living in per-instance memory.
+ * Returns null when Redis is not configured/available - callers should
+ * fall back to an in-memory counter in that case.
+ */
+export async function incrWithExpiry(key: string, windowMs: number): Promise<number | null> {
+  try {
+    const client = await getRedisClient()
+    if (!client) return null
+
+    const count = await client.incr(key)
+    if (count === 1) {
+      await client.pExpire(key, windowMs)
+    }
+    return count
+  } catch (error) {
+    console.warn(`[Redis] incrWithExpiry failed for ${key}:`, (error as Error).message)
+    return null
+  }
+}
+
+/**
+ * Get remaining TTL (ms) for a key. Returns null if Redis unavailable
+ * or the key has no TTL.
+ */
+export async function getKeyTTL(key: string): Promise<number | null> {
+  try {
+    const client = await getRedisClient()
+    if (!client) return null
+
+    const ttl = await client.pTTL(key)
+    return ttl > 0 ? ttl : null
+  } catch (error) {
+    console.warn(`[Redis] getKeyTTL failed for ${key}:`, (error as Error).message)
+    return null
+  }
+}
+
+/**
  * Check if Redis is available
  */
 export function isRedisConnected(): boolean {
