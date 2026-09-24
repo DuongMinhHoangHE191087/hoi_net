@@ -1,27 +1,26 @@
 # Hồi Nét - Khôi phục ảnh cũ bằng AI
 
-Ứng dụng khôi phục ảnh và ghép ảnh gia đình bằng AI - phiên bản 1.1
+Ứng dụng khôi phục ảnh và ghép ảnh gia đình bằng AI (Google Gemini), xây dựng trên Next.js App Router.
 
 ## 🚀 Tính Năng
 
-- ✅ Khôi phục ảnh cũ bằng AI
-- ✅ Ghép ảnh gia đình tự nhiên
-- ✅ **System Prompts AI** - Quản lý và tùy chỉnh prompts cho AI (mới)
-- ✅ **Gemini API Integration** - Xử lý ảnh với Google Gemini AI (mới)
-- ✅ Upload ảnh lên Cloudinary
-- ✅ Quản lý dữ liệu với Supabase
-- ✅ Animation mượt mà với Framer Motion
-- ✅ Admin panel quản lý yêu cầu
-- ✅ Responsive design
-- ✅ Dark mode support (coming soon)
+- Khôi phục / nâng cấp chất lượng / tô màu ảnh đen trắng bằng Google Gemini AI
+- Upload ảnh lên Cloudinary
+- Đăng ký/đăng nhập qua Supabase Auth (email + Google OAuth), có hCaptcha chống spam
+- Quản lý yêu cầu xử lý ảnh (tạo yêu cầu, theo dõi trạng thái, phản hồi/đánh giá kết quả)
+- Admin panel: quản lý người dùng, yêu cầu, blog, trang giới thiệu, đội ngũ, feedback, cấu hình site
+- Blog có rich text editor (Tiptap)
+- Rate limiting và optimistic locking (chống ghi đè dữ liệu khi nhiều admin sửa cùng lúc)
+- Responsive design, single light theme (không hỗ trợ dark mode)
 
 ## 📋 Yêu Cầu
 
 - Node.js 18+
-- npm hoặc yarn
-- Tài khoản Supabase
+- npm
+- Tài khoản Supabase (Postgres + Auth)
 - Tài khoản Cloudinary
-- **Google Gemini API Key** (cho AI image processing)
+- Google Gemini API Key
+- (Tuỳ chọn) Redis - để rate limiting hoạt động đúng khi chạy nhiều instance serverless; nếu bỏ trống, app tự chuyển sang giới hạn theo từng instance (vẫn chạy được, chỉ kém chính xác hơn khi scale)
 
 ## 🛠️ Cài Đặt
 
@@ -29,7 +28,7 @@
 
 ```bash
 git clone <repository-url>
-cd WEB-SSG
+cd hoi_net
 ```
 
 ### 2. Cài đặt dependencies
@@ -40,13 +39,11 @@ npm install
 
 ### 3. Cấu hình Environment Variables
 
-Copy file `.env.example` thành `.env.local` và điền các thông tin:
-
 ```bash
 cp .env.example .env.local
 ```
 
-Cập nhật các biến môi trường trong `.env.local`:
+Các biến bắt buộc để chạy được cơ bản:
 
 ```env
 # Supabase
@@ -61,18 +58,24 @@ CLOUDINARY_API_SECRET=your-api-secret
 
 # Google Gemini AI
 GEMINI_API_KEY=your-gemini-api-key
+
+# (Tuỳ chọn) Redis - PHẢI là connection string dạng redis://..., KHÔNG PHẢI REST API URL
+REDIS_URL=redis://default:password@host:port
 ```
+
+Xem `.env.example` để biết đầy đủ các biến khác (hCaptcha, NextAuth, admin emails, v.v.)
 
 ### 4. Thiết lập Supabase Database
 
-Chạy các SQL script trên Supabase SQL Editor:
+> **Lưu ý quan trọng**: repo hiện có 3 thư mục chứa migration SQL không hoàn toàn đồng bộ
+> (`lib/migrations/`, `database/migrations/`, `supabase/migrations/`) do lịch sử phát triển
+> để lại. `database/migrations/` là bộ đầy đủ và mới nhất (đánh số tới 040+). Trước khi chạy,
+> hãy kiểm tra trong Supabase Dashboard xem bảng nào đã tồn tại để tránh chạy trùng - không có
+> cách nào xác định tự động migration nào đã áp dụng cho database thật của bạn.
 
-1. Truy cập: https://app.supabase.com/project/_/sql
-2. Chạy script `lib/supabase-schema.sql` cho database chính
-3. **Chạy script `database/system_prompts.sql` cho System Prompts** (mới)
-4. Xác nhận tất cả tables đã được tạo
-
-> **Lưu ý**: System Prompts table chứa 7 prompts mặc định cho AI image processing
+1. Truy cập Supabase SQL Editor: `https://app.supabase.com/project/_/sql`
+2. Chạy lần lượt các file trong `database/migrations/` theo thứ tự số, đối chiếu với bảng đã có
+3. Xác nhận các bảng chính đã được tạo: `user_profiles`, `user_requests`, `blog_posts`, `feedback`, `team_members`, `site_settings`, `value_sections`, `about_sections`, `features`, `system_prompts`, `notifications`
 
 ### 5. Chạy development server
 
@@ -82,267 +85,85 @@ npm run dev
 
 Mở [http://localhost:3000](http://localhost:3000) trên trình duyệt.
 
-## 📁 Cấu Trúc Dự Án
+## 📁 Cấu Trúc Dự Án (rút gọn)
 
 ```
-WEB-SSG/
+hoi_net/
 ├── app/
 │   ├── page.tsx                    # Landing page
-│   ├── pricing/page.tsx            # Pricing page
-│   ├── login/page.tsx              # Login page
-│   ├── register/page.tsx           # Register page
-│   ├── onboarding/page.tsx         # Onboarding wizard
-│   ├── dashboard/page.tsx          # User dashboard
-│   ├── request-photo/page.tsx      # Photo restoration request
-│   ├── requests/page.tsx           # User requests list (mới)
-│   ├── admin/page.tsx              # Admin panel
-│   ├── settings/page.tsx           # User settings
+│   ├── (auth)                      # login, register, forgot-password, reset-password...
+│   ├── dashboard/                  # User dashboard
+│   ├── requests/                   # Danh sách & chi tiết yêu cầu xử lý ảnh
+│   ├── studio/                     # Công cụ chỉnh sửa ảnh (background remover...)
+│   ├── admin/                      # Admin panel
+│   ├── blog/                       # Blog công khai
 │   ├── api/
-│   │   ├── upload/route.ts         # Cloudinary upload API
-│   │   └── process-images-v2/      # AI image processing (mới)
-│   │       └── route.ts            # Gemini API integration
+│   │   ├── process-images/         # Xử lý ảnh bằng Gemini AI
+│   │   ├── requests/, admin/, auth/, upload*, notifications/, feedback/, health
 │   ├── layout.tsx                  # Root layout
 │   └── globals.css                 # Global styles
-├── components/
-│   ├── ui/
-│   │   ├── Button.tsx              # Button with animations
-│   │   ├── Input.tsx               # Form input
-│   │   ├── Card.tsx                # Card with hover effects
-│   │   ├── LoadingSpinner.tsx      # Loading spinner
-│   │   ├── Skeleton.tsx            # Skeleton loaders
-│   │   └── Alert.tsx               # Alert messages
-│   ├── layout/
-│   │   ├── Navbar.tsx              # Navigation bar
-│   │   ├── Sidebar.tsx             # Sidebar menu
-│   │   └── Footer.tsx              # Footer
-│   └── admin/
-│       └── AdminSystemPrompts.tsx  # System Prompts admin UI (mới)
-├── lib/
-│   ├── supabase.ts                 # Supabase client & utilities
-│   └── supabase-schema.sql         # Database schema
-├── database/
-│   └── system_prompts.sql          # System prompts table (mới)
-├── docs/                           # Documentation (mới)
-│   ├── SYSTEM_PROMPTS.md           # Full system prompts docs
-│   └── QUICK_START_SYSTEM_PROMPTS.md # Quick start guide
-├── .env.local                      # Environment variables
+├── components/                     # ui/, layout/, sections/, admin/, editor/, studio/, auth/, blog/
+├── lib/                             # auth-server, gemini, rate-limit*, redis, supabase/*, optimistic-lock, api-handler...
+├── database/migrations/            # Bộ migration SQL đầy đủ nhất (xem lưu ý ở trên)
+├── docs/archive/                   # Tài liệu lịch sử các đợt fix cũ (không còn phản ánh trạng thái hiện tại)
 ├── .env.example                    # Environment variables template
-├── package.json                    # Dependencies
-├── tailwind.config.js              # Tailwind configuration
-└── next.config.js                  # Next.js configuration
+├── package.json
+├── tailwind.config.js              # Design tokens (nguồn màu sắc duy nhất)
+└── next.config.js
 ```
 
 ## 🎨 Design System
 
+Nguồn duy nhất cho màu sắc/theme là `tailwind.config.js` (không còn file theme rời rạc khác).
+
 ### Colors
 
-- **Primary**: `#F4C542` (Vàng ấm)
-- **Secondary**: `#9E9E9E` (Xám nhạt)
-- **Success**: `#22C55E` (Xanh lá)
-- **Warning**: `#F59E0B` (Vàng nhạt)
-- **Error**: `#EF4444` (Đỏ)
-- **Background**: `#FFFFFF` (Trắng)
-- **Text**: `#0F172A` (Đen)
+- **Primary**: `#FF6B9D` (Hồng)
+- **Secondary**: `#FFC837` (Vàng)
+- **Success**: `#22C55E`
+- **Warning**: `#F59E0B`
+- **Error**: `#EF4444`
+- **Background**: gradient hồng/kem (`bg-gradient-warm`)
+- **Text**: `#2D1B2E`
+
+Chỉ dùng 1 theme sáng, không hỗ trợ dark mode (`darkMode: 'class'` trong `tailwind.config.js`, không có cơ chế nào bật class `dark` - đây là chủ đích, tránh `dark:` utility tự kích hoạt theo hệ điều hành).
 
 ### Typography
 
-- **Heading**: Plus Jakarta Sans
-- **Body**: Plus Jakarta Sans
+- **Sans**: Plus Jakarta Sans
 - **Mono**: JetBrains Mono
 
 ## 🔧 Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Styling**: Tailwind CSS
 - **Animation**: Framer Motion
 - **Icons**: Lucide React
 - **Forms**: React Hook Form + Zod
-- **Database**: Supabase (PostgreSQL)
+- **Data fetching**: TanStack React Query (đang mở rộng dần, một số trang vẫn fetch thủ công)
+- **Database/Auth**: Supabase (PostgreSQL + Auth)
 - **Storage**: Cloudinary
-- **Authentication**: NextAuth.js (mock)
+- **AI**: Google Gemini (`@google/genai`)
+- **Cache/Rate limit**: Redis (tuỳ chọn, có fallback in-memory)
+- **Rich text editor**: Tiptap
 
-## 📝 API Routes
+## 📝 API chính
 
-### POST /api/upload
+Tất cả route nằm dưới `app/api/`. Một vài route tiêu biểu:
 
-Upload ảnh lên Cloudinary.
+- `POST /api/process-images` - Xử lý ảnh bằng Gemini AI (có timeout, retry cho lỗi tạm thời)
+- `POST /api/secure-upload`, `POST /api/upload` - Upload ảnh
+- `POST/PATCH/DELETE /api/requests`, `/api/requests/[id]` - CRUD yêu cầu xử lý ảnh
+- `app/api/admin/**` - Các route quản trị (đều yêu cầu xác thực + kiểm tra quyền admin)
+- `GET /api/health` - Health check (DB, AI key, storage config, cache)
 
-**Request:**
-- `Content-Type`: `multipart/form-data`
-- `file`: File ảnh
+## 🔐 Security & Data Integrity
 
-**Response:**
-```json
-{
-  "url": "https://res.cloudinary.com/...",
-  "public_id": "photo-restoration/abc123",
-  "format": "jpg",
-  "width": 1920,
-  "height": 1080
-}
-```
-
-### DELETE /api/upload
-
-Xóa ảnh từ Cloudinary.
-
-**Request:**
-```json
-{
-  "public_id": "photo-restoration/abc123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true
-}
-```
-
-### POST /api/process-images-v2 (mới)
-
-Xử lý ảnh với Gemini AI sử dụng system prompts.
-
-**Request:**
-```json
-{
-  "request_id": "uuid",
-  "images": ["https://..."],
-  "prompt": "Custom user prompt",
-  "system_prompt_name": "general_restore",
-  "options": {
-    "upscale": 2,
-    "denoise": true,
-    "enhanceFaces": true
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "processed_images": ["https://..."],
-  "system_prompt_used": "general_restore",
-  "processing_time": "2s"
-}
-```
-
-> **Xem thêm**: `docs/SYSTEM_PROMPTS.md` cho chi tiết đầy đủ về API
-
-## 🗄️ Database Schema
-
-### Table: users
-
-| Column     | Type      | Description        |
-|------------|-----------|-------------------|
-| id         | UUID      | Primary key       |
-| email      | TEXT      | User email        |
-| name       | TEXT      | User name         |
-| company    | TEXT      | Company (optional)|
-| created_at | TIMESTAMP | Created timestamp |
-| updated_at | TIMESTAMP | Updated timestamp |
-
-### Table: requests
-
-| Column      | Type      | Description                    |
-|-------------|-----------|--------------------------------|
-| id          | UUID      | Primary key                    |
-| user_id     | UUID      | Foreign key -> users.id        |
-| type        | TEXT      | 'restore' hoặc 'family'        |
-| status      | TEXT      | pending/processing/completed   |
-| description | TEXT      | Mô tả yêu cầu                  |
-| image_urls  | TEXT[]    | Array URL ảnh                  |
-| result_url  | TEXT      | URL kết quả (optional)         |
-| created_at  | TIMESTAMP | Created timestamp              |
-| updated_at  | TIMESTAMP | Updated timestamp              |
-
-### Table: system_prompts (mới)
-
-| Column               | Type      | Description                           |
-|---------------------|-----------|---------------------------------------|
-| id                  | UUID      | Primary key                           |
-| name                | TEXT      | Internal identifier (unique)          |
-| display_name        | TEXT      | User-facing name                      |
-| category            | TEXT      | Category (restoration, enhancement)   |
-| system_prompt       | TEXT      | Main AI instruction                   |
-| user_prompt_template| TEXT      | Template with {variables}             |
-| description         | TEXT      | Description for users                 |
-| parameters          | JSONB     | Processing parameters                 |
-| is_active           | BOOLEAN   | Show/hide from users                  |
-| is_default          | BOOLEAN   | Default prompt flag                   |
-| display_order       | INTEGER   | Sort order                            |
-| created_at          | TIMESTAMP | Created timestamp                     |
-| updated_at          | TIMESTAMP | Updated timestamp                     |
-
-> **Xem thêm**: `docs/SYSTEM_PROMPTS.md` cho full schema và documentation
-
-## 🤖 System Prompts & AI Processing (Mới)
-
-### Tính Năng
-
-Hệ thống quản lý prompts linh hoạt cho AI image processing với Gemini API:
-
-- ✅ **Database-driven prompts** - Tất cả prompts được lưu trong database, dễ dàng chỉnh sửa
-- ✅ **7 prompts mặc định** - Từ basic restoration đến 4K upscaling
-- ✅ **Admin UI** - Giao diện quản lý CRUD đầy đủ cho prompts
-- ✅ **Custom variables** - Hỗ trợ biến động trong prompt templates
-- ✅ **Advanced options** - Upscale, denoise, face enhancement, color accuracy
-- ✅ **Category organization** - Phân loại theo restoration, enhancement, colorization
-- ✅ **Quick processing** - One-click processing với preset prompts
-- ✅ **Mock mode** - Chạy được mà không cần Gemini API key (demo)
-
-### Quick Start
-
-1. **Setup Database**:
-```bash
-# Chạy script tạo bảng system_prompts
-# File: database/system_prompts.sql
-```
-
-2. **Add Gemini API Key**:
-```env
-GEMINI_API_KEY=your-api-key
-```
-
-3. **Access Admin Panel**:
-```
-/admin → AI Prompts tab
-```
-
-4. **Process Images**:
-```
-/requests → Click vào request → Chọn AI preset
-```
-
-### 7 Prompts Mặc Định
-
-| Prompt | Mục Đích | Tính Năng |
-|--------|----------|-----------|
-| `general_restore` | Default cho mọi restoration | Balanced, tự nhiên |
-| `photo_restore_advanced` | Ảnh lịch sử | Phân tích chi tiết |
-| `colorize_bw` | Ảnh đen trắng | Tô màu tự nhiên |
-| `enhance_quality` | Nâng cao chất lượng | Sharpening, details |
-| `upscale_4k` | 4K upscaling | 4x độ phân giải |
-| `portrait_enhance` | Chân dung | Tối ưu khuôn mặt |
-| `denoise_photo` | Ảnh nhiễu | Khử nhiễu |
-
-### Documentation
-
-- **Full Documentation**: `docs/SYSTEM_PROMPTS.md`
-- **Quick Start Guide**: `docs/QUICK_START_SYSTEM_PROMPTS.md`
-- **API Reference**: Xem phần API Routes ở trên
-
-### Custom Prompts
-
-Tạo prompts riêng trong Admin Panel:
-
-```
-System Prompt: You are a photo restoration expert...
-User Prompt Template: Restore {image_type} from {era}
-Parameters: { "upscale": 2, "denoise": true }
-```
+- Row Level Security (RLS) bật trên Supabase
+- Validation với Zod cho input
+- Rate limiting cho các route auth nhạy cảm (đăng ký, quên mật khẩu, magic link), Redis-backed khi có cấu hình `REDIS_URL`, tự fallback in-memory
+- Optimistic locking (cột `version` + trigger) cho `blog_posts`, `team_members`, `feedback`, `value_sections` - tránh 2 admin ghi đè dữ liệu của nhau
+- API keys lưu trong `.env.local`, không commit lên git
 
 ## 🚀 Deployment
 
@@ -350,32 +171,9 @@ Parameters: { "upscale": 2, "denoise": true }
 
 1. Push code lên GitHub
 2. Import project vào Vercel
-3. Cấu hình Environment Variables
+3. Cấu hình Environment Variables (xem mục 3 ở trên)
 4. Deploy
-
-### Docker
-
-```bash
-# Build image
-docker build -t photo-restoration-app .
-
-# Run container
-docker run -p 3000:3000 photo-restoration-app
-```
-
-## 🔐 Security
-
-- Tất cả API keys được lưu trong `.env.local` (không commit lên git)
-- Row Level Security (RLS) được enable trên Supabase
-- Validation với Zod cho tất cả form inputs
-- CORS protection trên API routes
 
 ## 📄 License
 
 MIT License
-
-## 👥 Team
-
-- **Developer**: Vibecode Kit v4.0
-- **Version**: 1.1
-- **Date**: 2026-01-16

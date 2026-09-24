@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Dịch vụ phục chế ảnh cũ, làm nét ảnh mờ và tô màu ảnh trắng đen bằng AI',
     start_url: '/',
     display: 'standalone',
-    background_color: '#FFF5E6',
+    background_color: '#FFF5F8',
     theme_color: '#ec4899',
     orientation: 'portrait-primary',
     icons: [
