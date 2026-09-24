@@ -8,7 +8,14 @@ interface BeforeAfterSliderProps {
   beforeLabel?: string
   afterLabel?: string
   className?: string
+  /** Auto-sweep between before/after when the user isn't interacting,
+   * so the transformation is visible without requiring a drag. */
+  autoPlay?: boolean
 }
+
+const AUTO_PLAY_MIN = 12
+const AUTO_PLAY_MAX = 88
+const AUTO_PLAY_RESUME_DELAY_MS = 1800
 
 export default function BeforeAfterSlider({
   beforeImage,
@@ -16,11 +23,14 @@ export default function BeforeAfterSlider({
   beforeLabel = 'Ảnh Gốc',
   afterLabel = 'Đã Khôi Phục',
   className = '',
+  autoPlay = true,
 }: BeforeAfterSliderProps) {
   const [sliderPosition, setSliderPosition] = useState(50)
   const [isDragging, setIsDragging] = useState(false)
   const [containerWidth, setContainerWidth] = useState(0)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const el = containerRef.current
@@ -52,7 +62,80 @@ export default function BeforeAfterSlider({
     []
   )
 
-  const handleMouseDown = () => setIsDragging(true)
+  // --- Auto-play: smooth back-and-forth sweep while idle ---
+  useEffect(() => {
+    if (!autoPlay) return
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const clearResumeTimer = () => {
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current)
+        resumeTimerRef.current = null
+      }
+    }
+
+    const scheduleResume = () => {
+      clearResumeTimer()
+      resumeTimerRef.current = setTimeout(() => setIsAutoPlaying(true), AUTO_PLAY_RESUME_DELAY_MS)
+    }
+
+    if (isDragging) {
+      setIsAutoPlaying(false)
+      clearResumeTimer()
+    } else {
+      scheduleResume()
+    }
+
+    return clearResumeTimer
+  }, [autoPlay, isDragging])
+
+  useEffect(() => {
+    if (!isAutoPlaying) return
+
+    let frameId: number
+    // Start the sweep from wherever the slider currently is, so resuming
+    // after a manual drag doesn't jump.
+    const amplitude = (AUTO_PLAY_MAX - AUTO_PLAY_MIN) / 2
+    const center = (AUTO_PLAY_MAX + AUTO_PLAY_MIN) / 2
+    const startPos = sliderPosition
+    const startRatio = Math.max(-1, Math.min(1, (startPos - center) / amplitude))
+    const startTime = performance.now() - (Math.asin(startRatio) / (2 * Math.PI)) * 6000
+
+    const tick = (now: number) => {
+      const elapsed = now - startTime
+      const cyclePos = (elapsed / 6000) * 2 * Math.PI
+      setSliderPosition(center + Math.sin(cyclePos) * amplitude)
+      frameId = requestAnimationFrame(tick)
+    }
+    frameId = requestAnimationFrame(tick)
+
+    return () => cancelAnimationFrame(frameId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAutoPlaying])
+
+  const stopAutoPlay = () => {
+    setIsAutoPlaying(false)
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current)
+      resumeTimerRef.current = null
+    }
+  }
+
+  const handleMouseDown = () => {
+    stopAutoPlay()
+    setIsDragging(true)
+  }
+
+  const handlePointerEnter = () => {
+    stopAutoPlay()
+  }
+
+  const handlePointerLeave = () => {
+    if (!isDragging && autoPlay) {
+      resumeTimerRef.current = setTimeout(() => setIsAutoPlaying(true), AUTO_PLAY_RESUME_DELAY_MS)
+    }
+  }
 
   useEffect(() => {
     const handleMouseUp = () => setIsDragging(false)
@@ -82,6 +165,8 @@ export default function BeforeAfterSlider({
       className={`relative w-full aspect-[4/3] overflow-hidden rounded-xl select-none cursor-col-resize group ${className}`}
       onMouseDown={handleMouseDown}
       onTouchStart={handleMouseDown}
+      onMouseEnter={handlePointerEnter}
+      onMouseLeave={handlePointerLeave}
     >
       {/* After Image (full background) */}
       <img
@@ -94,7 +179,10 @@ export default function BeforeAfterSlider({
       {/* Before Image (clipped) */}
       <div
         className="absolute inset-0 overflow-hidden"
-        style={{ width: `${sliderPosition}%` }}
+        style={{
+          width: `${sliderPosition}%`,
+          transition: isAutoPlaying || isDragging ? undefined : 'width 200ms ease-out',
+        }}
       >
         <img
           src={beforeImage}
@@ -105,10 +193,15 @@ export default function BeforeAfterSlider({
         />
       </div>
 
-      {/* Slider Line */}
+      {/* Slider Line - glows softly while auto-sweeping to read as an
+          active "restoring" scan rather than a static divider */}
       <div
-        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg z-10"
-        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+        className={`absolute top-0 bottom-0 w-0.5 bg-white z-10 ${isAutoPlaying ? 'shadow-[0_0_16px_4px_rgba(255,255,255,0.8)]' : 'shadow-lg'}`}
+        style={{
+          left: `${sliderPosition}%`,
+          transform: 'translateX(-50%)',
+          transition: isAutoPlaying || isDragging ? undefined : 'left 200ms ease-out',
+        }}
       >
         {/* Handle */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-xl flex items-center justify-center border-2 border-gray-200 group-hover:scale-110 transition-transform">
