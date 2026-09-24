@@ -5,16 +5,17 @@ import { Shield, Lock, Zap, Star, Users, Image as ImageIcon } from 'lucide-react
 import AnimatedCounter from '@/components/ui/AnimatedCounter'
 import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider'
 
-// Before/After showcase pairs (replace with real images when available)
+// Before/After showcase pairs (placeholder mockups - replace with real
+// restoration photos when available; see note in SocialProofSection below)
 const SHOWCASE_PAIRS = [
   {
-    before: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><rect fill="%23f1f5f9" width="600" height="450"/><text fill="%2394a3b8" font-size="20" x="300" y="200" text-anchor="middle">Ảnh mờ, hỏng</text><line x1="50" y1="100" x2="550" y2="400" stroke="%23cbd5e1" stroke-width="3"/><circle cx="200" cy="180" r="60" fill="%23e2e8f0"/></svg>'),
-    after: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%23818cf8"/><stop offset="100%" stop-color="%23c084fc"/></linearGradient></defs><rect fill="url(%23g)" width="600" height="450"/><text fill="white" font-size="20" x="300" y="210" text-anchor="middle">Đã khôi phục bởi AI</text><circle cx="200" cy="180" r="60" fill="%23a5b4fc"/></svg>'),
+    before: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><rect fill="#f1f5f9" width="600" height="450"/><text fill="#94a3b8" font-size="20" x="300" y="200" text-anchor="middle">Ảnh mờ, hỏng</text><line x1="50" y1="100" x2="550" y2="400" stroke="#cbd5e1" stroke-width="3"/><circle cx="200" cy="180" r="60" fill="#e2e8f0"/></svg>'),
+    after: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#818cf8"/><stop offset="100%" stop-color="#c084fc"/></linearGradient></defs><rect fill="url(#g)" width="600" height="450"/><text fill="white" font-size="20" x="300" y="210" text-anchor="middle">Đã khôi phục bởi AI</text><circle cx="200" cy="180" r="60" fill="#a5b4fc"/></svg>'),
     label: 'Phục hồi ảnh gia đình',
   },
   {
-    before: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><rect fill="%23fef3c7" width="600" height="450"/><text fill="%23b45309" font-size="20" x="300" y="200" text-anchor="middle">Ảnh ố vàng, xước</text><rect x="100" y="120" width="400" height="200" fill="none" stroke="%23f59e0b" stroke-width="2" stroke-dasharray="10,5"/></svg>'),
-    after: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%2310b981"/><stop offset="100%" stop-color="%2306b6d4"/></linearGradient></defs><rect fill="url(%23g2)" width="600" height="450"/><text fill="white" font-size="20" x="300" y="210" text-anchor="middle">Sắc nét và tươi sáng</text><rect x="100" y="120" width="400" height="200" fill="none" stroke="white" stroke-width="2"/></svg>'),
+    before: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><rect fill="#fef3c7" width="600" height="450"/><text fill="#b45309" font-size="20" x="300" y="200" text-anchor="middle">Ảnh ố vàng, xước</text><rect x="100" y="120" width="400" height="200" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="10,5"/></svg>'),
+    after: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs><rect fill="url(#g2)" width="600" height="450"/><text fill="white" font-size="20" x="300" y="210" text-anchor="middle">Sắc nét và tươi sáng</text><rect x="100" y="120" width="400" height="200" fill="none" stroke="white" stroke-width="2"/></svg>'),
     label: 'Nâng cấp chất lượng',
   },
 ]
