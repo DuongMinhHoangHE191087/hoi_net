@@ -27,10 +27,15 @@ interface CanvasImage {
 }
 
 // Sample backgrounds (fallback placeholders)
+// NOTE: colors must be plain #hex here, not pre-escaped %23 - the whole
+// string already goes through encodeURIComponent below, which would
+// double-encode a literal %23 into %2523 (an invalid color), making the
+// shape fall back to SVG's default fill: solid black. See the same bug
+// fixed in components/sections/SocialProofSection.tsx.
 const SAMPLE_BACKGROUNDS = [
-  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="%23e0e7ff" width="800" height="600"/><text fill="%236366f1" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Xanh</text></svg>'),
-  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="%23fce7f3" width="800" height="600"/><text fill="%23ec4899" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Hồng</text></svg>'),
-  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="%23d1fae5" width="800" height="600"/><text fill="%2310b981" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Xanh Lá</text></svg>'),
+  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="#e0e7ff" width="800" height="600"/><text fill="#6366f1" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Xanh</text></svg>'),
+  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="#fce7f3" width="800" height="600"/><text fill="#ec4899" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Hồng</text></svg>'),
+  'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect fill="#d1fae5" width="800" height="600"/><text fill="#10b981" font-size="24" x="400" y="300" text-anchor="middle">Phông Nền Xanh Lá</text></svg>'),
 ]
 
 export default function StudioPage() {
