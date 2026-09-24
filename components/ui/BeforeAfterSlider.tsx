@@ -19,7 +19,27 @@ export default function BeforeAfterSlider({
 }: BeforeAfterSliderProps) {
   const [sliderPosition, setSliderPosition] = useState(50)
   const [isDragging, setIsDragging] = useState(false)
+  const [containerWidth, setContainerWidth] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    // Track the container's real width so the "before" image can be
+    // rendered at full size and clipped by the parent, instead of
+    // shrinking to match the slider's current position (which distorted
+    // it). Reading offsetWidth directly during render doesn't work: on
+    // the very first paint the ref isn't attached yet, and nothing
+    // re-reads it again on window resize.
+    const observer = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width)
+    })
+    observer.observe(el)
+    setContainerWidth(el.offsetWidth)
+
+    return () => observer.disconnect()
+  }, [])
 
   const handleMove = useCallback(
     (clientX: number) => {
@@ -79,8 +99,8 @@ export default function BeforeAfterSlider({
         <img
           src={beforeImage}
           alt={beforeLabel}
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ width: containerRef.current ? `${containerRef.current.offsetWidth}px` : '100%' }}
+          className="absolute inset-0 h-full object-cover"
+          style={{ width: containerWidth ? `${containerWidth}px` : '100%' }}
           draggable={false}
         />
       </div>

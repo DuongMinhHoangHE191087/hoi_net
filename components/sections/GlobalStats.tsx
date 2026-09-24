@@ -2,6 +2,7 @@
 
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
+import GlobeVisual from '@/components/three/GlobeVisual'
 
 interface StatItem {
   value: string | number  // "90+", "33,000+", or numeric
@@ -220,31 +221,9 @@ export default function GlobalStats({
                   </defs>
                 </svg>
 
-                {/* Globe Image or Placeholder */}
+                {/* Globe - real 3D (WebGL) when available, flat SVG fallback otherwise */}
                 <div className="absolute inset-8 rounded-full overflow-hidden border-4 border-soft-cyan-light/30 shadow-glow-cyan">
-                  {globeImage ? (
-                    <img 
-                      src={globeImage} 
-                      alt="Global Presence" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    // Placeholder globe visualization
-                    <div className="w-full h-full bg-gradient-to-br from-soft-blue-bg to-soft-cyan-bg flex items-center justify-center">
-                      <svg className="w-full h-full text-soft-blue-light" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
-                        <ellipse cx="50" cy="50" rx="45" ry="20" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
-                        <ellipse cx="50" cy="50" rx="30" ry="45" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
-                        <ellipse cx="50" cy="50" rx="15" ry="45" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
-                        {/* Location dots */}
-                        <circle cx="30" cy="35" r="2" fill="#4F8FFF" />
-                        <circle cx="60" cy="40" r="2" fill="#4F8FFF" />
-                        <circle cx="45" cy="55" r="2" fill="#4F8FFF" />
-                        <circle cx="70" cy="50" r="2" fill="#4F8FFF" />
-                        <circle cx="55" cy="65" r="2" fill="#4F8FFF" />
-                      </svg>
-                    </div>
-                  )}
+                  <GlobeVisual image={globeImage} />
                 </div>
               </div>
             </motion.div>
