@@ -15,6 +15,7 @@ import { LazySection } from '@/components/ui/LazySection'
 import { useMinimumLoadingTime } from '@/lib/hooks/useMinimumLoadingTime'
 import { LOADING_CONFIG } from '@/lib/loading-config'
 import UniversalLoading from '@/components/UniversalLoading'
+import FloatingPhotosVisual from '@/components/three/FloatingPhotosVisual'
 
 // Dynamic imports cho heavy components (below-the-fold)
 const TeamCarousel3D = dynamic(() => import('@/components/sections/TeamCarousel3D'), {
@@ -359,7 +360,11 @@ export default function LandingPageClient({ team, valueSections, features, testi
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 relative">
-        <div className="max-w-7xl mx-auto text-center">
+        {/* Decorative floating 3D photo cards - purely ambient, sits
+            behind the text and never intercepts clicks/scroll */}
+        <FloatingPhotosVisual />
+
+        <div className="max-w-7xl mx-auto text-center relative z-10">
           <div className="scale-in mb-6 inline-block">
             <div className="p-4 bg-gradient-primary rounded-3xl shadow-glow animate-glow">
               <BrandLogo src={brandLogoUrl} className="w-12 h-12 object-contain" priority />
