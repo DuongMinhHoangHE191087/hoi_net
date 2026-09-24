@@ -65,7 +65,10 @@ export async function updateRateLimitSettings(settings: Partial<RateLimitSetting
 // In-memory rate limit tracker (for server-side use)
 const rateLimitStore = new Map<string, { count: number; resetAt: number; blockedUntil?: number }>()
 
-export function checkRateLimit(
+// Named distinctly from lib/rate-limit.ts's checkRateLimit/checkRateLimitCustom
+// (that shared, Redis-backed limiter) to avoid import collisions - this one is
+// purely in-memory and driven by admin-configurable settings above.
+export function checkSettingsRateLimit(
   key: string,
   maxAttempts: number,
   windowMs: number,

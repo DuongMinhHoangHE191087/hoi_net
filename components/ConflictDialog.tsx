@@ -44,51 +44,51 @@ export function ConflictDialog({
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+          className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
 
           {/* Icon */}
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-full">
-              <AlertTriangle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+            <div className="p-3 bg-amber-100 rounded-full">
+              <AlertTriangle className="w-8 h-8 text-amber-600" />
             </div>
           </div>
 
           {/* Title */}
-          <h3 className="text-xl font-semibold text-center text-gray-900 dark:text-white mb-2">
+          <h3 className="text-xl font-semibold text-center text-gray-900 mb-2">
             {title}
           </h3>
 
           {/* Message */}
-          <p className="text-center text-gray-600 dark:text-gray-300 mb-4">
+          <p className="text-center text-gray-600 mb-4">
             {message}
           </p>
 
           {/* Version info */}
           {expectedVersion !== undefined && currentVersion !== undefined && (
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4">
+            <div className="bg-gray-50 rounded-lg p-3 mb-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Phiên bản của bạn:</span>
-                <span className="font-mono text-gray-900 dark:text-white">v{expectedVersion}</span>
+                <span className="text-gray-500">Phiên bản của bạn:</span>
+                <span className="font-mono text-gray-900">v{expectedVersion}</span>
               </div>
               <div className="flex justify-between text-sm mt-1">
-                <span className="text-gray-500 dark:text-gray-400">Phiên bản hiện tại:</span>
-                <span className="font-mono text-amber-600 dark:text-amber-400 font-semibold">v{currentVersion}</span>
+                <span className="text-gray-500">Phiên bản hiện tại:</span>
+                <span className="font-mono text-amber-600 font-semibold">v{currentVersion}</span>
               </div>
             </div>
           )}
 
           {/* Explanation */}
-          <div className="text-sm text-gray-500 dark:text-gray-400 mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="font-medium text-blue-700 dark:text-blue-400 mb-1">💡 Điều này có nghĩa là gì?</p>
+          <div className="text-sm text-gray-500 mb-6 p-3 bg-blue-50 rounded-lg">
+            <p className="font-medium text-blue-700 mb-1">💡 Điều này có nghĩa là gì?</p>
             <p>Trong khi bạn đang chỉnh sửa, ai đó khác đã lưu thay đổi. Bạn cần tải lại dữ liệu mới nhất để tránh mất thông tin.</p>
           </div>
 
@@ -101,11 +101,11 @@ export function ConflictDialog({
               <RefreshCw className="w-5 h-5" />
               Tải lại dữ liệu
             </button>
-            
+
             {onForceUpdate && (
               <button
                 onClick={onForceUpdate}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
                 title="Ghi đè thay đổi của người khác (cẩn thận!)"
               >
                 <Copy className="w-5 h-5" />
@@ -117,7 +117,7 @@ export function ConflictDialog({
           {/* Cancel */}
           <button
             onClick={onClose}
-            className="w-full mt-3 px-4 py-2 text-gray-500 dark:text-gray-400 text-sm hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            className="w-full mt-3 px-4 py-2 text-gray-500 text-sm hover:text-gray-700 transition-colors"
           >
             Để sau
           </button>

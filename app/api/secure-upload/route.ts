@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/auth-server'
 
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
         const filePath = `${userId}/${secureFileName}`
 
         // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
+        const { data, error } = await supabaseAdmin.storage
           .from('photos') // Your bucket name
           .upload(filePath, file, {
             cacheControl: '3600',
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get public URL
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseAdmin.storage
           .from('photos')
           .getPublicUrl(filePath)
 
@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
     const userId = user.id
 
     // List files for this user
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseAdmin.storage
       .from('photos')
       .list(userId, {
         limit: 100,
@@ -244,7 +244,7 @@ export async function GET(request: NextRequest) {
       name: file.name,
       size: file.metadata?.size || 0,
       createdAt: file.created_at,
-      url: supabase.storage
+      url: supabaseAdmin.storage
         .from('photos')
         .getPublicUrl(`${userId}/${file.name}`).data.publicUrl,
     }))
@@ -291,7 +291,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete file (only allows deleting user's own files)
-    const { error } = await supabase.storage
+    const { error } = await supabaseAdmin.storage
       .from('photos')
       .remove([`${userId}/${fileName}`])
 

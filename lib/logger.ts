@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug'
 
@@ -34,7 +34,7 @@ async function flushLogBuffer(): Promise<void> {
   // Only write to DB in production
   if (process.env.NODE_ENV === 'production') {
     try {
-      const { error } = await supabase.from('system_logs').insert(
+      const { error } = await getSupabaseAdmin().from('system_logs').insert(
         logsToFlush.map(log => ({
           level: log.level,
           message: log.message,

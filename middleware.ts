@@ -133,7 +133,7 @@ export async function middleware(req: NextRequest) {
   if (!canAccessAdminPanel) {
     const rateLimitType = getRateLimitType(pathname)
     const rateLimitKey = generateRateLimitKey(userId || clientIP, rateLimitType)
-    const rateLimitResult = checkRateLimit(rateLimitKey, rateLimitType)
+    const rateLimitResult = await checkRateLimit(rateLimitKey, rateLimitType)
 
     if (!rateLimitResult.allowed) {
       return new NextResponse(

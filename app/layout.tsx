@@ -343,10 +343,14 @@ export default function RootLayout({
         {/* DNS prefetch for external resources */}
         <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
         
-        {/* Prevent FOUC: Apply background immediately */}
+        {/* Prevent FOUC: Apply background immediately.
+            Must match body's bg-gradient-warm utility (tailwind.config.js)
+            exactly - this inline tag can win the cascade over that
+            utility class, so a different gradient here was overriding
+            body's real background with a mismatched color. */}
         <style dangerouslySetInnerHTML={{ __html: `
           html, body {
-            background: linear-gradient(135deg, #FFF5E6 0%, #FFEBD6 50%, #FFE4D4 100%);
+            background: linear-gradient(135deg, #FFF5F8 0%, #FFFBF0 50%, #FFF5F8 100%);
             min-height: 100vh;
           }
           /* Hide content until CSS loads */

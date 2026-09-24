@@ -1,5 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // Single light theme only - 'class' instead of Tailwind's default 'media'
+  // so a `dark:` utility can never silently activate from the OS/browser
+  // color-scheme preference (nothing in the app ever toggles a `dark`
+  // class, so dark: variants are inert by design).
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',

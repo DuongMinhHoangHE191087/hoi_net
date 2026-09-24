@@ -2,10 +2,11 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies, headers } from 'next/headers'
 import { NextResponse, NextRequest } from 'next/server'
 import crypto from 'crypto'
+import { checkRateLimitCustom } from '@/lib/rate-limit-redis'
 
 /**
  * 🔐 Secure Password Reset API
- * 
+ *
  * Security Features:
  * 1. One-time token usage - Token can only be used once
  * 2. Rate limiting - Prevents brute force attacks
@@ -15,8 +16,7 @@ import crypto from 'crypto'
  * 6. Password strength validation - Server-side validation
  */
 
-// Rate limiting map (in production, use Redis)
-const resetAttempts = new Map<string, { count: number; lastAttempt: number }>()
+// Rate limiting - shared, Redis-backed (see lib/rate-limit.ts)
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000 // 15 minutes
 const MAX_ATTEMPTS = 5
 
@@ -72,31 +72,9 @@ function getClientIdentifier(request: NextRequest): string {
 }
 
 // Check rate limit
-function checkRateLimit(clientId: string): { allowed: boolean; retryAfter?: number } {
-  const now = Date.now()
-  const attempt = resetAttempts.get(clientId)
-  
-  if (!attempt) {
-    resetAttempts.set(clientId, { count: 1, lastAttempt: now })
-    return { allowed: true }
-  }
-  
-  // Reset window if expired
-  if (now - attempt.lastAttempt > RATE_LIMIT_WINDOW) {
-    resetAttempts.set(clientId, { count: 1, lastAttempt: now })
-    return { allowed: true }
-  }
-  
-  // Check if exceeded
-  if (attempt.count >= MAX_ATTEMPTS) {
-    const retryAfter = Math.ceil((RATE_LIMIT_WINDOW - (now - attempt.lastAttempt)) / 1000)
-    return { allowed: false, retryAfter }
-  }
-  
-  // Increment
-  attempt.count++
-  attempt.lastAttempt = now
-  return { allowed: true }
+async function checkRateLimit(clientId: string): Promise<{ allowed: boolean; retryAfter?: number }> {
+  const result = await checkRateLimitCustom(`reset-password:${clientId}`, MAX_ATTEMPTS, RATE_LIMIT_WINDOW)
+  return result.allowed ? { allowed: true } : { allowed: false, retryAfter: result.resetIn }
 }
 
 export async function POST(request: NextRequest) {
@@ -105,7 +83,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || 'unknown'
     
     // Check rate limit
-    const rateLimit = checkRateLimit(clientId)
+    const rateLimit = await checkRateLimit(clientId)
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { 
