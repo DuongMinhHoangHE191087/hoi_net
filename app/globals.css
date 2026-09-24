@@ -8,9 +8,12 @@
    CRITICAL: Prevent Flash of Unstyled Content
    ============================================== */
 
-/* Apply base styles IMMEDIATELY to prevent white flash */
+/* Apply base styles IMMEDIATELY to prevent white flash.
+   Must match body's bg-gradient-warm (tailwind.config.js) exactly - a
+   different gradient here caused a visible color flash/mismatch the
+   instant body's own background painted over it. */
 html {
-  background: linear-gradient(135deg, #FFF5E6 0%, #FFEBD6 50%, #FFE4D4 100%) !important;
+  background: linear-gradient(135deg, #FFF5F8 0%, #FFFBF0 50%, #FFF5F8 100%) !important;
   min-height: 100vh;
 }
 
@@ -18,7 +21,7 @@ html {
   html {
     /* Use auto for programmatic scrolls to avoid warnings with fixed elements */
     scroll-behavior: auto;
-    background: linear-gradient(135deg, #FFF5E6 0%, #FFEBD6 50%, #FFE4D4 100%);
+    background: linear-gradient(135deg, #FFF5F8 0%, #FFFBF0 50%, #FFF5F8 100%);
   }
 
   /* Enable smooth scrolling only for user-initiated actions (click, focus) */
