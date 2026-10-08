@@ -11,7 +11,9 @@
  *    trước khi chạy production:
  *      - COMPANY.address / COMPANY.phone  (địa chỉ, số điện thoại)
  *      - COMPANY.taxCode / COMPANY.businessLicense  (để trống = không hiển thị)
- *      - SOCIAL_LINKS (trừ Facebook), STATS, MILESTONES
+ *      - SOCIAL_LINKS (trừ Facebook)
+ *    Nội dung trang About (số liệu, mốc phát triển, giải thưởng, nhân sự, VI/EN)
+ *    nằm ở lib/about-content.ts.
  *
  * Về sau có thể chuyển sang Supabase (site_settings + bảng milestones) bằng
  * cách đổi nguồn của các hằng số bên dưới; các component không cần sửa.
@@ -36,25 +38,6 @@ export interface CompanyAddress {
   full: string
   /** Link mở Google Maps */
   mapUrl: string
-}
-
-export interface Milestone {
-  /** ISO yyyy-mm — dùng để sắp xếp và hiển thị "Tháng 9/2025" */
-  date: string
-  title: string
-  description: string
-  /** Mốc chưa diễn ra (lộ trình) */
-  upcoming?: boolean
-}
-
-export interface StatItem {
-  value: number
-  prefix?: string
-  suffix?: string
-  label: string
-  description: string
-  /** Tên icon, được component CompanyStats ánh xạ sang icon thật */
-  icon: 'image' | 'users' | 'map' | 'smile' | 'clock' | 'calendar'
 }
 
 export interface SocialLink {
@@ -163,126 +146,8 @@ export const SOCIAL_LINKS: SocialLink[] = [
 export const TWITTER_HANDLE = '@hoinet_tech'
 
 // ============================================
-// Số liệu nổi bật [MOCK] — tính đến 10/2026
-// ============================================
-
-export const STATS: StatItem[] = [
-  {
-    value: 128000,
-    suffix: '+',
-    icon: 'image',
-    label: 'Ảnh đã phục chế',
-    description: 'Từ ngày ra mắt công khai tháng 2/2026',
-  },
-  {
-    value: 36000,
-    suffix: '+',
-    icon: 'users',
-    label: 'Người dùng',
-    description: 'Gia đình và cá nhân tin dùng mỗi tháng',
-  },
-  {
-    value: 34,
-    suffix: '/34',
-    icon: 'map',
-    label: 'Tỉnh, thành phố',
-    description: 'Có người dùng trên khắp cả nước',
-  },
-  {
-    value: 98,
-    suffix: '%',
-    icon: 'smile',
-    label: 'Hài lòng',
-    description: 'Theo khảo sát sau mỗi lượt phục chế',
-  },
-  {
-    value: 3,
-    prefix: '~',
-    suffix: ' phút',
-    icon: 'clock',
-    label: 'Thời gian xử lý',
-    description: 'Trung bình cho một bức ảnh',
-  },
-  {
-    value: 13,
-    suffix: ' tháng',
-    icon: 'calendar',
-    label: 'Đồng hành cùng bạn',
-    description: 'Kể từ khi thành lập tháng 9/2025',
-  },
-]
-
-// ============================================
-// Hành trình phát triển [MOCK] — 09/2025 → nay (10/2026)
-// ============================================
-
-export const MILESTONES: Milestone[] = [
-  {
-    date: '2025-09',
-    title: 'Thành lập',
-    description:
-      'Công ty TNHH Công nghệ Hồi Nét được thành lập và khởi động dự án Hồi Nét — dự án phi lợi nhuận phục chế ảnh cũ bằng AI.',
-  },
-  {
-    date: '2025-10',
-    title: 'Nghiên cứu & thử nghiệm',
-    description:
-      'Xây dựng bộ ảnh mẫu, thử nghiệm và so sánh các mô hình AI cho bài toán khử nhiễu, làm nét và phục hồi chi tiết khuôn mặt.',
-  },
-  {
-    date: '2025-12',
-    title: 'Closed beta',
-    description:
-      'Mở thử nghiệm kín cho 200 người dùng đầu tiên, bổ sung tính năng tô màu ảnh trắng đen dựa trên phản hồi thực tế.',
-  },
-  {
-    date: '2026-02',
-    title: 'Ra mắt công khai',
-    description:
-      'Chính thức ra mắt website hoinet.tech với dịch vụ phục chế, làm nét và tô màu ảnh cũ miễn phí cho mọi người.',
-  },
-  {
-    date: '2026-04',
-    title: 'Ghép ảnh gia đình & Studio',
-    description:
-      'Thêm tính năng ghép ảnh gia đình và Studio chỉnh sửa trực tuyến, tách nền ngay trên trình duyệt.',
-  },
-  {
-    date: '2026-06',
-    title: 'Mốc 25.000 ảnh',
-    description:
-      'Hoàn thành phục chế hơn 25.000 bức ảnh; nâng cấp hàng đợi xử lý để rút ngắn thời gian chờ xuống còn vài phút.',
-  },
-  {
-    date: '2026-08',
-    title: 'Cộng đồng đóng góp',
-    description:
-      'Ra mắt trang đóng góp minh bạch để duy trì chi phí hạ tầng, giữ dịch vụ cơ bản luôn miễn phí.',
-  },
-  {
-    date: '2026-09',
-    title: 'Tròn 1 năm hoạt động',
-    description:
-      'Vượt mốc 100.000 ảnh phục chế và 30.000 người dùng; đội ngũ mở rộng thêm các vị trí kỹ thuật và vận hành tại Hà Nội.',
-  },
-  {
-    date: '2026-12',
-    title: 'Lộ trình sắp tới',
-    description:
-      'Nâng cấp chất lượng phục chế, hỗ trợ xử lý hàng loạt và mở rộng chương trình phục chế ảnh tư liệu cho cộng đồng.',
-    upcoming: true,
-  },
-]
-
-// ============================================
 // Helpers
 // ============================================
-
-/** "2025-09" → "Tháng 9/2025" */
-export function formatMilestoneDate(date: string): string {
-  const [year, month] = date.split('-')
-  return month ? `Tháng ${Number(month)}/${year}` : year
-}
 
 /** Chuỗi bản quyền cho Footer */
 export function getCopyright(year: number = new Date().getFullYear()): string {

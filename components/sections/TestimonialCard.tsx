@@ -5,6 +5,8 @@ import { Star, Facebook, Phone, Globe, MessageCircle, ExternalLink, CheckCircle 
 import Image from 'next/image'
 import Link from 'next/link'
 import { Feedback } from '@/lib/supabase'
+import { useLang } from '@/contexts/LanguageContext'
+import { H } from '@/lib/landing-i18n'
 
 interface TestimonialCardProps {
   testimonial: Feedback
@@ -19,6 +21,7 @@ export default function TestimonialCard({
   showContactInfo = false,
   variant = 'compact'
 }: TestimonialCardProps) {
+  const { t } = useLang()
   // Get avatar display - either image URL, first letter, or emoji
   const getAvatar = () => {
     if (testimonial.testimonial_image_url) {
@@ -141,7 +144,7 @@ export default function TestimonialCard({
       <div className="mt-4 pt-4 border-t border-gray-100">
         <div className="flex items-center gap-1.5 text-xs text-green-600 mb-2">
           <CheckCircle className="w-3.5 h-3.5" />
-          <span className="font-medium">Đã xác minh</span>
+          <span className="font-medium">{t(H.verified)}</span>
         </div>
         <div className="flex flex-wrap gap-3">
           {contacts}
@@ -162,7 +165,7 @@ export default function TestimonialCard({
         {/* Featured badge */}
         {testimonial.is_featured && (
           <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
-            ⭐ Nổi bật
+            {t(H.featured)}
           </div>
         )}
 
@@ -261,7 +264,7 @@ export default function TestimonialCard({
       <div className="text-center relative z-10">
         <p className="font-bold text-text text-lg">{testimonial.name}</p>
         <p className="text-sm text-gray-600">
-          {testimonial.position_title || testimonial.company_name || 'Khách hàng'}
+          {testimonial.position_title || testimonial.company_name || t(H.customer)}
         </p>
       </div>
 

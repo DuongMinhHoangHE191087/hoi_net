@@ -16,6 +16,8 @@ import { useMinimumLoadingTime } from '@/lib/hooks/useMinimumLoadingTime'
 import { LOADING_CONFIG } from '@/lib/loading-config'
 import UniversalLoading from '@/components/UniversalLoading'
 import FloatingPhotosVisual from '@/components/three/FloatingPhotosVisual'
+import { useLang } from '@/contexts/LanguageContext'
+import { FEATURES_EN, H, LANDING_EN, TESTIMONIALS_EN, VALUES_EN } from '@/lib/landing-i18n'
 
 // Dynamic imports cho heavy components (below-the-fold)
 const TeamCarousel3D = dynamic(() => import('@/components/sections/TeamCarousel3D'), {
@@ -88,6 +90,11 @@ export default function LandingPageClient({ team, valueSections, features, testi
 
   // Helper function to get setting with fallback
   const getSetting = (key: string, fallback: string = '') => siteSettings[key] || fallback
+
+  // Ngôn ngữ: EN dùng bản dịch trong lib/landing-i18n.ts, VI vẫn ưu tiên nội dung admin nhập trong DB
+  const { lang, t } = useLang()
+  const en = lang === 'en'
+  const tt = (key: string, fallback: string) => (en ? LANDING_EN[key] ?? getSetting(key, fallback) : getSetting(key, fallback))
 
   const brandLogoUrl = getSetting('site_logo_url', getSetting('brand_logo_url', getSetting('site_favicon_url', '')))
 
@@ -238,13 +245,13 @@ export default function LandingPageClient({ team, valueSections, features, testi
   // Map database feedback to testimonials format or use defaults
   const testimonials = dbTestimonials.length > 0
     ? dbTestimonials.slice(0, 3).map((item) => ({
-        name: item.name || 'Khách hàng',
-        role: item.position_title || (item.company_name ? `${item.company_name}` : 'Khách hàng'),
+        name: item.name || t(H.customer),
+        role: item.position_title || (item.company_name ? `${item.company_name}` : t(H.customer)),
         content: item.message,
         rating: item.rating || 5,
         avatar: item.testimonial_image_url || (item.name ? item.name.charAt(0).toUpperCase() : '👤')
       }))
-    : defaultTestimonials
+    : (en ? TESTIMONIALS_EN : defaultTestimonials)
 
   // Default value sections (Mission, Vision, Values)
   const defaultValueSections = [
@@ -372,13 +379,13 @@ export default function LandingPageClient({ team, valueSections, features, testi
           </div>
 
           <h1 className="fade-in text-5xl md:text-7xl font-bold mb-6">
-            <span className="gradient-text-alt">{getSetting('hero_title', 'Phục Chế & Khôi Phục Ảnh Cũ')}</span>
+            <span className="gradient-text-alt">{tt('hero_title', 'Phục Chế & Khôi Phục Ảnh Cũ')}</span>
             <br />
-            <span className="text-text">Chuyên Nghiệp Bằng AI</span>
+            <span className="text-text">{t(H.heroTagline)}</span>
           </h1>
 
           <p className="fade-in-delay-1 text-xl md:text-2xl text-gray-700 mb-10 max-w-3xl mx-auto leading-relaxed">
-            {getSetting('hero_subtitle', 'Khôi phục ảnh cũ hư hỏng, tô màu ảnh trắng đen và làm nét ảnh mờ AI giúp lưu giữ kỷ niệm gia đình sống động, chuyên nghiệp.')}
+            {tt('hero_subtitle', 'Khôi phục ảnh cũ hư hỏng, tô màu ảnh trắng đen và làm nét ảnh mờ AI giúp lưu giữ kỷ niệm gia đình sống động, chuyên nghiệp.')}
           </p>
 
           <div className="fade-in-delay-3 flex flex-col sm:flex-row gap-4 justify-center">
@@ -391,11 +398,11 @@ export default function LandingPageClient({ team, valueSections, features, testi
                 {loadingButton === 'hero-primary' ? (
                   <>
                     <Loader2 className="w-6 h-6 animate-spin" />
-                    Đang chuyển...
+                    {t(H.redirecting)}
                   </>
                 ) : (
                   <>
-                    {getSetting('hero_cta_primary_text', 'Bắt Đầu Ngay')}
+                    {tt('hero_cta_primary_text', 'Bắt Đầu Ngay')}
                     <Sparkles className="w-6 h-6" />
                   </>
                 )}
@@ -410,11 +417,11 @@ export default function LandingPageClient({ team, valueSections, features, testi
                 {loadingButton === 'hero-secondary' ? (
                   <>
                     <Loader2 className="w-6 h-6 animate-spin" />
-                    Đang chuyển...
+                    {t(H.redirecting)}
                   </>
                 ) : (
                   <>
-                    {getSetting('hero_cta_secondary_text', 'Tìm Hiểu Thêm')}
+                    {tt('hero_cta_secondary_text', 'Tìm Hiểu Thêm')}
                     <ArrowRight className="w-6 h-6" />
                   </>
                 )}
@@ -427,30 +434,30 @@ export default function LandingPageClient({ team, valueSections, features, testi
       {/* Mission, Vision, Values Section - Lazy Loaded */}
       <LazySection minHeight="500px" rootMargin="300px">
         <ValuesSection
-          values={displayValueSections}
-          title={getSetting('about_section_title', 'Về Chúng Tôi')}
-          subtitle={getSetting('about_section_subtitle', 'Sứ mệnh và tầm nhìn của chúng tôi')}
+          values={en ? VALUES_EN : displayValueSections}
+          title={tt('about_section_title', 'Về Chúng Tôi')}
+          subtitle={tt('about_section_subtitle', 'Sứ mệnh và tầm nhìn của chúng tôi')}
         />
       </LazySection>
 
       {/* Features Section - Carousel */}
       <FeaturesCarousel 
-        features={features}
-        title={getSetting('features_section_title', 'Tính Năng Nổi Bật')}
-        subtitle={getSetting('features_section_subtitle', 'Khám phá những công cụ mạnh mẽ giúp bạn khôi phục và cải thiện ảnh')}
+        features={en ? FEATURES_EN : features}
+        title={tt('features_section_title', 'Tính Năng Nổi Bật')}
+        subtitle={tt('features_section_subtitle', 'Khám phá những công cụ mạnh mẽ giúp bạn khôi phục và cải thiện ảnh')}
       />
 
       {/* Global Stats Section */}
       <GlobalStats
-        title="Luôn Bên Bạn Mọi Lúc, Mọi Nơi"
-        titleHighlight={['Mọi Lúc', 'Mọi Nơi']}
+        title={t(H.statsTitle)}
+        titleHighlight={H.statsHighlight[lang]}
         stats={[
-          { value: '7+', label: 'Mô Hình AI', color: 'default' },
-          { value: '1,000+', label: 'Khách Hàng Hài Lòng', color: 'default' },
-          { value: '50,000+', label: 'Ảnh Đã Khôi Phục', color: 'orange' },
-          { value: '30+', label: 'Quốc Gia', color: 'default' },
+          { value: '7+', label: t(H.statsAiModels), color: 'default' },
+          { value: '36,000+', label: t(H.statsUsers), color: 'default' },
+          { value: '128,000+', label: t(H.statsPhotos), color: 'orange' },
+          { value: '34', label: t(H.statsProvinces), color: 'default' },
         ]}
-        ctaText="Khám Phá Dịch Vụ Của Chúng Tôi"
+        ctaText={t(H.statsCta)}
         ctaLink="/about"
         showGlobe={true}
       />
@@ -466,10 +473,10 @@ export default function LandingPageClient({ team, valueSections, features, testi
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-8 animate-fade-in-up">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                <span className="gradient-text-alt">{getSetting('team_section_title', 'Đội Ngũ Của Chúng Tôi')}</span>
+                <span className="gradient-text-alt">{tt('team_section_title', 'Đội Ngũ Của Chúng Tôi')}</span>
               </h2>
               <p className="text-gray-600 text-lg">
-                {getSetting('team_section_subtitle', 'Những người đồng hành cùng bạn')}
+                {tt('team_section_subtitle', 'Những người đồng hành cùng bạn')}
               </p>
             </div>
 
@@ -488,9 +495,9 @@ export default function LandingPageClient({ team, valueSections, features, testi
       <LazySection minHeight="600px" rootMargin="300px">
         <TestimonialsSection
           testimonials={testimonials}
-          title={getSetting('testimonials_section_title', 'Khách Hàng Nói Gì')}
-          subtitle={getSetting('testimonials_section_subtitle', 'Phản hồi từ những người đã sử dụng dịch vụ')}
-          ctaText="Gửi phản hồi của bạn"
+          title={tt('testimonials_section_title', 'Khách Hàng Nói Gì')}
+          subtitle={tt('testimonials_section_subtitle', 'Phản hồi từ những người đã sử dụng dịch vụ')}
+          ctaText={t(H.testimonialCta)}
           onCTAClick={() => handleCTAClick('testimonial-cta', '/contact')}
           isLoading={loadingButton === 'testimonial-cta'}
         />
@@ -504,11 +511,11 @@ export default function LandingPageClient({ team, valueSections, features, testi
 
             <div className="relative z-10">
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                <span className="gradient-text-alt">{getSetting('final_cta_title', 'Sẵn Sàng Khôi Phục Ảnh?')}</span>
+                <span className="gradient-text-alt">{tt('final_cta_title', 'Sẵn Sàng Khôi Phục Ảnh?')}</span>
               </h2>
 
               <p className="text-xl text-gray-700 mb-10 max-w-2xl mx-auto leading-relaxed">
-                {getSetting('final_cta_subtitle', 'Tham gia cùng hàng ngàn người dùng đã tin tưởng chúng tôi để lưu giữ kỷ niệm quý giá.')}
+                {tt('final_cta_subtitle', 'Tham gia cùng hàng ngàn người dùng đã tin tưởng chúng tôi để lưu giữ kỷ niệm quý giá.')}
               </p>
 
               <button 
@@ -520,12 +527,12 @@ export default function LandingPageClient({ team, valueSections, features, testi
                   {loadingButton === 'final-cta' ? (
                     <>
                       <Loader2 className="w-6 h-6 animate-spin" />
-                      Đang chuyển...
+                      {t(H.redirecting)}
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-6 h-6" />
-                      {getSetting('final_cta_button_text', 'Đăng Ký Miễn Phí Ngay')}
+                      {tt('final_cta_button_text', 'Đăng Ký Miễn Phí Ngay')}
                       <ArrowRight className="w-6 h-6" />
                     </>
                   )}

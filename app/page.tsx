@@ -1,15 +1,23 @@
 // ✅ Server Component - fetches data server-side with Redis caching
 import { getHomepageDataWithCache } from '@/lib/homepage-cache'
 import { getBrandName } from '@/lib/site-metadata'
+import { getRequestLang } from '@/lib/server-lang'
 import LandingPageClient from './LandingPageClient'
 import { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const brandName = await getBrandName()
-  return {
-    title: `${brandName} - Phục Chế & Khôi Phục Ảnh Cũ Chuyên Nghiệp`,
-    description: 'Biến những bức ảnh cũ hư hỏng thành kỷ niệm sống động. Chuyên phục chế ảnh, làm nét ảnh mờ và ghép ảnh gia đình tự nhiên bằng công nghệ AI hàng đầu.',
-  }
+  const [brandName, lang] = await Promise.all([getBrandName(), getRequestLang()])
+  return lang === 'en'
+    ? {
+        title: `${brandName} — AI Photo Restoration for Old & Damaged Photos`,
+        description:
+          'Turn damaged old photos into vivid memories. Professional photo restoration, sharpening of blurry images and natural family photo composition powered by leading AI.',
+      }
+    : {
+        title: `${brandName} - Phục Chế & Khôi Phục Ảnh Cũ Chuyên Nghiệp`,
+        description:
+          'Biến những bức ảnh cũ hư hỏng thành kỷ niệm sống động. Chuyên phục chế ảnh, làm nét ảnh mờ và ghép ảnh gia đình tự nhiên bằng công nghệ AI hàng đầu.',
+      }
 }
 
 export default async function LandingPage() {

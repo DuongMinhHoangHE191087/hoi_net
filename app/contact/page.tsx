@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Send, Mail, MessageSquare, Upload, X, Star, CheckCircle, Sparkles, AlertCircle, Clock, Shield, ArrowRight, User, LogIn, MapPin, Phone } from 'lucide-react'
 import { COMPANY } from '@/lib/company-info'
+import { COMPANY_EN } from '@/lib/about-content'
+import { useLang } from '@/contexts/LanguageContext'
+import { CONTACT_INFO, CONTACT_PAGE as C } from '@/lib/site-i18n'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
@@ -26,6 +29,8 @@ const RATE_LIMITS = {
 export default function ContactPage() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
+  const { lang, t } = useLang()
+  const en = lang === 'en'
   // Thông tin liên hệ lấy từ lib/company-info.ts (hardcode), không phụ thuộc site_settings
   const contactEmail = COMPANY.emails.contact
 
@@ -119,7 +124,7 @@ export default function ContactPage() {
     
     // Check client-side cooldown
     if (cooldownRemaining > 0) {
-      toast.error(`Vui lòng đợi ${cooldownRemaining} giây trước khi gửi tiếp`)
+      toast.error(en ? `Please wait ${cooldownRemaining}s before submitting again` : `Vui lòng đợi ${cooldownRemaining} giây trước khi gửi tiếp`)
       return
     }
 
@@ -185,7 +190,7 @@ export default function ContactPage() {
         if (res.status === 429) {
           const retryAfter = result.retryAfter || 60
           setCooldownRemaining(retryAfter)
-          toast.error(result.error || `Vui lòng đợi ${retryAfter} giây`, { 
+          toast.error(result.error || (en ? `Please wait ${retryAfter}s` : `Vui lòng đợi ${retryAfter} giây`), { 
             icon: '⏳',
             duration: 5000 
           })
@@ -197,7 +202,7 @@ export default function ContactPage() {
           setEmailError(result.error)
           toast.error(result.error, { icon: '⚠️' })
         } else {
-          toast.error(result.error || 'Có lỗi xảy ra, vui lòng thử lại')
+          toast.error(result.error || t(C.error))
         }
         setLoading(false)
         return
@@ -216,13 +221,13 @@ export default function ContactPage() {
       setFormData({ name: user?.user_metadata?.full_name || '', email: user?.email || '', phone: '', message: '', rating: 0 })
       setFiles([])
       setHoneypot('')
-      toast.success(result.message || 'Yêu cầu đã được gửi!', {
+      toast.success(result.message || t(C.sent), {
         icon: '🎉',
         duration: 4000
       })
     } catch (error) {
       console.error('Error submitting feedback:', error)
-      toast.error('Có lỗi xảy ra, vui lòng thử lại')
+      toast.error(t(C.error))
     } finally {
       setLoading(false)
       setUploadProgress(0)
@@ -273,17 +278,17 @@ export default function ContactPage() {
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              <span className="gradient-text-alt">Liên Hệ Với Chúng Tôi</span>
+              <span className="gradient-text-alt">{t(C.title)}</span>
             </h1>
             <p className="text-xl text-gray-700 mb-6">
-              Gửi phản hồi, câu hỏi hoặc yêu cầu phục hồi ảnh. Chúng tôi sẽ phản hồi sớm nhất! ✨
+              {t(C.subtitle)}
             </p>
 
             {/* User Status & Rate Limit Info */}
             <div className="flex justify-center">
               {authLoading ? (
                 <div className="glassmorphism-light px-4 py-2 rounded-full animate-pulse">
-                  <span className="text-gray-500">Đang kiểm tra...</span>
+                  <span className="text-gray-500">{t(C.checking)}</span>
                 </div>
               ) : user ? (
                 <motion.div 
@@ -295,8 +300,8 @@ export default function ContactPage() {
                     <User className="w-4 h-4 text-green-600" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-green-700">Thành viên</p>
-                    <p className="text-xs text-gray-600">3 yêu cầu/ngày</p>
+                    <p className="text-sm font-medium text-green-700">{t(C.member)}</p>
+                    <p className="text-xs text-gray-600">{t(C.memberLimit)}</p>
                   </div>
                 </motion.div>
               ) : (
@@ -310,8 +315,8 @@ export default function ContactPage() {
                       <AlertCircle className="w-4 h-4 text-amber-600" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium text-amber-700">Khách</p>
-                      <p className="text-xs text-gray-600">1 yêu cầu/ngày</p>
+                      <p className="text-sm font-medium text-amber-700">{t(C.guest)}</p>
+                      <p className="text-xs text-gray-600">{t(C.guestLimit)}</p>
                     </div>
                   </div>
                   <Link 
@@ -319,7 +324,7 @@ export default function ContactPage() {
                     className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
                   >
                     <LogIn className="w-4 h-4" />
-                    Đăng nhập để gửi thêm
+                    {t(C.loginForMore)}
                   </Link>
                 </motion.div>
               )}
@@ -357,7 +362,7 @@ export default function ContactPage() {
                 <MessageSquare className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-bold text-text mb-2">Chat</h3>
-              <p className="text-gray-700 font-medium">Trò chuyện trực tiếp</p>
+              <p className="text-gray-700 font-medium">{t(C.liveChat)}</p>
             </motion.div>
 
             <motion.div
@@ -370,8 +375,8 @@ export default function ContactPage() {
               <div className="w-16 h-16 mx-auto mb-4 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-glow-yellow">
                 <Send className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-bold text-text mb-2">Phản Hồi</h3>
-              <p className="text-gray-700 font-medium">Gửi phản hồi trực tiếp</p>
+              <h3 className="text-lg font-bold text-text mb-2">{t(C.feedback)}</h3>
+              <p className="text-gray-700 font-medium">{t(C.sendFeedback)}</p>
             </motion.div>
           </div>
 
@@ -382,27 +387,27 @@ export default function ContactPage() {
             transition={{ delay: 0.35 }}
             className="glassmorphism-strong p-6 md:p-8 mb-12"
           >
-            <h2 className="text-xl font-bold text-text mb-1">{COMPANY.legalName}</h2>
-            <p className="text-sm text-gray-600 mb-6">{COMPANY.organizationType}</p>
+            <h2 className="text-xl font-bold text-text mb-1">{en ? COMPANY.legalNameEn : COMPANY.legalName}</h2>
+            <p className="text-sm text-gray-600 mb-6">{en ? COMPANY_EN.organizationType : COMPANY.organizationType}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm text-gray-700">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" aria-hidden="true" />
                 <div>
-                  <p className="font-semibold text-text">Trụ sở</p>
+                  <p className="font-semibold text-text">{t(CONTACT_INFO.office)}</p>
                   <a
                     href={COMPANY.address.mapUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-primary hover:underline"
                   >
-                    {COMPANY.address.full}
+                    {en ? COMPANY_EN.addressFull : COMPANY.address.full}
                   </a>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Phone className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" aria-hidden="true" />
                 <div>
-                  <p className="font-semibold text-text">Điện thoại</p>
+                  <p className="font-semibold text-text">{t(CONTACT_INFO.phone)}</p>
                   <a href={`tel:${COMPANY.phoneRaw}`} className="hover:text-primary hover:underline">
                     {COMPANY.phone}
                   </a>
@@ -411,29 +416,29 @@ export default function ContactPage() {
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" aria-hidden="true" />
                 <div>
-                  <p className="font-semibold text-text">Giờ làm việc</p>
-                  <p>{COMPANY.workingHours}</p>
-                  <p className="text-gray-500">{COMPANY.responseTime}</p>
+                  <p className="font-semibold text-text">{t(CONTACT_INFO.hours)}</p>
+                  <p>{en ? COMPANY_EN.workingHours : COMPANY.workingHours}</p>
+                  <p className="text-gray-500">{en ? COMPANY_EN.responseTime : COMPANY.responseTime}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Mail className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" aria-hidden="true" />
                 <div>
-                  <p className="font-semibold text-text">Các hộp thư</p>
+                  <p className="font-semibold text-text">{t(CONTACT_INFO.mailboxes)}</p>
                   <p>
-                    Hỗ trợ:{' '}
+                    {t(CONTACT_INFO.support)}:{' '}
                     <a href={`mailto:${COMPANY.emails.support}`} className="hover:text-primary hover:underline">
                       {COMPANY.emails.support}
                     </a>
                   </p>
                   <p>
-                    Báo chí & hợp tác:{' '}
+                    {t(CONTACT_INFO.press)}:{' '}
                     <a href={`mailto:${COMPANY.emails.press}`} className="hover:text-primary hover:underline">
                       {COMPANY.emails.press}
                     </a>
                   </p>
                   <p>
-                    Tuyển dụng:{' '}
+                    {t(CONTACT_INFO.careers)}:{' '}
                     <a href={`mailto:${COMPANY.emails.careers}`} className="hover:text-primary hover:underline">
                       {COMPANY.emails.careers}
                     </a>
@@ -466,24 +471,24 @@ export default function ContactPage() {
                   </motion.div>
                 </div>
                 
-                <h2 className="text-3xl font-bold text-text mb-4">Yêu cầu đã được gửi!</h2>
+                <h2 className="text-3xl font-bold text-text mb-4">{t(C.sent)}</h2>
                 
                 <div className="glassmorphism-light p-6 rounded-2xl max-w-md mx-auto mb-8">
                   <div className="flex items-center gap-3 mb-4">
                     <Clock className="w-6 h-6 text-primary" />
-                    <p className="text-lg font-medium text-gray-800">Đang đợi Admin xử lý</p>
+                    <p className="text-lg font-medium text-gray-800">{t(C.waitingAdmin)}</p>
                   </div>
                   <p className="text-gray-600 text-sm mb-4">
-                    Yêu cầu của bạn đã được tiếp nhận. Admin sẽ xem xét và phản hồi trong thời gian sớm nhất (thường trong 24 giờ).
+                    {t(C.received)}
                   </p>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Shield className="w-4 h-4" />
-                    <span>Bạn sẽ nhận email thông báo khi có kết quả</span>
+                    <span>{t(C.emailNotice)}</span>
                   </div>
                 </div>
 
                 <p className="text-gray-600 mb-6">
-                  Đang chuyển đến trang theo dõi yêu cầu trong <span className="font-bold text-primary">{redirectCountdown}</span> giây...
+                  {en ? 'Redirecting to request tracking in ' : 'Đang chuyển đến trang theo dõi yêu cầu trong '}<span className="font-bold text-primary">{redirectCountdown}</span>{en ? ' s...' : ' giây...'}
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -493,7 +498,7 @@ export default function ContactPage() {
                     className="btn-glass-primary"
                   >
                     <span className="flex items-center gap-2">
-                      Xem Yêu Cầu Của Tôi
+                      {t(C.viewMyRequests)}
                       <ArrowRight className="w-5 h-5" />
                     </span>
                   </Button>
@@ -509,10 +514,10 @@ export default function ContactPage() {
                     {cooldownRemaining > 0 ? (
                       <span className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
-                        Đợi {cooldownRemaining}s
+                        {en ? 'Wait' : 'Đợi'} {cooldownRemaining}s
                       </span>
                     ) : (
-                      'Gửi Yêu Cầu Khác'
+                      t(C.sendAnother)
                     )}
                   </Button>
                 </div>
@@ -520,7 +525,7 @@ export default function ContactPage() {
             ) : (
               <>
                 <h2 className="text-3xl font-bold text-text mb-8 text-center">
-                  Gửi Yêu Cầu Của Bạn
+                  {t(C.formTitle)}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -548,10 +553,10 @@ export default function ContactPage() {
                       <Clock className="w-5 h-5 text-amber-600 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-amber-800">
-                          Chờ {cooldownRemaining} giây để gửi yêu cầu tiếp
+                          {en ? `Wait ${cooldownRemaining}s to submit another request` : `Chờ ${cooldownRemaining} giây để gửi yêu cầu tiếp`}
                         </p>
                         <p className="text-xs text-amber-600">
-                          Để đảm bảo chất lượng dịch vụ, mỗi lần gửi cách nhau 2 phút
+                          {t(C.spacingNotice)}
                         </p>
                       </div>
                     </motion.div>
@@ -560,14 +565,14 @@ export default function ContactPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-800 mb-2">
-                        Tên của bạn *
+                        {t(C.yourName)}
                       </label>
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="input-glass"
-                        placeholder="Nguyễn Văn A"
+                        placeholder={t(C.namePlaceholder)}
                         required
                       />
                     </div>
@@ -604,7 +609,7 @@ export default function ContactPage() {
 
                   <div className={emailError ? 'mt-8' : ''}>
                     <label className="block text-sm font-medium text-gray-800 mb-2">
-                      Số điện thoại
+                      {t(C.phone)}
                     </label>
                     <input
                       type="tel"
@@ -617,14 +622,14 @@ export default function ContactPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">
-                      Mô tả yêu cầu *
+                      {t(C.describe)}
                     </label>
                     <textarea
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       className="textarea-glass"
                       rows={6}
-                      placeholder="Mô tả chi tiết yêu cầu của bạn..."
+                      placeholder={t(C.describePlaceholder)}
                       required
                     />
                   </div>
@@ -632,7 +637,7 @@ export default function ContactPage() {
                   {/* File Upload */}
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">
-                      Tải ảnh lên (tùy chọn)
+                      {t(C.uploadLabel)}
                     </label>
                     <div className="glassmorphism-light p-6 border-2 border-dashed border-white/50 hover:border-primary/50 transition-colors">
                       <input
@@ -649,10 +654,10 @@ export default function ContactPage() {
                       >
                         <Upload className="w-12 h-12 text-gray-600 mb-3" />
                         <p className="text-gray-700 font-medium mb-1">
-                          Kéo thả ảnh vào đây hoặc click để chọn
+                          {t(C.dragDrop)}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Hỗ trợ: JPG, PNG, WEBP (Tối đa 10MB/file)
+                          {t(C.supported)}
                         </p>
                       </label>
                     </div>
@@ -696,7 +701,7 @@ export default function ContactPage() {
                           />
                         </div>
                         <p className="text-sm text-gray-700 mt-2 text-center">
-                          Đang tải lên... {Math.round(uploadProgress)}%
+                          {t(C.uploading)} {Math.round(uploadProgress)}%
                         </p>
                       </div>
                     )}
@@ -705,7 +710,7 @@ export default function ContactPage() {
                   {/* Rating */}
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">
-                      Đánh giá trải nghiệm (tùy chọn)
+                      {t(C.rate)}
                     </label>
                     <div className="flex gap-2">
                       {[1, 2, 3, 4, 5].map((star) => (
@@ -737,17 +742,17 @@ export default function ContactPage() {
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
                         <div className="animate-spin rounded-full h-5 w-5 border-3 border-white border-t-transparent" />
-                        Đang gửi...
+                        {t(C.sending)}
                       </span>
                     ) : cooldownRemaining > 0 ? (
                       <span className="flex items-center justify-center gap-2">
                         <Clock className="w-5 h-5" />
-                        Đợi {cooldownRemaining} giây
+                        {en ? 'Wait' : 'Đợi'} {cooldownRemaining}{en ? 's' : ' giây'}
                       </span>
                     ) : (
                       <span className="flex items-center justify-center gap-2">
                         <Send className="w-5 h-5" />
-                        Gửi Yêu Cầu
+                        {t(C.submit)}
                         <Sparkles className="w-5 h-5" />
                       </span>
                     )}
@@ -756,7 +761,7 @@ export default function ContactPage() {
                   {/* Security notice */}
                   <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                     <Shield className="w-4 h-4" />
-                    <span>Yêu cầu được bảo vệ chống spam</span>
+                    <span>{t(C.spamProtected)}</span>
                   </div>
                 </form>
               </>

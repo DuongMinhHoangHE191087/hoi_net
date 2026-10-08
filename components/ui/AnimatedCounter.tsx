@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useLang } from '@/contexts/LanguageContext'
 
 interface AnimatedCounterProps {
   end: number
@@ -20,6 +21,7 @@ export default function AnimatedCounter({
   className = '',
   compact = true,
 }: AnimatedCounterProps) {
+  const { lang } = useLang()
   const [count, setCount] = useState(0)
   const [hasStarted, setHasStarted] = useState(false)
   const ref = useRef<HTMLSpanElement>(null)
@@ -74,7 +76,8 @@ export default function AnimatedCounter({
 
   const formatNumber = (n: number) => {
     if (compact && n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K`
-    return n.toLocaleString('vi-VN')
+    // vi-VN: 128.000 | en-US: 128,000
+    return n.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')
   }
 
   return (

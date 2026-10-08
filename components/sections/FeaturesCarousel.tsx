@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight, Sparkles, ArrowRight } from 'lucide-react'
 import { Feature } from '@/lib/supabase'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useLang } from '@/contexts/LanguageContext'
+import { H } from '@/lib/landing-i18n'
 
 // Icon mapping - import directly to avoid barrel file overhead
 import {
@@ -94,6 +96,7 @@ const FeatureCard = memo(function FeatureCard({
   gradient: string
   shouldReduceMotion: boolean | null
 }) {
+  const { t } = useLang()
   const IconComponent = getIconComponent(feature.icon_value)
   const hasImage = feature.icon_type === 'image' && feature.icon_value
 
@@ -157,7 +160,7 @@ const FeatureCard = memo(function FeatureCard({
           
           {/* Learn more */}
           <div className="inline-flex items-center gap-1 text-primary font-medium text-sm opacity-80 group-hover:opacity-100 transition-opacity">
-            <span>Tìm hiểu thêm</span>
+            <span>{t(H.learnMore)}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
           </div>
         </div>
@@ -177,6 +180,7 @@ export default function FeaturesCarousel({
   title = 'Tính Năng Nổi Bật',
   subtitle = 'Khám phá những công cụ mạnh mẽ giúp bạn khôi phục và cải thiện ảnh'
 }: FeaturesCarouselProps) {
+  const { t } = useLang()
   // Respect user's motion preferences
   const shouldReduceMotion = useReducedMotion()
   
@@ -276,7 +280,7 @@ export default function FeaturesCarousel({
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            ✨ Khám phá ngay
+            {t(H.discoverNow)}
           </motion.span>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
             <span className="gradient-text-alt">{title}</span>
@@ -298,14 +302,14 @@ export default function FeaturesCarousel({
               <button
                 onClick={prevSlide}
                 className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-gray-700 hover:text-primary hover:shadow-xl transition-all duration-200 cursor-pointer"
-                aria-label="Slide trước"
+                aria-label={t(H.prevSlide)}
               >
                 <ChevronLeft className="w-6 h-6" aria-hidden="true" />
               </button>
               <button
                 onClick={nextSlide}
                 className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-gray-700 hover:text-primary hover:shadow-xl transition-all duration-200 cursor-pointer"
-                aria-label="Slide tiếp theo"
+                aria-label={t(H.nextSlide)}
               >
                 <ChevronRight className="w-6 h-6" aria-hidden="true" />
               </button>
@@ -359,7 +363,7 @@ export default function FeaturesCarousel({
                       ? 'w-8 bg-primary' 
                       : 'w-2 bg-gray-300 hover:bg-gray-400'
                   }`}
-                  aria-label={`Đi đến slide ${idx + 1}`}
+                  aria-label={`${t(H.goToSlide)} ${idx + 1}`}
                 />
               ))}
             </div>
@@ -378,7 +382,7 @@ export default function FeaturesCarousel({
             href="/features"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-full hover:border-primary hover:text-primary hover:shadow-lg transition-all duration-200 cursor-pointer group"
           >
-            <span>Xem tất cả tính năng</span>
+            <span>{t(H.viewAllFeatures)}</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
           </Link>
         </motion.div>

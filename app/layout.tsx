@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth'
 import { SiteSettingsProvider } from '@/contexts/SiteSettingsContext'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 import LoadingWrapper from '@/components/LoadingWrapper'
 import QueryProvider from '@/lib/providers/QueryProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -9,6 +10,8 @@ import AbortErrorSuppressor from '@/components/AbortErrorSuppressor'
 import { Toaster } from 'react-hot-toast'
 import { getAllSiteSettings } from '@/lib/supabase/server-utils'
 import { COMPANY, SITE_URL, TWITTER_HANDLE, buildOrganizationJsonLd } from '@/lib/company-info'
+import { SEO, buildFaqJsonLd, buildServiceJsonLd, organizationCopy } from '@/lib/seo-copy'
+import { getRequestLang } from '@/lib/server-lang'
 
 // This app relies on auth cookies in multiple places; force dynamic rendering
 // to prevent build-time prerender errors when reading cookies in server utilities.
@@ -50,6 +53,8 @@ export const viewport: Viewport = {
  * 10. seo_canonical         - Canonical URL
  */
 export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getRequestLang()
+  const en = lang === 'en'
   let settings: Record<string, string> = {}
   try {
     settings = await getAllSiteSettings()
@@ -61,18 +66,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteName = settings.brand_name || COMPANY.brandName
   const siteUrl = settings.site_url || SITE_URL
   
-  const title = settings.site_meta_title || settings.seo_title || 'Hồi Nét - Dịch Vụ Phục Chế & Khôi Phục Ảnh Cũ Chuyên Nghiệp Bằng AI'
-  const description = settings.site_meta_description || settings.seo_description || 'Dịch vụ phục chế ảnh cũ, làm nét ảnh mờ và ghép ảnh gia đình bằng công nghệ AI tiên tiến. Khôi phục kỷ niệm, tô màu ảnh trắng đen chuyên nghiệp, chất lượng cao.'
-  
+  // Site settings trong DB chỉ có tiếng Việt → chỉ dùng cho bản VI; bản EN dùng lib/seo-copy.ts
+  const title = en
+    ? SEO.title.en
+    : settings.site_meta_title || settings.seo_title || SEO.title.vi
+  const description = en
+    ? SEO.description.en
+    : settings.site_meta_description || settings.seo_description || SEO.description.vi
+
   // Keywords (comma-separated in settings)
-  const keywords = settings.seo_keywords?.split(',').map(k => k.trim()) || [
-    'khôi phục ảnh cũ',
-    'làm nét ảnh',
-    'AI ảnh',
-    'ghép ảnh gia đình',
-    'phục chế ảnh',
-    'tô màu ảnh cũ',
-  ]
+  const keywords = en
+    ? [...SEO.keywords.en]
+    : settings.seo_keywords?.split(',').map(k => k.trim()) || [...SEO.keywords.vi]
 
   // === IMAGES ===
   const ogImage = settings.site_og_image || settings.brand_logo_url || `${siteUrl}/og-image.jpg`
@@ -106,7 +111,10 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical,
       languages: {
-        'vi-VN': canonical,
+        // Cùng một URL phục vụ cả hai ngôn ngữ (chọn theo cookie); mặc định là tiếng Anh
+        'x-default': canonical,
+        en: canonical,
+        vi: canonical,
       },
     },
 
@@ -125,7 +133,8 @@ export async function generateMetadata(): Promise<Metadata> {
     // === OPEN GRAPH (Facebook, LinkedIn) ===
     openGraph: {
       type: 'website',
-      locale: 'vi_VN',
+      locale: en ? 'en_US' : 'vi_VN',
+      alternateLocale: en ? ['vi_VN'] : ['en_US'],
       url: siteUrl,
       siteName,
       title,
@@ -180,13 +189,15 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const lang = await getRequestLang()
+
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         {/* ============================================
             🔍 JSON-LD STRUCTURED DATA (SEO Rich Snippets)
@@ -195,7 +206,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(buildOrganizationJsonLd()),
+            __html: JSON.stringify({ ...buildOrganizationJsonLd(), ...organizationCopy(lang) }),
           }}
         />
 
@@ -209,93 +220,22 @@ export default function RootLayout({
               '@id': `${SITE_URL}/#website`,
               name: COMPANY.brandName,
               url: SITE_URL,
-              inLanguage: 'vi-VN',
+              inLanguage: lang === 'en' ? 'en' : 'vi-VN',
               publisher: { '@id': `${SITE_URL}/#organization` },
             }),
           }}
         />
 
-        {/* Service Schema */}
+        {/* Service Schema (song ngữ: lib/seo-copy.ts) */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Service',
-              serviceType: 'Hồi Nét - Phục chế và khôi phục ảnh',
-              name: 'Hồi Nét - Phục chế & Khôi phục ảnh cũ chuyên nghiệp bằng AI',
-              description: 'Hồi Nét - Dịch vụ phục chế, khôi phục, làm nét và tô màu ảnh cũ hư hỏng nặng sử dụng công nghệ AI tiên tiến',
-              provider: { '@id': `${SITE_URL}/#organization` },
-              areaServed: {
-                '@type': 'Country',
-                name: 'Vietnam',
-              },
-              hasOfferCatalog: {
-                '@type': 'OfferCatalog',
-                name: 'Dịch vụ khôi phục ảnh',
-                itemListElement: [
-                  {
-                    '@type': 'Offer',
-                    itemOffered: {
-                      '@type': 'Service',
-                      name: 'Làm nét ảnh',
-                    },
-                  },
-                  {
-                    '@type': 'Offer',
-                    itemOffered: {
-                      '@type': 'Service',
-                      name: 'Tô màu ảnh cũ',
-                    },
-                  },
-                  {
-                    '@type': 'Offer',
-                    itemOffered: {
-                      '@type': 'Service',
-                      name: 'Ghép ảnh gia đình',
-                    },
-                  },
-                ],
-              },
-            }),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildServiceJsonLd(lang)) }}
         />
-        
-        {/* FAQ Schema for SEO Rich Snippets */}
+
+        {/* FAQ Schema for SEO Rich Snippets (song ngữ: lib/seo-copy.ts) */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'FAQPage',
-              "mainEntity": [
-                {
-                  "@type": "Question",
-                  "name": "Khôi phục ảnh cũ giá bao nhiêu?",
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Hồi Nét cung cấp dịch vụ khôi phục ảnh cơ bản hoàn toàn miễn phí. Đối với các yêu cầu phục chế chuyên sâu hoặc ghép ảnh phức tạp, chúng tôi có các gói dịch vụ linh hoạt phù hợp với nhu cầu của bạn."
-                  }
-                },
-                {
-                  "@type": "Question",
-                  "name": "Làm nét ảnh mờ bằng AI có hiệu quả không?",
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Công nghệ AI của Hồi Nét có khả năng tái tạo chi tiết, khử nhiễu và làm rõ nét các bức ảnh bị mờ nhòe do rung tay hoặc độ phân giải thấp một cách kinh ngạc."
-                  }
-                },
-                {
-                  "@type": "Question",
-                  "name": "Thời gian phục chế một bức ảnh là bao lâu?",
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Với sức mạnh của trí tuệ nhân tạo, phần lớn các bức ảnh sẽ được xử lý hoàn tất chỉ trong vòng vài phút."
-                  }
-                }
-              ]
-            }),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildFaqJsonLd(lang)) }}
         />
 
         {/* Preload critical fonts for faster LCP */}
@@ -333,6 +273,7 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <SiteSettingsProvider>
+               <LanguageProvider initialLang={lang}>
                 {/* ⚡ Loading with dynamic branding from database */}
                 <LoadingWrapper>
                   {children}
@@ -379,6 +320,7 @@ export default function RootLayout({
                     },
                   }}
                 />
+               </LanguageProvider>
               </SiteSettingsProvider>
             </AuthProvider>
           </QueryProvider>

@@ -3,8 +3,13 @@
 import Link from 'next/link'
 import { Shield, ChevronLeft, Database, Eye, Lock, Bell, Trash2, Globe } from 'lucide-react'
 import { COMPANY } from '@/lib/company-info'
+import { COMPANY_EN } from '@/lib/about-content'
+import { useLang } from '@/contexts/LanguageContext'
+import { LEGAL_COMMON, PRIVACY_EN } from '@/lib/legal-i18n'
 
 export default function PrivacyPage() {
+  const { lang, t } = useLang()
+  const en = lang === 'en'
   const sections = [
     {
       icon: Database,
@@ -78,7 +83,7 @@ export default function PrivacyPage() {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors mb-6"
           >
             <ChevronLeft className="w-4 h-4" />
-            Quay lại trang chủ
+            {t(LEGAL_COMMON.back)}
           </Link>
           
           <div className="flex items-center gap-4 animate-fade-in-up">
@@ -86,8 +91,8 @@ export default function PrivacyPage() {
               <Shield className="w-8 h-8 text-emerald-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Chính Sách Bảo Mật</h1>
-              <p className="text-muted-foreground">Cập nhật lần cuối: Tháng 1, 2026</p>
+              <h1 className="text-3xl font-bold">{en ? PRIVACY_EN.title : 'Chính Sách Bảo Mật'}</h1>
+              <p className="text-muted-foreground">{t(LEGAL_COMMON.updated)}</p>
             </div>
           </div>
         </div>
@@ -99,15 +104,18 @@ export default function PrivacyPage() {
           {/* Intro */}
           <div className="bg-card border rounded-2xl p-6 mb-8 animate-fade-in-up">
             <p className="text-lg text-muted-foreground">
-              Tại <strong className="text-foreground">Hồi Nét</strong>, chúng tôi cam kết bảo vệ quyền riêng tư của bạn.
-              Chính sách này giải thích cách chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn
-              khi sử dụng dịch vụ khôi phục ảnh của chúng tôi.
+              {en ? PRIVACY_EN.introLead : 'Tại'} <strong className="text-foreground">Hồi Nét</strong>
+              {en
+                ? `, ${PRIVACY_EN.introBody}`
+                : ', chúng tôi cam kết bảo vệ quyền riêng tư của bạn. Chính sách này giải thích cách chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn khi sử dụng dịch vụ khôi phục ảnh của chúng tôi.'}
             </p>
           </div>
 
           {/* Sections */}
           <div className="space-y-6 animate-stagger">
-            {sections.map((section) => (
+            {sections.map((section, sectionIndex) => {
+              const view = en ? PRIVACY_EN.sections[sectionIndex] : section
+              return (
               <div
                 key={section.title}
                 className="bg-card border rounded-2xl p-6 hover:shadow-lg transition-shadow animate-fade-in-up"
@@ -117,9 +125,9 @@ export default function PrivacyPage() {
                     <section.icon className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl font-semibold mb-4">{section.title}</h2>
+                    <h2 className="text-xl font-semibold mb-4">{view.title}</h2>
                     <ul className="space-y-3">
-                      {section.content.map((item, i) => (
+                      {view.content.map((item, i) => (
                         <li key={i} className="flex items-start gap-3 text-muted-foreground">
                           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0" />
                           {item}
@@ -129,28 +137,36 @@ export default function PrivacyPage() {
                   </div>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Retention Policy */}
           <div className="mt-8 bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 animate-fade-in-up">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <Database className="w-5 h-5 text-amber-600" />
-              Thời Gian Lưu Trữ
+              {en ? PRIVACY_EN.retentionTitle : 'Thời Gian Lưu Trữ'}
             </h3>
             <ul className="space-y-2 text-muted-foreground">
-              <li>• Ảnh tải lên: Xóa sau 30 ngày nếu không có yêu cầu xử lý</li>
-              <li>• Ảnh đã xử lý: Lưu trữ 90 ngày để bạn tải về</li>
-              <li>• Thông tin tài khoản: Lưu trữ cho đến khi bạn yêu cầu xóa</li>
-              <li>• Nhật ký truy cập: Xóa sau 12 tháng</li>
+              {(en
+                ? PRIVACY_EN.retention
+                : [
+                    '• Ảnh tải lên: Xóa sau 30 ngày nếu không có yêu cầu xử lý',
+                    '• Ảnh đã xử lý: Lưu trữ 90 ngày để bạn tải về',
+                    '• Thông tin tài khoản: Lưu trữ cho đến khi bạn yêu cầu xóa',
+                    '• Nhật ký truy cập: Xóa sau 12 tháng',
+                  ]
+              ).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
             </ul>
           </div>
 
           {/* Contact */}
           <div className="mt-8 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 text-center animate-fade-in-up">
-            <h3 className="text-lg font-semibold mb-2">Liên Hệ Về Quyền Riêng Tư</h3>
+            <h3 className="text-lg font-semibold mb-2">{en ? PRIVACY_EN.contactTitle : 'Liên Hệ Về Quyền Riêng Tư'}</h3>
             <p className="text-muted-foreground mb-4">
-              Nếu bạn có câu hỏi hoặc muốn thực hiện quyền của mình, vui lòng liên hệ.
+              {en ? PRIVACY_EN.contactText : 'Nếu bạn có câu hỏi hoặc muốn thực hiện quyền của mình, vui lòng liên hệ.'}
             </p>
             <a
               href={`mailto:${COMPANY.emails.support}`}
@@ -159,7 +175,7 @@ export default function PrivacyPage() {
               {COMPANY.emails.support}
             </a>
             <p className="mt-3 text-sm text-muted-foreground">
-              Đơn vị quản lý dữ liệu: {COMPANY.legalName} · {COMPANY.address.full}
+              {en ? PRIVACY_EN.controller : 'Đơn vị quản lý dữ liệu:'} {en ? COMPANY.legalNameEn : COMPANY.legalName} · {en ? COMPANY_EN.addressFull : COMPANY.address.full}
             </p>
           </div>
 
@@ -169,7 +185,7 @@ export default function PrivacyPage() {
               href="/terms" 
               className="text-primary hover:underline font-medium"
             >
-              ← Điều Khoản Sử Dụng
+              {en ? PRIVACY_EN.related : '← Điều Khoản Sử Dụng'}
             </Link>
           </div>
         </div>

@@ -4,6 +4,13 @@
  */
 
 import { createClient } from './server'
+import {
+  mapAchievementRows,
+  mapLeaderRows,
+  mapMilestoneRows,
+  mapStatRows,
+  type CompanyContent,
+} from '../about-content'
 
 // ============================================
 // Server-side Data Fetching Functions
@@ -229,3 +236,37 @@ export async function getPricingPlans() {
   }
 }
 
+
+/**
+ * Nội dung trang About song ngữ (bảng company_* từ migration 041).
+ * Bảng chưa tồn tại / rỗng / lỗi → trả undefined cho phần đó để website dùng
+ * bản hardcode trong lib/about-content.ts. Không bao giờ ném lỗi.
+ */
+export async function getCompanyContent(): Promise<CompanyContent> {
+  try {
+    const supabase = await createClient()
+    const load = async (table: string) => {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+      if (error || !data || data.length === 0) return undefined
+      return data
+    }
+    const [milestones, achievements, leaders, stats] = await Promise.all([
+      load('company_milestones'),
+      load('company_achievements'),
+      load('company_leaders'),
+      load('company_stats'),
+    ])
+    return {
+      milestones: milestones && mapMilestoneRows(milestones),
+      achievements: achievements && mapAchievementRows(achievements),
+      leaders: leaders && mapLeaderRows(leaders),
+      stats: stats && mapStatRows(stats),
+    }
+  } catch {
+    return {}
+  }
+}

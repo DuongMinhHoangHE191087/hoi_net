@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight, Pause, Play, Twitter, Linkedin, Github, Mail
 import { TeamMember } from '@/lib/supabase'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { SafeAvatar } from '@/components/ui/SafeImage'
+import { useLang } from '@/contexts/LanguageContext'
+import { H } from '@/lib/landing-i18n'
 
 interface TeamCarousel3DProps {
   team: TeamMember[]
@@ -22,6 +24,7 @@ export default function TeamCarousel3D({
   variant = 'default',
   showBackground = true
 }: TeamCarousel3DProps) {
+  const { t } = useLang()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(autoPlay)
   const [isHovering, setIsHovering] = useState(false)
@@ -91,8 +94,8 @@ export default function TeamCarousel3D({
   if (team.length === 0) {
     return (
       <div className="glassmorphism-strong p-12 text-center rounded-2xl">
-        <h3 className="text-lg font-medium text-gray-800 mb-2">Đang cập nhật</h3>
-        <p className="text-gray-600">Thông tin đội ngũ sẽ được cập nhật sớm</p>
+        <h3 className="text-lg font-medium text-gray-800 mb-2">{t(H.teamUpdatingTitle)}</h3>
+        <p className="text-gray-600">{t(H.teamUpdatingText)}</p>
       </div>
     )
   }
@@ -246,7 +249,7 @@ export default function TeamCarousel3D({
               <span className="text-yellow-200 drop-shadow-lg">TEAM</span>
             </h2>
             <p className="text-white/80 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-              Chúng tôi luôn hướng tới sự chuyên nghiệp và hoàn hảo trong mọi sản phẩm.
+              {t(H.teamTagline)}
             </p>
           </motion.div>
         )}

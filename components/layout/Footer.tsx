@@ -4,15 +4,22 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ImageIcon, Heart, ExternalLink, Mail, Phone, MapPin, Clock, Globe } from 'lucide-react'
 import { useSiteSettings, useFooterLinksByColumn, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
-import { COMPANY, SOCIAL_LINKS, getCopyright } from '@/lib/company-info'
+import { COMPANY, SOCIAL_LINKS } from '@/lib/company-info'
+import { COMPANY_EN } from '@/lib/about-content'
+import { useLang } from '@/contexts/LanguageContext'
+import { FOOTER, translateFooterColumn, translateLink } from '@/lib/site-i18n'
 import SocialIcon from '@/components/ui/SocialIcon'
 
 export default function Footer() {
   const { data: settings = DEFAULT_SITE_SETTINGS } = useSiteSettings()
   const { data: footerColumns = {} } = useFooterLinksByColumn()
+  const { lang, t } = useLang()
+  const en = lang === 'en'
 
   const brandName = settings.brand_name || DEFAULT_SITE_SETTINGS.brand_name
-  const footerDescription = settings.footer_description || DEFAULT_SITE_SETTINGS.footer_description
+  const footerDescription = en
+    ? FOOTER.description.en
+    : settings.footer_description || DEFAULT_SITE_SETTINGS.footer_description
   const logoUrl = settings.brand_logo_url || ''
 
   // Default column order
@@ -70,7 +77,7 @@ export default function Footer() {
 
             {/* Contact Column (hardcode: lib/company-info.ts) */}
             <div>
-              <h3 className="font-bold text-text mb-4 text-lg">Liên Hệ</h3>
+              <h3 className="font-bold text-text mb-4 text-lg">{t(FOOTER.contactTitle)}</h3>
               <address className="not-italic space-y-3 text-sm text-gray-700">
                 <p className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" aria-hidden="true" />
@@ -80,7 +87,7 @@ export default function Footer() {
                     rel="noopener noreferrer"
                     className="hover:text-primary transition-colors"
                   >
-                    {COMPANY.address.full}
+                    {en ? COMPANY_EN.addressFull : COMPANY.address.full}
                   </a>
                 </p>
                 <p className="flex items-center gap-2">
@@ -111,7 +118,7 @@ export default function Footer() {
                 </p>
                 <p className="flex items-start gap-2">
                   <Clock className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" aria-hidden="true" />
-                  <span>{COMPANY.workingHours}</span>
+                  <span>{en ? COMPANY_EN.workingHours : COMPANY.workingHours}</span>
                 </p>
               </address>
             </div>
@@ -128,7 +135,7 @@ export default function Footer() {
 
               return (
                 <div key={columnName}>
-                  <h3 className="font-bold text-text mb-4 text-lg">{column.title}</h3>
+                  <h3 className="font-bold text-text mb-4 text-lg">{translateFooterColumn(column.title, columnName, lang)}</h3>
                   <ul className="space-y-3">
                     {column.links.map((link) => (
                       <li key={link.id}>
@@ -139,7 +146,7 @@ export default function Footer() {
                             rel="noopener noreferrer"
                             className="text-gray-700 hover:text-primary text-sm transition-all hover:translate-x-1 inline-flex items-center gap-1"
                           >
-                            → {link.label}
+                            → {translateLink(link.label, link.href, lang)}
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         ) : (
@@ -147,7 +154,7 @@ export default function Footer() {
                             href={link.href}
                             className="text-gray-700 hover:text-primary text-sm transition-all hover:translate-x-1 inline-block"
                           >
-                            → {link.label}
+                            → {translateLink(link.label, link.href, lang)}
                           </Link>
                         )}
                       </li>
@@ -159,11 +166,11 @@ export default function Footer() {
           </div>
 
           <div className="border-t-2 border-white/30 mt-8 pt-8">
-            <p className="text-center text-sm text-gray-700">{getCopyright()}</p>
+            <p className="text-center text-sm text-gray-700">{FOOTER.copyright(new Date().getFullYear(), lang)}</p>
             <p className="mt-1 text-center text-xs text-gray-600 flex items-center justify-center gap-2">
-              Made with
+              {t(FOOTER.madeWith)}
               <Heart className="w-3.5 h-3.5 text-primary fill-primary animate-pulse" />
-              in Vietnam · All rights reserved.
+              {t(FOOTER.inVietnam)}
             </p>
           </div>
         </div>
@@ -174,6 +181,7 @@ export default function Footer() {
 
 // Fallback columns when database is empty
 function FallbackColumn({ columnName }: { columnName: string }) {
+  const { lang } = useLang()
   const fallbackData: Record<string, { title: string; links: { label: string; href: string }[] }> = {
     products: {
       title: 'Sản Phẩm',
@@ -202,7 +210,7 @@ function FallbackColumn({ columnName }: { columnName: string }) {
 
   return (
     <div>
-      <h3 className="font-bold text-text mb-4 text-lg">{column.title}</h3>
+      <h3 className="font-bold text-text mb-4 text-lg">{translateFooterColumn(column.title, columnName, lang)}</h3>
       <ul className="space-y-3">
         {column.links.map((link, index) => (
           <li key={index}>
@@ -210,7 +218,7 @@ function FallbackColumn({ columnName }: { columnName: string }) {
               href={link.href}
               className="text-gray-700 hover:text-primary text-sm transition-all hover:translate-x-1 inline-block"
             >
-              → {link.label}
+              → {translateLink(link.label, link.href, lang)}
             </Link>
           </li>
         ))}

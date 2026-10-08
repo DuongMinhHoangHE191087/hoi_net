@@ -7,6 +7,8 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/lib/auth'
 import { useSiteSettings, useNavigationLinks, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
+import { useLang, LanguageSwitch } from '@/contexts/LanguageContext'
+import { COMMON, translateLink } from '@/lib/site-i18n'
 import toast from 'react-hot-toast'
 import LogoutConfirmDialog from '@/components/ui/LogoutConfirmDialog'
 import NotificationBell from '@/components/NotificationBell'
@@ -18,6 +20,7 @@ export default function Navbar() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { user, isAdmin, signOut, loading } = useAuth()
+  const { lang, t } = useLang()
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   // Enable realtime notifications for logged in users
@@ -141,7 +144,7 @@ export default function Navbar() {
           className={`${baseClassName} inline-flex items-center gap-1`}
           onClick={() => isMobile && setIsOpen(false)}
         >
-          {link.label}
+          {translateLink(link.label, link.href, lang)}
           <ExternalLink className="w-3 h-3" />
           {!isMobile && (
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-primary group-hover:w-full transition-all duration-300"></span>
@@ -157,7 +160,7 @@ export default function Navbar() {
         className={baseClassName}
         onClick={() => isMobile && setIsOpen(false)}
       >
-        {link.label}
+        {translateLink(link.label, link.href, lang)}
         {!isMobile && (
           <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-primary group-hover:w-full transition-all duration-300"></span>
         )}
@@ -182,6 +185,8 @@ export default function Navbar() {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
             {displayLinks.map((link) => renderNavLink(link))}
+
+            <LanguageSwitch compact indicatorId="nav-lang-pill" />
 
             {/* User Authentication Section */}
             {!loading && (
@@ -220,7 +225,7 @@ export default function Navbar() {
                           {/* User Info */}
                           <div className="p-4 border-b border-white/30">
                             <p className="text-sm font-semibold text-gray-800">
-                              {user.user_metadata?.full_name || 'Người dùng'}
+                              {user.user_metadata?.full_name || t(COMMON.userFallback)}
                             </p>
                             <p className="text-xs text-gray-600 truncate">
                               {user.email}
@@ -250,7 +255,7 @@ export default function Navbar() {
                               onClick={() => setUserMenuOpen(false)}
                             >
                               <Settings className="w-4 h-4" />
-                              <span className="text-sm font-medium">Hồ Sơ</span>
+                              <span className="text-sm font-medium">{t(COMMON.profile)}</span>
                             </Link>
 
                             <Link
@@ -259,7 +264,7 @@ export default function Navbar() {
                               onClick={() => setUserMenuOpen(false)}
                             >
                               <FileText className="w-4 h-4" />
-                              <span className="text-sm font-medium">Yêu Cầu</span>
+                              <span className="text-sm font-medium">{t(COMMON.requests)}</span>
                             </Link>
 
                             {isAdmin && (
@@ -281,7 +286,7 @@ export default function Navbar() {
                               className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors border-t border-white/30"
                             >
                               <LogOut className="w-4 h-4" />
-                              <span className="text-sm font-medium">Đăng Xuất</span>
+                              <span className="text-sm font-medium">{t(COMMON.logout)}</span>
                             </button>
                           </div>
                         </motion.div>
@@ -298,7 +303,7 @@ export default function Navbar() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        Đăng Nhập
+                        {t(COMMON.login)}
                       </motion.button>
                     </Link>
                     <Link href="/register">
@@ -308,7 +313,7 @@ export default function Navbar() {
                         whileTap={{ scale: 0.95 }}
                       >
                         <span className="flex items-center gap-2">
-                          Đăng Ký
+                          {t(COMMON.register)}
                           <Sparkles className="w-4 h-4" />
                         </span>
                       </motion.button>
@@ -344,6 +349,10 @@ export default function Navbar() {
                   .filter((link) => link.show_in_mobile !== false)
                   .map((link) => renderNavLink(link, true))}
 
+                <div className="px-4">
+                  <LanguageSwitch compact indicatorId="nav-lang-pill-mobile" />
+                </div>
+
                 {/* Mobile User Menu */}
                 {!loading && (
                   <>
@@ -357,7 +366,7 @@ export default function Navbar() {
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-gray-800">
-                                {user.user_metadata?.full_name || 'Người dùng'}
+                                {user.user_metadata?.full_name || t(COMMON.userFallback)}
                               </p>
                               <p className="text-xs text-gray-600 truncate">
                                 {user.email}
@@ -387,7 +396,7 @@ export default function Navbar() {
                           onClick={() => setIsOpen(false)}
                         >
                           <Settings className="w-5 h-5" />
-                          Hồ Sơ
+                          {t(COMMON.profile)}
                         </Link>
 
                         <Link
@@ -396,7 +405,7 @@ export default function Navbar() {
                           onClick={() => setIsOpen(false)}
                         >
                           <FileText className="w-5 h-5" />
-                          Yêu Cầu
+                          {t(COMMON.requests)}
                         </Link>
 
                         {isAdmin && (
@@ -418,7 +427,7 @@ export default function Navbar() {
                           className="flex items-center gap-3 text-red-600 hover:bg-red-50 transition-colors py-3 px-4 rounded-lg font-medium w-full"
                         >
                           <LogOut className="w-5 h-5" />
-                          Đăng Xuất
+                          {t(COMMON.logout)}
                         </button>
                       </>
                     ) : (
@@ -428,12 +437,12 @@ export default function Navbar() {
                           className="text-gray-700 hover:text-primary transition-colors py-3 px-4 hover:bg-white/30 rounded-lg font-medium"
                           onClick={() => setIsOpen(false)}
                         >
-                          Đăng Nhập
+                          {t(COMMON.login)}
                         </Link>
                         <Link href="/register" onClick={() => setIsOpen(false)}>
                           <button className="btn-glass-primary w-full py-3">
                             <span className="flex items-center justify-center gap-2">
-                              Đăng Ký
+                              {t(COMMON.register)}
                               <Sparkles className="w-4 h-4" />
                             </span>
                           </button>

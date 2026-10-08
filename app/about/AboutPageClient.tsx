@@ -4,17 +4,60 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import AboutSections from '@/components/sections/AboutSections'
 import TeamCarousel3D from '@/components/sections/TeamCarousel3D'
+import { useAboutLang } from '@/components/sections/AboutLang'
+import AboutHero from '@/components/sections/AboutHero'
 import CompanyOverview from '@/components/sections/CompanyOverview'
+import CoreValues from '@/components/sections/CoreValues'
 import CompanyStats from '@/components/sections/CompanyStats'
+import GrowthChart from '@/components/sections/GrowthChart'
+import Achievements from '@/components/sections/Achievements'
+import Expertise from '@/components/sections/Expertise'
 import CompanyTimeline from '@/components/sections/CompanyTimeline'
+import Roadmap2030 from '@/components/sections/Roadmap2030'
+import Leadership from '@/components/sections/Leadership'
+import CompanyProfileTable from '@/components/sections/CompanyProfileTable'
+import AboutCTA from '@/components/sections/AboutCTA'
+import type { CompanyContent, L } from '@/lib/about-content'
+import OurStory from '@/components/sections/OurStory'
+import AboutNav from '@/components/sections/AboutNav'
+import ServicesGrid from '@/components/sections/ServicesGrid'
+import HowItWorks from '@/components/sections/HowItWorks'
+import Ecosystem from '@/components/sections/Ecosystem'
+import TrustGovernance from '@/components/sections/TrustGovernance'
+import ImpactSection from '@/components/sections/ImpactSection'
+import PartnersSection from '@/components/sections/PartnersSection'
+import Newsroom from '@/components/sections/Newsroom'
+import CareersSection from '@/components/sections/CareersSection'
+import AboutFAQ from '@/components/sections/AboutFAQ'
 import { AboutSection, TeamMember } from '@/lib/supabase'
 
 interface AboutPageClientProps {
   aboutSections: AboutSection[]
   team: TeamMember[]
+  /** Nội dung từ bảng company_* (migration 041); thiếu thì dùng bản hardcode */
+  content?: CompanyContent
 }
 
-export default function AboutPageClient({ aboutSections, team }: AboutPageClientProps) {
+const TEAM_TITLE: L = { vi: 'Đội Ngũ Của Chúng Tôi', en: 'Our Team' }
+const TEAM_SUB: L = {
+  vi: 'Những con người tài năng và tận tâm, cùng nhau tạo nên sự khác biệt',
+  en: 'Talented, dedicated people who together make the difference',
+}
+
+function TeamHeading() {
+  const { t } = useAboutLang()
+  return (
+    <>
+      <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+        <span className="gradient-text-alt">{t(TEAM_TITLE)}</span>
+      </h2>
+      <p className="text-lg sm:text-xl text-gray-700 max-w-2xl mx-auto">{t(TEAM_SUB)}</p>
+    </>
+  )
+}
+
+export default function AboutPageClient({ aboutSections, team, content = {} }: AboutPageClientProps) {
+  const { lang } = useAboutLang()
   return (
     <div className="min-h-screen gradient-mesh relative overflow-hidden">
       {/* ✅ Pure CSS Animated background - NO Framer Motion */}
@@ -70,43 +113,35 @@ export default function AboutPageClient({ aboutSections, team }: AboutPageClient
 
       <Navbar />
 
-      <section className="pt-32 pb-20 px-4 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="fade-in-up text-center mb-16">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <span className="gradient-text-alt">Chuyên Gia Phục Chế Ảnh</span>
-            </h1>
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Khám phá câu chuyện, sứ mệnh và tầm nhìn của chúng tôi trong việc<br className="hidden sm:block" />
-              <strong className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">
-                phục chế kỷ niệm và bảo tồn di sản gia đình Việt
-              </strong>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Tổng quan công ty: sứ mệnh, tầm nhìn, thông tin pháp nhân (hardcode: lib/company-info.ts) */}
+      {/* Nội dung song ngữ VI/EN: lib/about-content.ts — thông tin công ty: lib/company-info.ts */}
+      <AboutHero />
+      <AboutNav />
       <CompanyOverview />
+      <OurStory />
+      <ServicesGrid />
+      <HowItWorks />
+      <Ecosystem />
+      <CoreValues />
+      <CompanyStats stats={content.stats} />
+      <GrowthChart />
 
-      {/* About Sections - Dynamic from admin */}
-      <AboutSections sections={aboutSections} />
+      {/* Khối About do admin nhập trong DB chỉ có tiếng Việt → chỉ hiện ở bản VI.
+          Bản EN đã có sứ mệnh/tầm nhìn/giá trị bằng tiếng Anh ở các section phía trên. */}
+      {lang === 'vi' && <AboutSections sections={aboutSections} />}
 
-      {/* Số liệu nổi bật + hành trình phát triển (hardcode: lib/company-info.ts) */}
-      <CompanyStats />
-      <CompanyTimeline />
+      <Achievements achievements={content.achievements} />
+      <Expertise />
+      <TrustGovernance />
+      <ImpactSection />
+      <CompanyTimeline milestones={content.milestones} />
+      <Roadmap2030 />
+      <Leadership leaders={content.leaders} />
 
       {/* Team Section */}
       <section className="py-20 px-4 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text-alt">Đội Ngũ Của Chúng Tôi</span>
-            </h2>
-            <p className="text-lg sm:text-xl text-gray-700 max-w-2xl mx-auto">
-              Những con người tài năng và tận tâm,<br className="hidden sm:block" />
-              cùng nhau tạo nên sự khác biệt
-            </p>
+            <TeamHeading />
           </div>
 
           <TeamCarousel3D
@@ -116,6 +151,13 @@ export default function AboutPageClient({ aboutSections, team }: AboutPageClient
           />
         </div>
       </section>
+
+      <PartnersSection />
+      <Newsroom />
+      <CareersSection />
+      <AboutFAQ />
+      <CompanyProfileTable />
+      <AboutCTA />
 
       <Footer />
     </div>

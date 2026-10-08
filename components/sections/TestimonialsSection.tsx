@@ -9,6 +9,8 @@
 
 import { motion } from 'framer-motion'
 import { Star, ArrowRight, Loader2 } from 'lucide-react'
+import { useLang } from '@/contexts/LanguageContext'
+import { H } from '@/lib/landing-i18n'
 
 interface Testimonial {
   name: string
@@ -55,6 +57,7 @@ export default function TestimonialsSection({
   onCTAClick,
   isLoading = false
 }: TestimonialsSectionProps) {
+  const { t } = useLang()
   return (
     <section id="testimonials" className="py-20 px-4 relative">
       <div className="max-w-7xl mx-auto">
@@ -162,7 +165,7 @@ export default function TestimonialsSection({
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Đang chuyển...</span>
+                  <span>{t(H.redirecting)}</span>
                 </>
               ) : (
                 <>

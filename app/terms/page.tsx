@@ -3,8 +3,13 @@
 import Link from 'next/link'
 import { FileText, ChevronLeft, Shield, Users, AlertTriangle, Scale } from 'lucide-react'
 import { COMPANY } from '@/lib/company-info'
+import { COMPANY_EN } from '@/lib/about-content'
+import { useLang } from '@/contexts/LanguageContext'
+import { LEGAL_COMMON, TERMS_EN } from '@/lib/legal-i18n'
 
 export default function TermsPage() {
+  const { lang, t } = useLang()
+  const en = lang === 'en'
   const sections = [
     {
       icon: Users,
@@ -68,7 +73,7 @@ export default function TermsPage() {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6"
           >
             <ChevronLeft className="w-4 h-4" />
-            Quay lại trang chủ
+            {t(LEGAL_COMMON.back)}
           </Link>
           
           <div className="flex items-center gap-4 animate-fade-in-up">
@@ -76,8 +81,8 @@ export default function TermsPage() {
               <FileText className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Điều Khoản Sử Dụng</h1>
-              <p className="text-muted-foreground">Cập nhật lần cuối: Tháng 1, 2026</p>
+              <h1 className="text-3xl font-bold">{en ? TERMS_EN.title : 'Điều Khoản Sử Dụng'}</h1>
+              <p className="text-muted-foreground">{t(LEGAL_COMMON.updated)}</p>
             </div>
           </div>
         </div>
@@ -89,15 +94,18 @@ export default function TermsPage() {
           {/* Intro */}
           <div className="bg-card border rounded-2xl p-6 mb-8 animate-fade-in-up">
             <p className="text-lg text-muted-foreground">
-              Chào mừng bạn đến với <strong className="text-foreground">Hồi Nét</strong>. 
-              Vui lòng đọc kỹ các điều khoản sử dụng dưới đây trước khi sử dụng dịch vụ của chúng tôi.
-              Bằng việc sử dụng dịch vụ, bạn đồng ý với các điều khoản này.
+              {en ? TERMS_EN.introLead : 'Chào mừng bạn đến với'} <strong className="text-foreground">Hồi Nét</strong>.{' '}
+              {en
+                ? TERMS_EN.introBody
+                : 'Vui lòng đọc kỹ các điều khoản sử dụng dưới đây trước khi sử dụng dịch vụ của chúng tôi. Bằng việc sử dụng dịch vụ, bạn đồng ý với các điều khoản này.'}
             </p>
           </div>
 
           {/* Sections */}
           <div className="space-y-6 animate-stagger">
-            {sections.map((section) => (
+            {sections.map((section, sectionIndex) => {
+              const view = en ? TERMS_EN.sections[sectionIndex] : section
+              return (
               <div
                 key={section.title}
                 className="bg-card border rounded-2xl p-6 hover:shadow-lg transition-shadow animate-fade-in-up"
@@ -107,9 +115,9 @@ export default function TermsPage() {
                     <section.icon className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl font-semibold mb-4">{section.title}</h2>
+                    <h2 className="text-xl font-semibold mb-4">{view.title}</h2>
                     <ul className="space-y-3">
-                      {section.content.map((item, i) => (
+                      {view.content.map((item, i) => (
                         <li key={i} className="flex items-start gap-3 text-muted-foreground">
                           <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
                           {item}
@@ -119,14 +127,15 @@ export default function TermsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Contact */}
           <div className="mt-12 bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center animate-fade-in-up">
-            <h3 className="text-lg font-semibold mb-2">Có câu hỏi?</h3>
+            <h3 className="text-lg font-semibold mb-2">{en ? TERMS_EN.questionsTitle : 'Có câu hỏi?'}</h3>
             <p className="text-muted-foreground mb-4">
-              Liên hệ với chúng tôi nếu bạn cần giải đáp về điều khoản sử dụng.
+              {en ? TERMS_EN.questionsText : 'Liên hệ với chúng tôi nếu bạn cần giải đáp về điều khoản sử dụng.'}
             </p>
             <a
               href={`mailto:${COMPANY.emails.support}`}
@@ -135,7 +144,7 @@ export default function TermsPage() {
               {COMPANY.emails.support}
             </a>
             <p className="mt-3 text-sm text-muted-foreground">
-              {COMPANY.legalName} · {COMPANY.address.full}
+              {en ? COMPANY.legalNameEn : COMPANY.legalName} · {en ? COMPANY_EN.addressFull : COMPANY.address.full}
             </p>
           </div>
 
@@ -145,7 +154,7 @@ export default function TermsPage() {
               href="/privacy" 
               className="text-primary hover:underline font-medium"
             >
-              Chính Sách Bảo Mật →
+              {en ? TERMS_EN.related : 'Chính Sách Bảo Mật →'}
             </Link>
           </div>
         </div>
