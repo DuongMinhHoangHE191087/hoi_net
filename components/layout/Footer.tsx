@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ImageIcon, Heart, ExternalLink, Facebook, Mail, Phone, MapPin } from 'lucide-react'
+import { ImageIcon, Heart, ExternalLink, Mail, Phone, MapPin, Clock, Globe } from 'lucide-react'
 import { useSiteSettings, useFooterLinksByColumn, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
+import { COMPANY, SOCIAL_LINKS, getCopyright } from '@/lib/company-info'
+import SocialIcon from '@/components/ui/SocialIcon'
 
 export default function Footer() {
   const { data: settings = DEFAULT_SITE_SETTINGS } = useSiteSettings()
@@ -11,9 +13,6 @@ export default function Footer() {
 
   const brandName = settings.brand_name || DEFAULT_SITE_SETTINGS.brand_name
   const footerDescription = settings.footer_description || DEFAULT_SITE_SETTINGS.footer_description
-  const contactEmail = settings.contact_email || ''
-  const contactPhone = settings.contact_phone || ''
-  const contactFacebook = settings.contact_facebook || ''
   const logoUrl = settings.brand_logo_url || ''
 
   // Default column order
@@ -26,7 +25,7 @@ export default function Footer() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none"></div>
 
         <div className="relative max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
             {/* Brand Column */}
             <div>
               <div className="flex items-center gap-2 mb-4">
@@ -51,38 +50,70 @@ export default function Footer() {
                 {footerDescription}
               </p>
 
-              {/* Social Links */}
-              <div className="flex items-center gap-3">
-                {contactEmail && (
+              {/* Social Links (hardcode: lib/company-info.ts) */}
+              <div className="flex flex-wrap items-center gap-2">
+                {SOCIAL_LINKS.map((social) => (
                   <a
-                    href={`mailto:${contactEmail}`}
-                    className="p-2 text-gray-600 hover:text-primary hover:bg-white/50 rounded-lg transition-all"
-                    title={contactEmail}
-                  >
-                    <Mail className="w-4 h-4" />
-                  </a>
-                )}
-                {contactPhone && (
-                  <a
-                    href={`tel:${contactPhone}`}
-                    className="p-2 text-gray-600 hover:text-primary hover:bg-white/50 rounded-lg transition-all"
-                    title={contactPhone}
-                  >
-                    <Phone className="w-4 h-4" />
-                  </a>
-                )}
-                {contactFacebook && (
-                  <a
-                    href={contactFacebook}
+                    key={social.key}
+                    href={social.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 text-gray-600 hover:text-primary hover:bg-white/50 rounded-lg transition-all"
-                    title="Facebook"
+                    className="p-2.5 text-gray-600 hover:text-primary hover:bg-white/60 border border-gray-300/70 hover:border-primary/50 rounded-full transition-all"
+                    title={social.label}
+                    aria-label={social.label}
                   >
-                    <Facebook className="w-4 h-4" />
+                    <SocialIcon name={social.key} />
                   </a>
-                )}
+                ))}
               </div>
+            </div>
+
+            {/* Contact Column (hardcode: lib/company-info.ts) */}
+            <div>
+              <h3 className="font-bold text-text mb-4 text-lg">Liên Hệ</h3>
+              <address className="not-italic space-y-3 text-sm text-gray-700">
+                <p className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" aria-hidden="true" />
+                  <a
+                    href={COMPANY.address.mapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary transition-colors"
+                  >
+                    {COMPANY.address.full}
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 flex-shrink-0 text-primary" aria-hidden="true" />
+                  <a href={`tel:${COMPANY.phoneRaw}`} className="hover:text-primary transition-colors">
+                    {COMPANY.phone}
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 flex-shrink-0 text-primary" aria-hidden="true" />
+                  <a
+                    href={`mailto:${COMPANY.emails.contact}`}
+                    className="hover:text-primary transition-colors break-all"
+                  >
+                    {COMPANY.emails.contact}
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 flex-shrink-0 text-primary" aria-hidden="true" />
+                  <a
+                    href={COMPANY.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary transition-colors"
+                  >
+                    {COMPANY.domain}
+                  </a>
+                </p>
+                <p className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" aria-hidden="true" />
+                  <span>{COMPANY.workingHours}</span>
+                </p>
+              </address>
             </div>
 
             {/* Dynamic Footer Columns */}
@@ -128,10 +159,11 @@ export default function Footer() {
           </div>
 
           <div className="border-t-2 border-white/30 mt-8 pt-8">
-            <p className="text-center text-sm text-gray-700 flex items-center justify-center gap-2">
-              © {new Date().getFullYear()} {brandName}. Made with
-              <Heart className="w-4 h-4 text-primary fill-primary animate-pulse" />
-              All rights reserved.
+            <p className="text-center text-sm text-gray-700">{getCopyright()}</p>
+            <p className="mt-1 text-center text-xs text-gray-600 flex items-center justify-center gap-2">
+              Made with
+              <Heart className="w-3.5 h-3.5 text-primary fill-primary animate-pulse" />
+              in Vietnam · All rights reserved.
             </p>
           </div>
         </div>

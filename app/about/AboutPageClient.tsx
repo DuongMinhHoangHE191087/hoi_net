@@ -4,6 +4,9 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import AboutSections from '@/components/sections/AboutSections'
 import TeamCarousel3D from '@/components/sections/TeamCarousel3D'
+import CompanyOverview from '@/components/sections/CompanyOverview'
+import CompanyStats from '@/components/sections/CompanyStats'
+import CompanyTimeline from '@/components/sections/CompanyTimeline'
 import { AboutSection, TeamMember } from '@/lib/supabase'
 
 interface AboutPageClientProps {
@@ -83,8 +86,15 @@ export default function AboutPageClient({ aboutSections, team }: AboutPageClient
         </div>
       </section>
 
+      {/* Tổng quan công ty: sứ mệnh, tầm nhìn, thông tin pháp nhân (hardcode: lib/company-info.ts) */}
+      <CompanyOverview />
+
       {/* About Sections - Dynamic from admin */}
       <AboutSections sections={aboutSections} />
+
+      {/* Số liệu nổi bật + hành trình phát triển (hardcode: lib/company-info.ts) */}
+      <CompanyStats />
+      <CompanyTimeline />
 
       {/* Team Section */}
       <section className="py-20 px-4 relative z-10">

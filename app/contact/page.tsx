@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Send, Mail, MessageSquare, Upload, X, Star, CheckCircle, Sparkles, AlertCircle, Clock, Shield, ArrowRight, User, LogIn } from 'lucide-react'
+import { Send, Mail, MessageSquare, Upload, X, Star, CheckCircle, Sparkles, AlertCircle, Clock, Shield, ArrowRight, User, LogIn, MapPin, Phone } from 'lucide-react'
+import { COMPANY } from '@/lib/company-info'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { useSiteSettings, DEFAULT_SITE_SETTINGS } from '@/hooks/useSiteSettings'
 import { useAuth } from '@/lib/auth'
 import toast, { Toaster } from 'react-hot-toast'
 
@@ -26,8 +26,8 @@ const RATE_LIMITS = {
 export default function ContactPage() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
-  const { data: settings = DEFAULT_SITE_SETTINGS } = useSiteSettings()
-  const contactEmail = settings.contact_email || DEFAULT_SITE_SETTINGS.contact_email
+  // Thông tin liên hệ lấy từ lib/company-info.ts (hardcode), không phụ thuộc site_settings
+  const contactEmail = COMPANY.emails.contact
 
   const [formData, setFormData] = useState({
     name: '',
@@ -338,7 +338,12 @@ export default function ContactPage() {
                 <Mail className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-bold text-text mb-2">Email</h3>
-              <p className="text-gray-700 font-medium">{contactEmail}</p>
+              <a
+                href={`mailto:${contactEmail}`}
+                className="text-gray-700 font-medium hover:text-primary break-all"
+              >
+                {contactEmail}
+              </a>
             </motion.div>
 
             <motion.div
@@ -369,6 +374,74 @@ export default function ContactPage() {
               <p className="text-gray-700 font-medium">Gửi phản hồi trực tiếp</p>
             </motion.div>
           </div>
+
+          {/* Thông tin công ty & trụ sở */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="glassmorphism-strong p-6 md:p-8 mb-12"
+          >
+            <h2 className="text-xl font-bold text-text mb-1">{COMPANY.legalName}</h2>
+            <p className="text-sm text-gray-600 mb-6">{COMPANY.organizationType}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm text-gray-700">
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold text-text">Trụ sở</p>
+                  <a
+                    href={COMPANY.address.mapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary hover:underline"
+                  >
+                    {COMPANY.address.full}
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Phone className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold text-text">Điện thoại</p>
+                  <a href={`tel:${COMPANY.phoneRaw}`} className="hover:text-primary hover:underline">
+                    {COMPANY.phone}
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold text-text">Giờ làm việc</p>
+                  <p>{COMPANY.workingHours}</p>
+                  <p className="text-gray-500">{COMPANY.responseTime}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold text-text">Các hộp thư</p>
+                  <p>
+                    Hỗ trợ:{' '}
+                    <a href={`mailto:${COMPANY.emails.support}`} className="hover:text-primary hover:underline">
+                      {COMPANY.emails.support}
+                    </a>
+                  </p>
+                  <p>
+                    Báo chí & hợp tác:{' '}
+                    <a href={`mailto:${COMPANY.emails.press}`} className="hover:text-primary hover:underline">
+                      {COMPANY.emails.press}
+                    </a>
+                  </p>
+                  <p>
+                    Tuyển dụng:{' '}
+                    <a href={`mailto:${COMPANY.emails.careers}`} className="hover:text-primary hover:underline">
+                      {COMPANY.emails.careers}
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

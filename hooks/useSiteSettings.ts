@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { db, FooterLink, NavigationLink } from '@/lib/supabase'
+import { COMPANY, SOCIAL_LINKS, getCopyright } from '@/lib/company-info'
 
 // Query Keys
 export const siteSettingsQueryKeys = {
@@ -29,11 +30,11 @@ export const DEFAULT_SITE_SETTINGS: Record<string, string> = {
   site_logo_url: HOINET_LOGO_URL,
   site_name: 'Hồi Nét',
   footer_description: 'Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI - Mang lại kỷ niệm tươi đẹp.',
-  footer_copyright: '© 2026 Hồi Nét. Made with ❤️ All rights reserved.',
-  contact_email: 'support@hoinet.com',
-  contact_phone: '',
-  contact_address: '',
-  contact_facebook: '',
+  footer_copyright: getCopyright(),
+  contact_email: COMPANY.emails.contact,
+  contact_phone: COMPANY.phone,
+  contact_address: COMPANY.address.full,
+  contact_facebook: SOCIAL_LINKS.find((s) => s.key === 'facebook')?.url ?? '',
   social_links: '{}',
   seo_title: 'Hồi Nét - Khôi phục ảnh cũ',
   seo_description: 'Khôi phục ảnh cũ và ghép ảnh gia đình bằng AI',

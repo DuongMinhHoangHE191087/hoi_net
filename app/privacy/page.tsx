@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Shield, ChevronLeft, Database, Eye, Lock, Bell, Trash2, Globe } from 'lucide-react'
+import { COMPANY } from '@/lib/company-info'
 
 export default function PrivacyPage() {
   const sections = [
@@ -151,12 +152,15 @@ export default function PrivacyPage() {
             <p className="text-muted-foreground mb-4">
               Nếu bạn có câu hỏi hoặc muốn thực hiện quyền của mình, vui lòng liên hệ.
             </p>
-            <a 
-              href="mailto:duongminhhoanginwork@gmail.com" 
+            <a
+              href={`mailto:${COMPANY.emails.support}`}
               className="text-emerald-600 font-medium hover:underline"
             >
-              duongminhhoanginwork@gmail.com
+              {COMPANY.emails.support}
             </a>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Đơn vị quản lý dữ liệu: {COMPANY.legalName} · {COMPANY.address.full}
+            </p>
           </div>
 
           {/* Related Links */}

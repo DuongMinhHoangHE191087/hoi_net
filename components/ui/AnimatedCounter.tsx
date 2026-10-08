@@ -8,6 +8,8 @@ interface AnimatedCounterProps {
   prefix?: string
   suffix?: string
   className?: string
+  /** true (mặc định): rút gọn "128K". false: số đầy đủ theo vi-VN, vd "128.000" */
+  compact?: boolean
 }
 
 export default function AnimatedCounter({
@@ -16,6 +18,7 @@ export default function AnimatedCounter({
   prefix = '',
   suffix = '',
   className = '',
+  compact = true,
 }: AnimatedCounterProps) {
   const [count, setCount] = useState(0)
   const [hasStarted, setHasStarted] = useState(false)
@@ -43,6 +46,12 @@ export default function AnimatedCounter({
   useEffect(() => {
     if (!hasStarted) return
 
+    // Người dùng bật "giảm chuyển động": hiện luôn giá trị cuối
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setCount(end)
+      return
+    }
+
     let startTime: number
     let animationFrame: number
 
@@ -50,9 +59,9 @@ export default function AnimatedCounter({
       if (!startTime) startTime = timestamp
       const progress = Math.min((timestamp - startTime) / duration, 1)
 
-      // Ease out cubic
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setCount(Math.floor(eased * end))
+      // Ease out quart: nhanh lúc đầu, giảm tốc mượt khi gần tới đích
+      const eased = 1 - Math.pow(1 - progress, 4)
+      setCount(progress >= 1 ? end : Math.floor(eased * end))
 
       if (progress < 1) {
         animationFrame = requestAnimationFrame(step)
@@ -64,7 +73,7 @@ export default function AnimatedCounter({
   }, [hasStarted, end, duration])
 
   const formatNumber = (n: number) => {
-    if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K`
+    if (compact && n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K`
     return n.toLocaleString('vi-VN')
   }
 

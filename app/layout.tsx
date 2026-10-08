@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import AbortErrorSuppressor from '@/components/AbortErrorSuppressor'
 import { Toaster } from 'react-hot-toast'
 import { getAllSiteSettings } from '@/lib/supabase/server-utils'
+import { COMPANY, SITE_URL, TWITTER_HANDLE, buildOrganizationJsonLd } from '@/lib/company-info'
 
 // This app relies on auth cookies in multiple places; force dynamic rendering
 // to prevent build-time prerender errors when reading cookies in server utilities.
@@ -57,8 +58,8 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   // === CORE SEO SETTINGS ===
-  const siteName = settings.brand_name || 'Hồi Nét'
-  const siteUrl = settings.site_url || 'https://hoinet.tech'
+  const siteName = settings.brand_name || COMPANY.brandName
+  const siteUrl = settings.site_url || SITE_URL
   
   const title = settings.site_meta_title || settings.seo_title || 'Hồi Nét - Dịch Vụ Phục Chế & Khôi Phục Ảnh Cũ Chuyên Nghiệp Bằng AI'
   const description = settings.site_meta_description || settings.seo_description || 'Dịch vụ phục chế ảnh cũ, làm nét ảnh mờ và ghép ảnh gia đình bằng công nghệ AI tiên tiến. Khôi phục kỷ niệm, tô màu ảnh trắng đen chuyên nghiệp, chất lượng cao.'
@@ -78,11 +79,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = settings.site_favicon_url || settings.site_logo_url || '/favicon.ico'
 
   // === AUTHOR & ROBOTS ===
-  const author = settings.seo_author || 'Hồi Nét Team'
+  const author = settings.seo_author || COMPANY.legalName
   const robots = settings.seo_robots || 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
-  const canonical = settings.seo_canonical || siteUrl
+  // './' = canonical tự trỏ về chính URL của từng trang (giải theo metadataBase).
+  // Nếu đặt canonical cố định ở layout, mọi trang con sẽ bị canonical về trang chủ.
+  const canonical = settings.seo_canonical || './'
 
   return {
+    metadataBase: new URL(siteUrl),
+
     // === BASIC META ===
     title: {
       default: title,
@@ -142,8 +147,8 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       images: [ogImage],
-      creator: settings.twitter_handle || '@hoinet_tech',
-      site: settings.twitter_handle || '@hoinet_tech',
+      creator: settings.twitter_handle || TWITTER_HANDLE,
+      site: settings.twitter_handle || TWITTER_HANDLE,
     },
 
     // === VERIFICATION (thêm vào Admin Settings nếu cần) ===
@@ -186,57 +191,26 @@ export default function RootLayout({
         {/* ============================================
             🔍 JSON-LD STRUCTURED DATA (SEO Rich Snippets)
             ============================================ */}
+        {/* Organization: dữ liệu lấy từ lib/company-info.ts (nguồn duy nhất) */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Organization',
-              name: 'Hồi Nét',
-              alternateName: 'HoiNet',
-              url: 'https://hoinet.tech',
-              logo: 'https://res.cloudinary.com/domuc9uy5/image/upload/v1748449789/logos/logo_qyonhg.png',
-              description: 'Hồi Nét - Chuyên gia phục chế và khôi phục ảnh cũ bằng công nghệ AI hàng đầu Việt Nam',
-              foundingDate: '2024',
-              founders: [
-                {
-                  '@type': 'Person',
-                  name: 'Duong Minh Hoang',
-                },
-              ],
-              address: {
-                '@type': 'PostalAddress',
-                addressCountry: 'VN',
-                addressLocality: 'Ho Chi Minh City',
-              },
-              contactPoint: {
-                '@type': 'ContactPoint',
-                contactType: 'customer service',
-                email: 'duongminhhoanginwork@gmail.com',
-                availableLanguage: ['Vietnamese', 'English'],
-              },
-              sameAs: [
-                'https://www.facebook.com/fpthoinet',
-                'https://twitter.com/hoinet_tech',
-              ],
-            }),
+            __html: JSON.stringify(buildOrganizationJsonLd()),
           }}
         />
-        
-        {/* Website Schema */}
+
+        {/* Website Schema (không khai báo SearchAction vì site chưa có trang /search) */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
-              name: 'Hồi Nét',
-              url: 'https://hoinet.tech',
-              potentialAction: {
-                '@type': 'SearchAction',
-                target: 'https://hoinet.tech/search?q={search_term_string}',
-                'query-input': 'required name=search_term_string',
-              },
+              '@id': `${SITE_URL}/#website`,
+              name: COMPANY.brandName,
+              url: SITE_URL,
+              inLanguage: 'vi-VN',
+              publisher: { '@id': `${SITE_URL}/#organization` },
             }),
           }}
         />
@@ -251,11 +225,7 @@ export default function RootLayout({
               serviceType: 'Hồi Nét - Phục chế và khôi phục ảnh',
               name: 'Hồi Nét - Phục chế & Khôi phục ảnh cũ chuyên nghiệp bằng AI',
               description: 'Hồi Nét - Dịch vụ phục chế, khôi phục, làm nét và tô màu ảnh cũ hư hỏng nặng sử dụng công nghệ AI tiên tiến',
-              provider: {
-                '@type': 'Organization',
-                name: 'Hồi Nét',
-                url: 'https://hoinet.tech',
-              },
+              provider: { '@id': `${SITE_URL}/#organization` },
               areaServed: {
                 '@type': 'Country',
                 name: 'Vietnam',

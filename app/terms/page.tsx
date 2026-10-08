@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { FileText, ChevronLeft, Shield, Users, AlertTriangle, Scale } from 'lucide-react'
+import { COMPANY } from '@/lib/company-info'
 
 export default function TermsPage() {
   const sections = [
@@ -127,12 +128,15 @@ export default function TermsPage() {
             <p className="text-muted-foreground mb-4">
               Liên hệ với chúng tôi nếu bạn cần giải đáp về điều khoản sử dụng.
             </p>
-            <a 
-              href="mailto:duongminhhoanginwork@gmail.com" 
+            <a
+              href={`mailto:${COMPANY.emails.support}`}
               className="text-primary font-medium hover:underline"
             >
-              duongminhhoanginwork@gmail.com
+              {COMPANY.emails.support}
             </a>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {COMPANY.legalName} · {COMPANY.address.full}
+            </p>
           </div>
 
           {/* Related Links */}
