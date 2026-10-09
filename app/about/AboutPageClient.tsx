@@ -137,20 +137,22 @@ export default function AboutPageClient({ aboutSections, team, content = {} }: A
       <Roadmap2030 />
       <Leadership leaders={content.leaders} />
 
-      {/* Team Section */}
-      <section className="py-20 px-4 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <TeamHeading />
-          </div>
+      {/* Team Section — ẩn khi chưa có thành viên active trong DB, tránh tiêu đề trống */}
+      {team.length > 0 && (
+        <section className="py-20 px-4 relative z-10">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <TeamHeading />
+            </div>
 
-          <TeamCarousel3D
-            team={team}
-            variant="compact"
-            showBackground={false}
-          />
-        </div>
-      </section>
+            <TeamCarousel3D
+              team={team}
+              variant="compact"
+              showBackground={false}
+            />
+          </div>
+        </section>
+      )}
 
       <PartnersSection />
       <Newsroom />

@@ -51,7 +51,9 @@ export default function Navbar() {
     return [
       { id: '1', label: 'Blog', href: '/blog', is_external: false, show_in_mobile: true },
       { id: '2', label: 'Về Chúng Tôi', href: '/about', is_external: false, show_in_mobile: true },
-      { id: '3', label: 'Liên Hệ', href: '/contact', is_external: false, show_in_mobile: true },
+      { id: '3', label: 'Tin Tức', href: '/about#news-title', is_external: false, show_in_mobile: true },
+      { id: '4', label: 'Tuyển Dụng', href: '/about#careers-title', is_external: false, show_in_mobile: true },
+      { id: '5', label: 'Liên Hệ', href: '/contact', is_external: false, show_in_mobile: true },
     ]
   }, [filteredLinks])
 

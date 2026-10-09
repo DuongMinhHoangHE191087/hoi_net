@@ -21,6 +21,11 @@ const LINK_LABELS: Record<string, L> = {
   '/terms': { vi: 'Điều Khoản', en: 'Terms of Service' },
   '/privacy': { vi: 'Bảo Mật', en: 'Privacy Policy' },
   '/request-photo': { vi: 'Phục Chế Ảnh', en: 'Restore a Photo' },
+  // Neo tới các section của trang /about (id khớp SECTION_NAV trong about-corporate.ts)
+  '/about#leadership-title': { vi: 'Ban Lãnh Đạo', en: 'Leadership' },
+  '/about#news-title': { vi: 'Tin Tức', en: 'News' },
+  '/about#careers-title': { vi: 'Tuyển Dụng', en: 'Careers' },
+  '/about#faq-title': { vi: 'Hỏi Đáp', en: 'FAQ' },
 }
 
 /** Tiêu đề cột footer, tra theo column_name */

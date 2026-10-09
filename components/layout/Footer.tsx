@@ -194,6 +194,10 @@ function FallbackColumn({ columnName }: { columnName: string }) {
       title: 'Công Ty',
       links: [
         { label: 'Về Chúng Tôi & Đội Ngũ', href: '/about' },
+        { label: 'Ban Lãnh Đạo', href: '/about#leadership-title' },
+        { label: 'Tin Tức', href: '/about#news-title' },
+        { label: 'Tuyển Dụng', href: '/about#careers-title' },
+        { label: 'Hỏi Đáp', href: '/about#faq-title' },
       ],
     },
     legal: {
