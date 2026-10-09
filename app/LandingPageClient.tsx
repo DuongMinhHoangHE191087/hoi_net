@@ -75,6 +75,15 @@ const SocialProofSection = dynamic(() => import('@/components/sections/SocialPro
   ssr: false,
 })
 
+const ClientsPartnersGrid = dynamic(() => import('@/components/sections/ClientsPartnersGrid'), {
+  loading: () => (
+    <div className="h-64 animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
+      <p className="text-gray-500">Đang tải đối tác...</p>
+    </div>
+  ),
+  ssr: false,
+})
+
 interface LandingPageClientProps {
   team: TeamMember[]
   valueSections: ValueSection[]
@@ -465,6 +474,11 @@ export default function LandingPageClient({ team, valueSections, features, testi
       {/* Social Proof Section — Trust Badges, Stats, Before/After */}
       <LazySection minHeight="400px" rootMargin="300px">
         <SocialProofSection />
+      </LazySection>
+
+      {/* Strategic Partners & Infrastructure Section */}
+      <LazySection minHeight="450px" rootMargin="300px">
+        <ClientsPartnersGrid />
       </LazySection>
 
       {/* Team Section - Using shared TeamCarousel3D component */}

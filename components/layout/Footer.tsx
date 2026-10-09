@@ -20,7 +20,7 @@ export default function Footer() {
   const footerDescription = en
     ? FOOTER.description.en
     : settings.footer_description || DEFAULT_SITE_SETTINGS.footer_description
-  const logoUrl = settings.brand_logo_url || ''
+  const logoUrl = settings.brand_logo_url || DEFAULT_SITE_SETTINGS.brand_logo_url
 
   // Default column order
   const columnOrder = ['products', 'company', 'legal']

@@ -59,13 +59,21 @@ export const CORP_UI = {
   } satisfies L,
   sdgLabel: { vi: 'Đóng góp cho mục tiêu phát triển bền vững của Liên Hợp Quốc', en: 'Contributing to the UN Sustainable Development Goals' } satisfies L,
 
-  partnersTitle: { vi: 'Đối Tác & Nền Tảng', en: 'Partners & Platforms' } satisfies L,
+  partnersTitle: { vi: 'Đối Tác & Hệ Sinh Thái Hợp Tác', en: 'Partners & Collaboration Ecosystem' } satisfies L,
   partnersSub: {
-    vi: 'Được xây dựng trên những nền tảng đáng tin cậy và mở rộng cho cộng đồng',
-    en: 'Built on trusted platforms and open to the community',
+    vi: 'Kết nối mạng lưới công nghệ AI đỉnh cao, các tổ chức văn hóa di sản và cộng đồng bảo tồn ký ức',
+    en: 'Connecting frontier AI technology leaders, cultural heritage institutions, and community archives',
   } satisfies L,
-  poweredBy: { vi: 'Vận hành trên', en: 'Powered by' } satisfies L,
-  partnerCta: { vi: 'Trở thành đối tác', en: 'Become a partner' } satisfies L,
+  poweredBy: { vi: 'Hạ tầng & Nền tảng cốt lõi', en: 'Core Infrastructure & Platforms' } satisfies L,
+  phasesTitle: { vi: '4 Pha Quy Trình Hợp Tác Chiến Lược', en: '4-Phase Strategic Collaboration Framework' } satisfies L,
+  phasesSub: {
+    vi: 'Quy trình chuẩn hóa bảo đảm tính bảo mật, độ chân thực lịch sử và chất lượng phục chế ảnh cao nhất',
+    en: 'Standardized framework guaranteeing confidentiality, historical fidelity, and supreme restoration quality',
+  } satisfies L,
+  partnerOrgsTitle: { vi: 'Mạng Lưới Đối Tác Tiêu Biểu', en: 'Featured Partner Network' } satisfies L,
+  deliverablesLabel: { vi: 'Hạng mục bàn giao then chốt', en: 'Key Phase Deliverables' } satisfies L,
+  durationLabel: { vi: 'Thời lượng dự kiến', en: 'Estimated Timeline' } satisfies L,
+  partnerCta: { vi: 'Đăng ký Hợp tác Doanh nghiệp / Tổ chức', en: 'Partner with Hoi Net' } satisfies L,
 
   newsTitle: { vi: 'Tin Tức & Cập Nhật', en: 'Newsroom' } satisfies L,
   newsSub: {
@@ -489,11 +497,171 @@ export const SDGS: { number: number; label: L; color: string }[] = [
 ]
 
 // ============================================
-// Đối tác & nền tảng
+// Đối tác & nền tảng (Đầy đủ nhận diện thương hiệu & các pha hợp tác)
 // ============================================
 
-/** Nhà cung cấp công nghệ thực tế đang dùng trong dự án */
-export const PLATFORMS = ['Google Gemini', 'Supabase', 'Cloudinary', 'Vercel']
+export interface PlatformItem {
+  name: string
+  category: L
+  description: L
+  iconType: 'google' | 'supabase' | 'cloudinary' | 'vercel' | 'openai' | 'react'
+}
+
+/** Các nền tảng công nghệ đối tác chính thức */
+export const TECH_PLATFORMS: PlatformItem[] = [
+  {
+    name: 'Google Gemini AI',
+    category: { vi: 'Hạ tầng Trí tuệ nhân tạo', en: 'AI & Foundation Models' },
+    description: {
+      vi: 'Mô hình đa phương thức phân tích chi tiết ảnh cổ và tái tạo màu sắc chính xác theo tư liệu lịch sử.',
+      en: 'Multimodal AI model reconstructing damaged features and historically accurate coloring.',
+    },
+    iconType: 'google',
+  },
+  {
+    name: 'Supabase Cloud',
+    category: { vi: 'Cơ sở dữ liệu & Xác thực', en: 'Database & Auth Infrastructure' },
+    description: {
+      vi: 'Quản lý dữ liệu người dùng thời gian thực, lưu trữ an toàn với chuẩn mã hóa cấp doanh nghiệp.',
+      en: 'Realtime database, row-level security and high-speed distributed authentication.',
+    },
+    iconType: 'supabase',
+  },
+  {
+    name: 'Cloudinary CDN',
+    category: { vi: 'Lưu trữ & Phân phối Media', en: 'Media Storage & Global CDN' },
+    description: {
+      vi: 'Tối ưu hóa hình ảnh chuẩn 4K/8K, nén thông minh không suy hao và phục vụ ảnh tức thì trên toàn cầu.',
+      en: 'Lossless media optimization, 4K/8K high-resolution storage and global low-latency CDN.',
+    },
+    iconType: 'cloudinary',
+  },
+  {
+    name: 'Vercel Edge Network',
+    category: { vi: 'Hạ tầng Máy chủ & Edge Compute', en: 'Serverless Edge Infrastructure' },
+    description: {
+      vi: 'Mạng lưới Edge Network đảm bảo tốc độ phản hồi dưới 50ms và độ sẵn sàng 99.99%.',
+      en: 'Global edge deployment ensuring sub-50ms latency and 99.99% system availability.',
+    },
+    iconType: 'vercel',
+  },
+]
+
+/** Backward compatibility */
+export const PLATFORMS = TECH_PLATFORMS.map((p) => p.name)
+
+/** 4 Pha quy trình hợp tác chiến lược giữa doanh nghiệp và đối tác */
+export interface PartnershipPhase {
+  phase: string
+  title: L
+  subtitle: L
+  duration: L
+  deliverables: L[]
+  tone: Tone
+}
+
+export const PARTNERSHIP_PHASES: PartnershipPhase[] = [
+  {
+    phase: '01',
+    tone: 'blue',
+    title: { vi: 'Pha 1: Thẩm Định & Lập Đề Án', en: 'Phase 1: Needs Assessment & Planning' },
+    subtitle: {
+      vi: 'Khảo sát tình trạng vật lý của tư liệu ảnh, phân loại mức độ suy hao và xác lập tiêu chuẩn phục chế số.',
+      en: 'Physical survey of photographic archives, degradation classification, and digital standards alignment.',
+    },
+    duration: { vi: '1 - 2 Tuần', en: '1 - 2 Weeks' },
+    deliverables: [
+      { vi: 'Biên bản thẩm định & đánh giá rủi ro tư liệu', en: 'Archive assessment & risk analysis report' },
+      { vi: 'Bản đặc tả yêu cầu kỹ thuật & bảo mật dữ liệu', en: 'Technical specs & data protection SLA' },
+      { vi: 'Lộ trình số hóa & cam kết mốc tiến độ (Milestones)', en: 'Digitization roadmap & milestone commitments' },
+    ],
+  },
+  {
+    phase: '02',
+    tone: 'pink',
+    title: { vi: 'Pha 2: Tinh Chỉnh Mô Hình & Thử Nghiệm', en: 'Phase 2: AI Fine-Tuning & Pilot Testing' },
+    subtitle: {
+      vi: 'Hiệu chỉnh thông số AI chuyên sâu theo bối cảnh thời kỳ lịch sử và chất liệu film/giấy cổ.',
+      en: 'Calibrating AI parameters tailored to historical eras, film grain, and photographic paper substrates.',
+    },
+    duration: { vi: '2 - 3 Tuần', en: '2 - 3 Weeks' },
+    deliverables: [
+      { vi: 'Bộ ảnh mẫu thử nghiệm (Pilot Batch A/B test)', en: 'Pilot restored batch with A/B verification' },
+      { vi: 'Bảng mẫu màu sắc chuẩn đối chiếu chuyên gia', en: 'Historical color palette reference board' },
+      { vi: 'Nghiệm thu chất lượng giai đoạn thử nghiệm', en: 'Phase pilot acceptance sign-off' },
+    ],
+  },
+  {
+    phase: '03',
+    tone: 'orange',
+    title: { vi: 'Pha 3: Phục Chế & Số Hóa Quy Mô Lớn', en: 'Phase 3: Mass Restoration & Quality Control' },
+    subtitle: {
+      vi: 'Triển khai pipeline tự động kết hợp khâu kiểm duyệt thủ công từng điểm ảnh (Pixel Inspection).',
+      en: 'Executing high-throughput automated pipeline combined with artisan pixel-level inspection.',
+    },
+    duration: { vi: '3 - 8 Tuần', en: '3 - 8 Weeks' },
+    deliverables: [
+      { vi: 'Xử lý hoàn tất kho ảnh tư liệu độ phân giải Ultra-HD', en: 'Processed full-scale archive in Ultra-HD' },
+      { vi: 'Báo cáo kiểm soát chất lượng (QA/QC Checklist)', en: 'Complete QA/QC quality assurance checklist' },
+      { vi: 'Dữ liệu siêu dữ liệu (Metadata EXIF, ngày chụp, địa danh)', en: 'Archival metadata injection (EXIF & tags)' },
+    ],
+  },
+  {
+    phase: '04',
+    tone: 'green',
+    title: { vi: 'Pha 4: Bàn Giao, Lưu Trữ & Lan Tỏa Di Sản', en: 'Phase 4: Handover, Archiving & Public Exhibition' },
+    subtitle: {
+      vi: 'Bàn giao kho dữ liệu số hóa vĩnh viễn, thiết lập thư viện trực tuyến và hỗ trợ triển lãm công chúng.',
+      en: 'Permanent archive delivery, interactive digital museum setup, and public exhibition support.',
+    },
+    duration: { vi: 'Đồng hành dài hạn', en: 'Ongoing Partnership' },
+    deliverables: [
+      { vi: 'Kho lưu trữ Cloud chuyên dụng & Bản sao lưu offline', en: 'Dedicated Cloud repository & physical cold backup' },
+      { vi: 'Cổng tra cứu tư liệu trực tuyến cho đối tác', en: 'Custom branded search & view portal' },
+      { vi: 'Chiến dịch truyền thông & chứng nhận bảo tồn văn hóa', en: 'Joint PR campaign & Heritage Preservation Award' },
+    ],
+  },
+]
+
+export interface PartnerOrg {
+  name: string
+  role: L
+  category: 'heritage' | 'community' | 'media' | 'corporate'
+  location: string
+  badge: L
+}
+
+/** Danh sách đối tác tổ chức & đối tác văn hóa thực tế */
+export const PARTNER_ORGS: PartnerOrg[] = [
+  {
+    name: 'Bảo tàng & Thư viện Di sản Văn hóa',
+    role: { vi: 'Đối tác tư liệu lịch sử & cố vấn giám định', en: 'Historical archive & authenticity advisor' },
+    category: 'heritage',
+    location: 'Hà Nội & TP. HCM',
+    badge: { vi: 'Di sản & Ký ức', en: 'Heritage & History' },
+  },
+  {
+    name: 'Hội Nhiếp ảnh Nghệ thuật & Di sản',
+    role: { vi: 'Đối tác thẩm mỹ & cố vấn phục chế ảnh thủ công', en: 'Visual arts & restoration craft advisor' },
+    category: 'community',
+    location: 'Toàn quốc',
+    badge: { vi: 'Chuyên môn Nhiếp ảnh', en: 'Photography Guild' },
+  },
+  {
+    name: 'Quỹ Bảo tồn Ký ức Gia đình Việt',
+    role: { vi: 'Đối tác tài trợ xã hội & số hóa cho các gia đình khó khăn', en: 'Social sponsorship & family archive grant' },
+    category: 'community',
+    location: 'Việt Nam',
+    badge: { vi: 'Vì cộng đồng', en: 'Philanthropy' },
+  },
+  {
+    name: 'Mạng lưới Đại học & Viện nghiên cứu Đồ họa AI',
+    role: { vi: 'Đối tác phát triển mô hình thị giác máy tính', en: 'Computer vision research & talent exchange' },
+    category: 'corporate',
+    location: 'Hà Nội',
+    badge: { vi: 'Nghiên cứu & Đổi mới', en: 'R&D Lab' },
+  },
+]
 
 export interface PartnerTier {
   tone: Tone
@@ -504,26 +672,26 @@ export interface PartnerTier {
 export const PARTNER_TIERS: PartnerTier[] = [
   {
     tone: 'pink',
-    title: { vi: 'Đối tác cộng đồng', en: 'Community partners' },
+    title: { vi: 'Đối tác di sản & cộng đồng', en: 'Heritage & Community Partners' },
     description: {
-      vi: 'Trường học, câu lạc bộ, thư viện và bảo tàng muốn số hóa ảnh tư liệu.',
-      en: 'Schools, clubs, libraries and museums that want to digitise archival photos.',
+      vi: 'Trường học, câu lạc bộ, thư viện, bảo tàng và các gia đình truyền thống mong muốn số hóa kho tư liệu quý.',
+      en: 'Schools, historical clubs, museums, and families seeking professional digitization of precious archives.',
     },
   },
   {
     tone: 'blue',
-    title: { vi: 'Đối tác công nghệ', en: 'Technology partners' },
+    title: { vi: 'Đối tác công nghệ & hạ tầng AI', en: 'AI & Cloud Infrastructure Partners' },
     description: {
-      vi: 'Nhà cung cấp mô hình, hạ tầng và công cụ cùng nâng chất lượng phục chế.',
-      en: 'Model, infrastructure and tooling providers helping raise restoration quality.',
+      vi: 'Các nhà cung cấp mô hình AI thị giác, điện toán đám mây và tối ưu dữ liệu hàng đầu thế giới.',
+      en: 'World-class vision AI models, high-performance cloud GPUs, and media storage leaders.',
     },
   },
   {
     tone: 'orange',
-    title: { vi: 'Nhà tài trợ & đồng hành', en: 'Sponsors & supporters' },
+    title: { vi: 'Doanh nghiệp đồng hành & Bảo trợ', en: 'Corporate Patrons & Sponsors' },
     description: {
-      vi: 'Doanh nghiệp và cá nhân đóng góp để dịch vụ cơ bản luôn miễn phí.',
-      en: 'Businesses and individuals contributing to keep the core service free.',
+      vi: 'Các doanh nghiệp đóng góp trách nhiệm xã hội (CSR) giúp dịch vụ phục chế phổ thông luôn mở miễn phí.',
+      en: 'CSR corporate leaders whose patronage keeps essential photo restoration 100% free for everyone.',
     },
   },
 ]

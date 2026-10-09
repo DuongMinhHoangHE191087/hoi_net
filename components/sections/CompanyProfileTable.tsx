@@ -42,6 +42,19 @@ export default function CompanyProfileTable() {
     <section className="py-16 px-4 relative z-10" aria-labelledby="profile-title">
       <div className="max-w-6xl mx-auto">
         <Reveal className="text-center mb-10">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full glassmorphism-strong border border-white/60 mb-5 shadow-sm">
+            <div className="relative w-7 h-7 shrink-0">
+              <img
+                src="https://res.cloudinary.com/dt6p7wm6i/image/upload/v1769010302/site-branding/logos/jfse7pubnqgqfzfnyemr.png"
+                alt="Hồi Nét"
+                className="w-7 h-7 object-contain"
+              />
+            </div>
+            <span className="text-xs sm:text-sm font-semibold tracking-wide text-gray-800 uppercase">
+              Hồ Sơ Pháp Nhân & Nhận Diện Doanh Nghiệp
+            </span>
+          </div>
+
           <h2 id="profile-title" className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
             <span className="gradient-text-alt">{t(UI.profileTitle)}</span>
           </h2>

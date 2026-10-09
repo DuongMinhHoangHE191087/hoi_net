@@ -107,15 +107,19 @@ export default function Navbar() {
 
   // Render brand logo
   const renderLogo = () => {
-    if (brandLogoType === 'image' && brandLogoUrl) {
+    const effectiveLogoUrl = brandLogoUrl || DEFAULT_SITE_SETTINGS.brand_logo_url
+    if (effectiveLogoUrl) {
       return (
-        <Image
-          src={brandLogoUrl}
-          alt={brandName}
-          width={32}
-          height={32}
-          className="w-8 h-8 object-contain"
-        />
+        <div className="relative w-8 h-8 flex-shrink-0 group-hover:scale-105 transition-transform">
+          <Image
+            src={effectiveLogoUrl}
+            alt={brandName}
+            width={32}
+            height={32}
+            className="w-8 h-8 object-contain"
+            priority
+          />
+        </div>
       )
     }
     return (
